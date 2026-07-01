@@ -1,116 +1,70 @@
+from pathlib import Path
+
 from app.schemas.rules import RetrievedChunk
+from app.services.chunker import RegulationChunker
+from app.services.pdf_reader import RegulationPdfReader
 
 
 class RuleRepository:
-    def search_relevant_chunks(self, question: str) -> list[RetrievedChunk]:
-        normalized_question = question.lower()
+    def __init__(
+        self,
+        pdf_reader: RegulationPdfReader | None = None,
+        chunker: RegulationChunker | None = None,
+    ) -> None:
+        self.pdf_reader = pdf_reader or RegulationPdfReader()
+        self.chunker = chunker or RegulationChunker()
+        self.pdf_path = Path(
+            "data/regulations/raw/FIA 2026 F1 Regulations - Section A [General Provisions] - Iss 03 - 2026-06-25.pdf"
+        )
 
-        if "unsafe release" in normalized_question:
-            return self._unsafe_release_chunks()
+    def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
+        chunks = self._load_chunks()
+        scored_chunks: list[tuple[int, RetrievedChunk]] = []
 
-        if "parc ferme" in normalized_question or "parc fermé" in normalized_question:
-            return self._parc_ferme_chunks()
+        keywords = self._extract_keywords(question)
+        for chunk in chunks:
+            score = self._score_chunk(chunk.content, keywords)
+            if score > 0:
+                scored_chunks.append((score, chunk))
 
-        if "plank" in normalized_question or "skid block" in normalized_question:
-            return self._plank_chunks()
+        scored_chunks.sort(key=lambda item: item[0], reverse=True)
 
-        return self._default_chunks()
+        if not scored_chunks:
+            return chunks[:1]
 
-    def _unsafe_release_chunks(self) -> list[RetrievedChunk]:
+        return [chunk for _, chunk in scored_chunks[:top_k]]
+
+    def _load_chunks(self) -> list[RetrievedChunk]:
+        pages = self.pdf_reader.read_pages(self.pdf_path)
+        regulation_chunks = self.chunker.chunk_pages(pages, max_chars=1000)
+
         return [
             RetrievedChunk(
-                chunk_id="fia-sporting-article-34-5-page-72",
-                content=(
-                    "Cars may not be worked on in the fast lane in a manner that could endanger "
-                    "drivers or team personnel. A car may be deemed to have been released in an "
-                    "unsafe condition if it is sent from its pit stop in a way that creates a risk "
-                    "to another competitor or pit lane personnel."
-                ),
-                score=0.95,
-                document_title="FIA Formula One Sporting Regulations",
-                article="Article 34.5",
-                page=72,
-            ),
-            RetrievedChunk(
-                chunk_id="fia-sporting-article-54-1-page-123",
-                content=(
-                    "The stewards may impose penalties when a competitor gains an advantage, causes "
-                    "a collision, forces another driver off the track, or commits an unsafe act during "
-                    "the competition."
-                ),
-                score=0.88,
-                document_title="FIA Formula One Sporting Regulations",
-                article="Article 54.1",
-                page=123,
-            ),
-        ]
-
-    def _parc_ferme_chunks(self) -> list[RetrievedChunk]:
-        return [
-            RetrievedChunk(
-                chunk_id="fia-sporting-parc-ferme-page-55",
-                content=(
-                    "After the qualifying session, cars are subject to parc ferme conditions. Under "
-                    "these conditions, only specifically permitted work may be carried out on the car "
-                    "unless approval is granted by the FIA technical delegate."
-                ),
-                score=0.94,
-                document_title="FIA Formula One Sporting Regulations",
-                article="Article 40.2",
-                page=55,
-            ),
-            RetrievedChunk(
-                chunk_id="fia-sporting-parc-ferme-exception-page-56",
-                content=(
-                    "Any change to the setup, suspension, aerodynamics, or other protected components "
-                    "during parc ferme may lead to the car being required to start from the pit lane "
-                    "unless explicitly authorized."
-                ),
-                score=0.86,
-                document_title="FIA Formula One Sporting Regulations",
-                article="Article 40.4",
-                page=56,
-            ),
-        ]
-
-    def _plank_chunks(self) -> list[RetrievedChunk]:
-        return [
-            RetrievedChunk(
-                chunk_id="fia-technical-plank-page-23",
-                content=(
-                    "The plank assembly must be fitted symmetrically about the car center line. Its "
-                    "thickness is monitored after the session, and wear beyond the permitted limit may "
-                    "constitute a breach of the technical regulations."
-                ),
-                score=0.93,
-                document_title="FIA Formula One Technical Regulations",
-                article="Article 3.5.9",
-                page=23,
-            ),
-            RetrievedChunk(
-                chunk_id="fia-technical-skid-page-24",
-                content=(
-                    "Skid block wear measurements are used to determine whether the plank has remained "
-                    "within the minimum thickness requirements throughout the event."
-                ),
-                score=0.85,
-                document_title="FIA Formula One Technical Regulations",
-                article="Article 3.5.9.b",
-                page=24,
-            ),
-        ]
-
-    def _default_chunks(self) -> list[RetrievedChunk]:
-        return [
-            RetrievedChunk(
-                chunk_id="fia-general-procedure-page-12",
-                content=(
-                    "Competitors must comply with the sporting and technical regulations at all times "
-                    "during the competition, and the FIA may investigate any suspected breach."
-                ),
-                score=0.72,
-                document_title="FIA Formula One Sporting Regulations",
-                article="Article 1.3",
-                page=12,
+                chunk_id=chunk.chunk_id,
+                content=chunk.content,
+                score=None,
+                document_title="FIA 2026 F1 Regulations - Section A [General Provisions]",
+                article=self._extract_article(chunk.content),
+                page=chunk.page_number,
             )
+            for chunk in regulation_chunks
         ]
+
+    def _extract_keywords(self, question: str) -> list[str]:
+        return [token.strip(".,?!:;()[]").lower() for token in question.split() if len(token) >= 3]
+
+    def _score_chunk(self, content: str, keywords: list[str]) -> int:
+        normalized_content = content.lower()
+        return sum(1 for keyword in keywords if keyword in normalized_content)
+
+    def _extract_article(self, content: str) -> str | None:
+        for line in content.splitlines():
+            line = line.strip()
+            if line.startswith("ARTICLE "):
+                return line.split(" ", 1)[1]
+            if line.startswith("A") and any(char.isdigit() for char in line[:6]):
+                token = line.split()[0]
+                if token.count(".") >= 1:
+                    return token
+
+        return None
