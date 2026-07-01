@@ -12,6 +12,17 @@ class Settings(BaseSettings):
     )
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-v4-flash"
+    hf_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"),
+    )
+    hf_home: str | None = None
+    hf_hub_cache: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("HF_HUB_CACHE", "HUGGINGFACE_HUB_CACHE"),
+    )
+    transformers_cache: str | None = None
+    sentence_transformers_home: str | None = None
     regulation_embedding_model: str = "BAAI/bge-m3"
     regulation_embedding_batch_size: int = 8
     regulation_embedding_device: str = "cpu"

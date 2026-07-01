@@ -10,6 +10,8 @@ from app.schemas.rules import RetrievedChunk
 
 
 class RuleRepository:
+    VECTOR_CANDIDATE_LIMIT = 12
+
     SECTION_KEYWORDS = {
         "Section A": [
             "general",
@@ -52,12 +54,15 @@ class RuleRepository:
         self._cached_chunks: list[RetrievedChunk] | None = None
 
     def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
-        chunks = self._load_chunks()
-        scored_chunks: list[tuple[int, RetrievedChunk]] = []
-
         phrases = self._extract_phrases(question)
         keywords = self._expand_keywords(question)
         preferred_sections = self._match_preferred_sections(question)
+        chunks = self._retrieve_candidate_chunks(
+            question,
+            top_k=top_k,
+            preferred_sections=preferred_sections,
+        )
+        scored_chunks: list[tuple[int, RetrievedChunk]] = []
 
         for chunk in chunks:
             score = self._score_chunk(
@@ -73,9 +78,24 @@ class RuleRepository:
         scored_chunks.sort(key=lambda item: item[0], reverse=True)
 
         if not scored_chunks:
-            return chunks[:1]
+            return chunks[:top_k] or self._load_chunks()[:1]
 
         return [chunk for _, chunk in scored_chunks[:top_k]]
+
+    def _retrieve_candidate_chunks(
+        self,
+        question: str,
+        top_k: int,
+        preferred_sections: list[str],
+    ) -> list[RetrievedChunk]:
+        chunks = self._search_by_vector(question, top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT))
+        if chunks:
+            filtered_chunks = self._filter_chunks_by_section(chunks, preferred_sections)
+            if filtered_chunks:
+                return filtered_chunks
+            return chunks
+
+        return self._load_chunks()
 
     def _load_chunks(self) -> list[RetrievedChunk]:
         if self._cached_chunks is not None:
@@ -115,6 +135,38 @@ class RuleRepository:
             chunk_data = json.load(file)
 
         return [RetrievedChunk(**item) for item in chunk_data]
+
+    def _search_by_vector(self, question: str, top_k: int) -> list[RetrievedChunk]:
+        try:
+            from app.rag.embedding.factory import build_embedding_service
+
+            embedding_service = build_embedding_service()
+            question_embedding = embedding_service.embed_texts([question])[0]
+        except Exception:
+            return []
+
+        try:
+            with SessionLocal() as session:
+                records = session.execute(
+                    select(RegulationChunkRecord)
+                    .where(RegulationChunkRecord.embedding.is_not(None))
+                    .order_by(RegulationChunkRecord.embedding.cosine_distance(question_embedding))
+                    .limit(top_k)
+                ).scalars().all()
+        except SQLAlchemyError:
+            return []
+
+        return [
+            RetrievedChunk(
+                chunk_id=record.chunk_id,
+                content=record.content,
+                score=None,
+                document_title=record.document_title,
+                article=record.article,
+                page=record.page,
+            )
+            for record in records
+        ]
 
     def _extract_phrases(self, question: str) -> list[str]:
         normalized_question = question.lower()
@@ -170,6 +222,21 @@ class RuleRepository:
                 matched_sections.append(section)
 
         return matched_sections
+
+    def _filter_chunks_by_section(
+        self,
+        chunks: list[RetrievedChunk],
+        preferred_sections: list[str],
+    ) -> list[RetrievedChunk]:
+        if not preferred_sections:
+            return chunks
+
+        filtered = [
+            chunk
+            for chunk in chunks
+            if any(section.lower() in chunk.document_title.lower() for section in preferred_sections)
+        ]
+        return filtered or chunks
 
     def _score_chunk(
         self,
