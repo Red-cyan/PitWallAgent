@@ -7,6 +7,8 @@ from app.rag.embedding.base import EmbeddingService
 class BgeEmbeddingService(EmbeddingService):
     """基于 BGE-M3 的本地向量服务。"""
 
+    _model_cache: dict[tuple[str, str], object] = {}
+
     def __init__(self, model_name: str | None = None, device: str | None = None) -> None:
         if settings.hf_token:
             os.environ["HF_TOKEN"] = settings.hf_token
@@ -24,7 +26,12 @@ class BgeEmbeddingService(EmbeddingService):
 
         self.model_name = model_name or settings.regulation_embedding_model
         self.device = device or settings.regulation_embedding_device
-        self.model = SentenceTransformer(self.model_name, device=self.device)
+        cache_key = (self.model_name, self.device)
+
+        if cache_key not in self._model_cache:
+            self._model_cache[cache_key] = SentenceTransformer(self.model_name, device=self.device)
+
+        self.model = self._model_cache[cache_key]
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if not texts:
