@@ -1,19 +1,49 @@
+import json
 from pathlib import Path
 
 from app.schemas.rules import RetrievedChunk
-from app.services.chunker import RegulationChunker
-from app.services.pdf_reader import RegulationPdfReader
 
 
 class RuleRepository:
-    def __init__(
-        self,
-        pdf_reader: RegulationPdfReader | None = None,
-        chunker: RegulationChunker | None = None,
-    ) -> None:
-        self.pdf_reader = pdf_reader or RegulationPdfReader()
-        self.chunker = chunker or RegulationChunker()
-        self.pdf_directory = Path("data/regulations/raw")
+    SECTION_KEYWORDS = {
+        "Section A": [
+            "general",
+            "principles",
+            "governance",
+            "applicable",
+            "regulations",
+            "code of ethics",
+            "disciplinary",
+        ],
+        "Section B": [
+            "unsafe",
+            "release",
+            "parc",
+            "ferme",
+            "pit",
+            "lane",
+            "penalty",
+            "stewards",
+            "race",
+            "qualifying",
+            "sprint",
+        ],
+        "Section C": [
+            "plank",
+            "wear",
+            "thickness",
+            "skid",
+            "floor",
+            "technical",
+            "geometry",
+            "bodywork",
+            "ride",
+            "height",
+        ],
+    }
+
+    def __init__(self) -> None:
+        self.chunks_file = Path("data/regulations/processed/chunks.json")
         self._cached_chunks: list[RetrievedChunk] | None = None
 
     def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
@@ -22,11 +52,18 @@ class RuleRepository:
 
         phrases = self._extract_phrases(question)
         keywords = self._expand_keywords(question)
+        preferred_sections = self._match_preferred_sections(question)
 
         for chunk in chunks:
-            score = self._score_chunk(chunk.content, phrases, keywords)
+            score = self._score_chunk(
+                chunk=chunk,
+                phrases=phrases,
+                keywords=keywords,
+                preferred_sections=preferred_sections,
+            )
             if score > 0:
-                scored_chunks.append((score, chunk))
+                scored_chunk = chunk.model_copy(update={"score": float(score)})
+                scored_chunks.append((score, scored_chunk))
 
         scored_chunks.sort(key=lambda item: item[0], reverse=True)
 
@@ -39,26 +76,10 @@ class RuleRepository:
         if self._cached_chunks is not None:
             return self._cached_chunks
 
-        retrieved_chunks: list[RetrievedChunk] = []
+        with self.chunks_file.open("r", encoding="utf-8") as file:
+            chunk_data = json.load(file)
 
-        for pdf_path in sorted(self.pdf_directory.glob("*.pdf")):
-            pages = self.pdf_reader.read_pages(pdf_path)
-            regulation_chunks = self.chunker.chunk_pages(pages, max_chars=1000)
-            document_title = pdf_path.stem
-
-            for chunk in regulation_chunks:
-                retrieved_chunks.append(
-                    RetrievedChunk(
-                        chunk_id=f"{document_title}:{chunk.chunk_id}",
-                        content=chunk.content,
-                        score=None,
-                        document_title=document_title,
-                        article=self._extract_article(chunk.content),
-                        page=chunk.page_number,
-                    )
-                )
-
-        self._cached_chunks = retrieved_chunks
+        self._cached_chunks = [RetrievedChunk(**item) for item in chunk_data]
         return self._cached_chunks
 
     def _extract_phrases(self, question: str) -> list[str]:
@@ -90,6 +111,7 @@ class RuleRepository:
             "ferme": ["parc", "ferme", "restricted"],
             "principles": ["principles", "overview", "application"],
             "general": ["general", "principles", "application"],
+            "plank": ["plank", "wear", "thickness", "skid", "block"],
         }
 
         expanded_keywords: list[str] = []
@@ -105,8 +127,25 @@ class RuleRepository:
 
         return unique_keywords
 
-    def _score_chunk(self, content: str, phrases: list[str], keywords: list[str]) -> int:
-        normalized_content = content.lower()
+    def _match_preferred_sections(self, question: str) -> list[str]:
+        normalized_question = question.lower()
+        matched_sections: list[str] = []
+
+        for section, keywords in self.SECTION_KEYWORDS.items():
+            if any(keyword in normalized_question for keyword in keywords):
+                matched_sections.append(section)
+
+        return matched_sections
+
+    def _score_chunk(
+        self,
+        chunk: RetrievedChunk,
+        phrases: list[str],
+        keywords: list[str],
+        preferred_sections: list[str],
+    ) -> int:
+        normalized_content = chunk.content.lower()
+        normalized_title = chunk.document_title.lower()
         score = 0
 
         for phrase in phrases:
@@ -117,16 +156,11 @@ class RuleRepository:
             if keyword in normalized_content:
                 score += 1
 
+        for section in preferred_sections:
+            if section.lower() in normalized_title:
+                score += 8
+
+        if chunk.article and any(keyword in chunk.article.lower() for keyword in keywords):
+            score += 3
+
         return score
-
-    def _extract_article(self, content: str) -> str | None:
-        for line in content.splitlines():
-            line = line.strip()
-            if line.startswith("ARTICLE "):
-                return line.split(" ", 1)[1]
-            if line.startswith("A") and any(char.isdigit() for char in line[:6]):
-                token = line.split()[0]
-                if token.count(".") >= 1:
-                    return token
-
-        return None
