@@ -1,6 +1,11 @@
 import json
 from pathlib import Path
 
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.db.engine import SessionLocal
+from app.db.models import RegulationChunkRecord
 from app.schemas.rules import RetrievedChunk
 
 
@@ -76,11 +81,40 @@ class RuleRepository:
         if self._cached_chunks is not None:
             return self._cached_chunks
 
+        chunks = self._load_chunks_from_database()
+        if chunks:
+            self._cached_chunks = chunks
+            return self._cached_chunks
+
+        self._cached_chunks = self._load_chunks_from_file()
+        return self._cached_chunks
+
+    def _load_chunks_from_database(self) -> list[RetrievedChunk]:
+        try:
+            with SessionLocal() as session:
+                records = session.execute(
+                    select(RegulationChunkRecord).order_by(RegulationChunkRecord.id)
+                ).scalars().all()
+        except SQLAlchemyError:
+            return []
+
+        return [
+            RetrievedChunk(
+                chunk_id=record.chunk_id,
+                content=record.content,
+                score=None,
+                document_title=record.document_title,
+                article=record.article,
+                page=record.page,
+            )
+            for record in records
+        ]
+
+    def _load_chunks_from_file(self) -> list[RetrievedChunk]:
         with self.chunks_file.open("r", encoding="utf-8") as file:
             chunk_data = json.load(file)
 
-        self._cached_chunks = [RetrievedChunk(**item) for item in chunk_data]
-        return self._cached_chunks
+        return [RetrievedChunk(**item) for item in chunk_data]
 
     def _extract_phrases(self, question: str) -> list[str]:
         normalized_question = question.lower()
