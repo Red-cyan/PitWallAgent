@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     regulation_embedding_model: str = "BAAI/bge-m3"
     regulation_embedding_batch_size: int = 8
     regulation_embedding_device: str = "cpu"
+    formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
+    news_request_timeout_seconds: float = 10.0
+    news_user_agent: str = "PitWall-Agent/0.1"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "pitwall"
