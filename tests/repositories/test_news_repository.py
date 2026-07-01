@@ -93,3 +93,23 @@ def test_list_recent_articles_orders_by_published_at_desc() -> None:
         articles = repository.list_recent_articles()
 
         assert [article.title for article in articles] == ["Later", "Earlier"]
+
+
+def test_get_article_by_id_returns_saved_article() -> None:
+    with build_session() as session:
+        repository = NewsRepository(session)
+
+        saved = repository.upsert_article(
+            NewsArticleCreate(
+                source_name="formula1",
+                source_article_id="news-001",
+                title="Saved article",
+                article_url="https://www.formula1.com/en/latest/article/test-1.333.html",
+            )
+        )
+
+        article = repository.get_article_by_id(saved.id)
+
+        assert article is not None
+        assert article.id == saved.id
+        assert article.title == "Saved article"

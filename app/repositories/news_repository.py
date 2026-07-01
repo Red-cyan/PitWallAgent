@@ -52,6 +52,18 @@ class NewsRepository:
         ).scalars().all()
         return [NewsArticleRead.from_record(record) for record in records]
 
+    def get_article_by_id(self, article_id: int) -> NewsArticleRead | None:
+        record = self.session.execute(
+            select(NewsArticleRecord).where(
+                NewsArticleRecord.id == article_id,
+                NewsArticleRecord.is_deleted.is_(False),
+            )
+        ).scalar_one_or_none()
+        if record is None:
+            return None
+
+        return NewsArticleRead.from_record(record)
+
     def _find_existing(self, article: NewsArticleCreate) -> NewsArticleRecord | None:
         if article.source_article_id:
             record = self.session.execute(

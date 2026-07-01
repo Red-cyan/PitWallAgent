@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.news import router as news_router
 from app.api.rules import router as rules_router
 
 router = APIRouter()
@@ -16,3 +17,4 @@ def health():
 
 
 router.include_router(rules_router)
+router.include_router(news_router)
