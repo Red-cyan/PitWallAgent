@@ -6,11 +6,24 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.engine import SessionLocal
 from app.db.models import RegulationChunkRecord
-from app.schemas.rules import RetrievedChunk
+from app.rag.retrieval.query_rewriter import QueryRewriter
+from app.schemas.rules import RetrievalDebugResponse, RetrievedChunk
 
 
 class RuleRepository:
     VECTOR_CANDIDATE_LIMIT = 12
+    QUERY_SYNONYMS = {
+        "红旗": "red flag",
+        "黄旗": "yellow flag",
+        "安全车": "safety car",
+        "虚拟安全车": "virtual safety car vsc",
+        "封闭维修区": "parc ferme",
+        "封闭维修": "parc ferme",
+        "不安全释放": "unsafe release",
+        "违规释放": "unsafe release",
+        "底板": "plank",
+        "木板": "plank",
+    }
 
     SECTION_KEYWORDS = {
         "Section A": [
@@ -18,7 +31,6 @@ class RuleRepository:
             "principles",
             "governance",
             "applicable",
-            "regulations",
             "code of ethics",
             "disciplinary",
         ],
@@ -34,6 +46,13 @@ class RuleRepository:
             "race",
             "qualifying",
             "sprint",
+            "red",
+            "flag",
+            "yellow",
+            "safety",
+            "vsc",
+            "virtual safety car",
+            "suspension",
         ],
         "Section C": [
             "plank",
@@ -49,19 +68,56 @@ class RuleRepository:
         ],
     }
 
-    def __init__(self) -> None:
+    def __init__(self, query_rewriter: QueryRewriter | None = None) -> None:
         self.chunks_file = Path("data/regulations/processed/chunks.json")
         self._cached_chunks: list[RetrievedChunk] | None = None
+        self.query_rewriter = query_rewriter or QueryRewriter()
 
     def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
-        phrases = self._extract_phrases(question)
-        keywords = self._expand_keywords(question)
-        preferred_sections = self._match_preferred_sections(question)
+        debug_data = self.debug_retrieval(question=question, top_k=top_k)
+        return debug_data.retrieved_chunks
+
+    def debug_retrieval(self, question: str, top_k: int = 3) -> RetrievalDebugResponse:
+        normalized_question = self._normalize_question(question)
+        rewritten_queries = self.query_rewriter.rewrite(question)
+        retrieval_questions = self._deduplicate_queries([normalized_question, *rewritten_queries])
+        scoring_question = " ".join(retrieval_questions)
+        phrases = self._extract_phrases(scoring_question)
+        keywords = self._expand_keywords(scoring_question)
+        preferred_sections = self._match_preferred_sections(scoring_question)
         chunks = self._retrieve_candidate_chunks(
-            question,
+            retrieval_questions,
             top_k=top_k,
+            phrases=phrases,
+            keywords=keywords,
             preferred_sections=preferred_sections,
         )
+        scored_chunks = self._rerank_chunks(
+            chunks=chunks,
+            top_k=top_k,
+            phrases=phrases,
+            keywords=keywords,
+            preferred_sections=preferred_sections,
+        )
+        return RetrievalDebugResponse(
+            question=question,
+            normalized_question=normalized_question,
+            rewritten_queries=rewritten_queries,
+            retrieval_queries=retrieval_questions,
+            extracted_phrases=phrases,
+            expanded_keywords=keywords,
+            preferred_sections=preferred_sections,
+            retrieved_chunks=scored_chunks,
+        )
+
+    def _rerank_chunks(
+        self,
+        chunks: list[RetrievedChunk],
+        top_k: int,
+        phrases: list[str],
+        keywords: list[str],
+        preferred_sections: list[str],
+    ) -> list[RetrievedChunk]:
         scored_chunks: list[tuple[int, RetrievedChunk]] = []
 
         for chunk in chunks:
@@ -82,13 +138,51 @@ class RuleRepository:
 
         return [chunk for _, chunk in scored_chunks[:top_k]]
 
+    def _normalize_question(self, question: str) -> str:
+        normalized_question = question
+
+        for source, target in self.QUERY_SYNONYMS.items():
+            if source in normalized_question and target not in normalized_question.lower():
+                normalized_question = f"{normalized_question} {target}"
+
+        return normalized_question
+
+    def _deduplicate_queries(self, queries: list[str]) -> list[str]:
+        unique_queries: list[str] = []
+        seen: set[str] = set()
+
+        for query in queries:
+            normalized = query.strip()
+            if not normalized:
+                continue
+            key = normalized.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_queries.append(normalized)
+
+        return unique_queries
+
     def _retrieve_candidate_chunks(
         self,
-        question: str,
+        questions: list[str],
         top_k: int,
+        phrases: list[str],
+        keywords: list[str],
         preferred_sections: list[str],
     ) -> list[RetrievedChunk]:
-        chunks = self._search_by_vector(question, top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT))
+        vector_chunks = self._search_by_vector_queries(
+            questions,
+            top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+        )
+        keyword_chunks = self._search_by_keywords(
+            phrases=phrases,
+            keywords=keywords,
+            preferred_sections=preferred_sections,
+            top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+        )
+
+        chunks = self._merge_candidates(vector_chunks, keyword_chunks, top_k=self.VECTOR_CANDIDATE_LIMIT)
         if chunks:
             filtered_chunks = self._filter_chunks_by_section(chunks, preferred_sections)
             if filtered_chunks:
@@ -136,6 +230,22 @@ class RuleRepository:
 
         return [RetrievedChunk(**item) for item in chunk_data]
 
+    def _search_by_vector_queries(self, questions: list[str], top_k: int) -> list[RetrievedChunk]:
+        merged_chunks: list[RetrievedChunk] = []
+        seen_chunk_ids: set[str] = set()
+
+        for question in questions:
+            for chunk in self._search_by_vector(question, top_k):
+                if chunk.chunk_id in seen_chunk_ids:
+                    continue
+                seen_chunk_ids.add(chunk.chunk_id)
+                merged_chunks.append(chunk)
+
+                if len(merged_chunks) >= top_k:
+                    return merged_chunks
+
+        return merged_chunks
+
     def _search_by_vector(self, question: str, top_k: int) -> list[RetrievedChunk]:
         try:
             from app.rag.embedding.factory import build_embedding_service
@@ -168,6 +278,48 @@ class RuleRepository:
             for record in records
         ]
 
+    def _search_by_keywords(
+        self,
+        phrases: list[str],
+        keywords: list[str],
+        preferred_sections: list[str],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
+        scored_chunks: list[tuple[int, RetrievedChunk]] = []
+
+        for chunk in self._load_chunks():
+            score = self._score_chunk(
+                chunk=chunk,
+                phrases=phrases,
+                keywords=keywords,
+                preferred_sections=preferred_sections,
+            )
+            if score > 0:
+                scored_chunks.append((score, chunk))
+
+        scored_chunks.sort(key=lambda item: item[0], reverse=True)
+        return [chunk for _, chunk in scored_chunks[:top_k]]
+
+    def _merge_candidates(
+        self,
+        primary_chunks: list[RetrievedChunk],
+        secondary_chunks: list[RetrievedChunk],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
+        merged_chunks: list[RetrievedChunk] = []
+        seen_chunk_ids: set[str] = set()
+
+        for chunk in [*primary_chunks, *secondary_chunks]:
+            if chunk.chunk_id in seen_chunk_ids:
+                continue
+            seen_chunk_ids.add(chunk.chunk_id)
+            merged_chunks.append(chunk)
+
+            if len(merged_chunks) >= top_k:
+                break
+
+        return merged_chunks
+
     def _extract_phrases(self, question: str) -> list[str]:
         normalized_question = question.lower()
         phrases: list[str] = []
@@ -177,6 +329,18 @@ class RuleRepository:
 
         if "unsafe release" in normalized_question:
             phrases.append("unsafe release")
+
+        if "red flag" in normalized_question:
+            phrases.append("red flag")
+
+        if "yellow flag" in normalized_question:
+            phrases.append("yellow flag")
+
+        if "safety car" in normalized_question:
+            phrases.append("safety car")
+
+        if "virtual safety car" in normalized_question or " vsc" in normalized_question:
+            phrases.append("virtual safety car")
 
         return phrases
 
@@ -198,6 +362,11 @@ class RuleRepository:
             "principles": ["principles", "overview", "application"],
             "general": ["general", "principles", "application"],
             "plank": ["plank", "wear", "thickness", "skid", "block"],
+            "red": ["red", "flag", "suspension", "stopped"],
+            "yellow": ["yellow", "flag", "warning", "marshal"],
+            "flag": ["red", "yellow", "flag", "suspension", "stopped"],
+            "safety": ["safety", "car", "vsc", "deployment"],
+            "virtual": ["virtual", "safety", "car", "vsc"],
         }
 
         expanded_keywords: list[str] = []

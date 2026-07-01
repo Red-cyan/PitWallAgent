@@ -1,5 +1,11 @@
 from app.repositories.rule_repository import RuleRepository
-from app.schemas.rules import Citation, RetrievedChunk, RuleAskRequest, RuleAskResponse
+from app.schemas.rules import (
+    Citation,
+    RetrievalDebugResponse,
+    RetrievedChunk,
+    RuleAskRequest,
+    RuleAskResponse,
+)
 from app.services.llm.client import LLMClient
 
 
@@ -103,3 +109,6 @@ class RegulationQAService:
             citations=citations,
             retrieved_chunks=retrieved_chunks,
         )
+
+    def debug_retrieval(self, request: RuleAskRequest) -> RetrievalDebugResponse:
+        return self.repository.debug_retrieval(request.question)

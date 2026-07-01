@@ -37,3 +37,34 @@ class RuleAskResponse(BaseModel):
         default_factory=list,
         description="Retrieved chunks used for answering and debugging.",
     )
+
+
+class RetrievalDebugResponse(BaseModel):
+    """检索调试响应。"""
+
+    question: str = Field(..., min_length=1, description="Original user question.")
+    normalized_question: str = Field(..., min_length=1, description="Question after term normalization.")
+    rewritten_queries: list[str] = Field(
+        default_factory=list,
+        description="Additional retrieval queries produced by the rewrite layer.",
+    )
+    retrieval_queries: list[str] = Field(
+        default_factory=list,
+        description="Final retrieval query set used by the repository.",
+    )
+    extracted_phrases: list[str] = Field(
+        default_factory=list,
+        description="High-value phrases extracted for scoring.",
+    )
+    expanded_keywords: list[str] = Field(
+        default_factory=list,
+        description="Expanded keyword set used in keyword retrieval and reranking.",
+    )
+    preferred_sections: list[str] = Field(
+        default_factory=list,
+        description="Sections preferred by routing heuristics.",
+    )
+    retrieved_chunks: list[RetrievedChunk] = Field(
+        default_factory=list,
+        description="Final retrieved chunks after merge, filtering, and reranking.",
+    )

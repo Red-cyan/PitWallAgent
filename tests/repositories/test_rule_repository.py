@@ -29,3 +29,30 @@ def test_general_principles_question_prefers_general_section() -> None:
     assert chunks
     assert "Section A" in chunks[0].document_title
     assert chunks[0].score is not None
+
+
+def test_red_flag_question_in_chinese_prefers_sporting_section() -> None:
+    class StubQueryRewriter:
+        def rewrite(self, question: str) -> list[str]:
+            return ["What is a red flag in Formula 1 regulations?"]
+
+    repository = RuleRepository(query_rewriter=StubQueryRewriter())
+
+    chunks = repository.search_relevant_chunks("红旗是什么？")
+
+    assert chunks
+    assert "Section B" in chunks[0].document_title
+    assert chunks[0].score is not None
+
+
+def test_red_flag_question_in_chinese_without_rewrite_still_prefers_sporting_section() -> None:
+    class EmptyQueryRewriter:
+        def rewrite(self, question: str) -> list[str]:
+            return []
+
+    repository = RuleRepository(query_rewriter=EmptyQueryRewriter())
+
+    chunks = repository.search_relevant_chunks("\u7ea2\u65d7\u662f\u4ec0\u4e48\uff1f")
+
+    assert chunks
+    assert "Section B" in chunks[0].document_title
