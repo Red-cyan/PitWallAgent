@@ -1,18 +1,23 @@
-# services/llm/client.py
-
 from openai import OpenAI
-import os
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from app.config.settings import settings
+
 
 class LLMClient:
-    def __init__(self, model="gpt-4.1-mini"):
-        self.model = model
+    def __init__(self, model: str | None = None) -> None:
+        if not settings.llm_api_key:
+            raise ValueError("LLM_API_KEY is required for chat generation.")
 
-    def chat(self, messages, temperature=0.2):
-        response = client.chat.completions.create(
+        self.model = model or settings.llm_model
+        self.client = OpenAI(
+            api_key=settings.llm_api_key,
+            base_url=settings.llm_base_url,
+        )
+
+    def chat(self, messages: list[dict], temperature: float = 0.2) -> str:
+        response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=temperature,
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content or ""
