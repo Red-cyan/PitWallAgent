@@ -1,4 +1,4 @@
-from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionSummary
+from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionListResponse, ChatSessionSummary
 from app.services.agent_service import AgentService
 from app.services.context_builder import ContextBuilder
 from app.services.session_service import SessionService
@@ -47,6 +47,15 @@ class ChatService:
         return ChatHistoryResponse(
             session=self._build_summary(session.session_id, history),
             history=history,
+        )
+
+    def list_sessions(self, limit: int = 20) -> ChatSessionListResponse:
+        sessions = self.session_service.list_sessions(limit=limit)
+        return ChatSessionListResponse(
+            sessions=[
+                self._build_summary(session.session_id, list(session.history))
+                for session in sessions
+            ]
         )
 
     def _build_summary(self, session_id: str, history: list) -> ChatSessionSummary:

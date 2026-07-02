@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 
-from app.schemas.chat import ChatHistoryResponse, ChatRequest, ChatResponse
+from app.schemas.chat import ChatHistoryResponse, ChatRequest, ChatResponse, ChatSessionListResponse
 from app.services.chat_service import ChatService
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -19,6 +19,21 @@ def chat(request: ChatRequest, response: Response) -> ChatResponse:
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     return chat_service.handle_chat(message=request.message, session_id=request.session_id)
+
+
+@router.get(
+    "/sessions",
+    response_model=ChatSessionListResponse,
+    summary="List recent chat sessions",
+    description="Fetch recent chat sessions with basic metadata.",
+)
+def list_chat_sessions(
+    response: Response,
+    limit: int = Query(default=20, ge=1, le=100),
+) -> ChatSessionListResponse:
+    response.headers["X-PitWall-Endpoint-Mode"] = "primary"
+    response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
+    return chat_service.list_sessions(limit=limit)
 
 
 @router.get(

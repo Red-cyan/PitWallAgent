@@ -12,6 +12,7 @@ class FakeRedisClient:
     def __init__(self) -> None:
         self.values: dict[str, str] = {}
         self.ttls: dict[str, int] = {}
+        self.sorted_sets: dict[str, dict[str, float]] = {}
 
     def get(self, key: str) -> str | None:
         return self.values.get(key)
@@ -19,6 +20,17 @@ class FakeRedisClient:
     def setex(self, key: str, time: int, value: str) -> None:
         self.values[key] = value
         self.ttls[key] = time
+
+    def zadd(self, key: str, mapping: dict[str, float]) -> None:
+        self.sorted_sets.setdefault(key, {}).update(mapping)
+
+    def zrevrange(self, key: str, start: int, end: int) -> list[str]:
+        entries = self.sorted_sets.get(key, {})
+        ordered = sorted(entries.items(), key=lambda item: item[1], reverse=True)
+        names = [name for name, _ in ordered]
+        if end < 0:
+            return names[start:]
+        return names[start : end + 1]
 
 
 def test_session_service_creates_session_and_tracks_history() -> None:
@@ -99,3 +111,32 @@ def test_session_store_factory_returns_redis_store(monkeypatch) -> None:
 
     assert isinstance(store, RedisSessionStore)
     assert store.ttl_seconds == 300
+
+
+def test_in_memory_session_store_lists_recent_sessions() -> None:
+    store = InMemorySessionStore()
+    service = SessionService(store=store)
+
+    service.append_user_message("session-a", "第一场对话")
+    service.append_user_message("session-b", "第二场对话")
+
+    sessions = service.list_sessions(limit=10)
+
+    assert len(sessions) == 2
+    assert sessions[0].session_id == "session-b"
+    assert sessions[1].session_id == "session-a"
+
+
+def test_redis_session_store_lists_recent_sessions() -> None:
+    client = FakeRedisClient()
+    store = RedisSessionStore(client=client, ttl_seconds=120)
+    service = SessionService(store=store)
+
+    service.append_user_message("session-a", "第一场对话")
+    service.append_user_message("session-b", "第二场对话")
+
+    sessions = service.list_sessions(limit=10)
+
+    assert len(sessions) == 2
+    assert sessions[0].session_id == "session-b"
+    assert sessions[1].session_id == "session-a"

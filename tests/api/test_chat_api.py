@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.agent import AgentQueryResponse
-from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionSummary, ConversationTurn
+from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionListResponse, ChatSessionSummary, ConversationTurn
 
 
 class StubChatService:
@@ -63,6 +63,24 @@ class StubChatService:
             ],
         )
 
+    def list_sessions(self, limit: int = 20) -> ChatSessionListResponse:
+        return ChatSessionListResponse(
+            sessions=[
+                ChatSessionSummary(
+                    session_id="session-002",
+                    turn_count=4,
+                    last_intent="race",
+                    updated_at="2026-07-02T00:00:02Z",
+                ),
+                ChatSessionSummary(
+                    session_id="session-001",
+                    turn_count=2,
+                    last_intent="news",
+                    updated_at="2026-07-02T00:00:01Z",
+                ),
+            ][:limit]
+        )
+
 
 def test_chat_routes_request(monkeypatch) -> None:
     from app.api import chat
@@ -98,6 +116,21 @@ def test_chat_history_routes_request(monkeypatch) -> None:
     assert body["session"]["session_id"] == "session-001"
     assert body["session"]["last_intent"] == "race"
     assert len(body["history"]) == 2
+    assert response.headers["X-PitWall-Endpoint-Mode"] == "primary"
+
+
+def test_chat_sessions_routes_request(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.get("/api/chat/sessions?limit=2")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["sessions"]) == 2
+    assert body["sessions"][0]["session_id"] == "session-002"
     assert response.headers["X-PitWall-Endpoint-Mode"] == "primary"
 
 

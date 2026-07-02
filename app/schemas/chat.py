@@ -45,3 +45,9 @@ class ChatHistoryResponse(BaseModel):
 
     session: ChatSessionSummary
     history: list[ConversationTurn] = Field(default_factory=list)
+
+
+class ChatSessionListResponse(BaseModel):
+    """会话列表响应。"""
+
+    sessions: list[ChatSessionSummary] = Field(default_factory=list)

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from app.schemas.agent import AgentQueryResponse
-from app.schemas.chat import ChatHistoryResponse, ChatSessionSummary, ConversationTurn
+from app.schemas.chat import ChatHistoryResponse, ChatSessionListResponse, ChatSessionSummary, ConversationTurn
 from app.services.chat_service import ChatService
 from app.services.session_service import SessionService
 
@@ -69,3 +69,17 @@ def test_chat_service_returns_history() -> None:
     assert history_response.session.session_id == "session-001"
     assert history_response.session.turn_count == 2
     assert history_response.history[0].role == "user"
+
+
+def test_chat_service_lists_sessions() -> None:
+    agent_service = StubAgentService()
+    session_service = SessionService()
+    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+
+    chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
+    chat_service.handle_chat("上一站比赛是什么？", session_id="session-b")
+    sessions_response = chat_service.list_sessions(limit=10)
+
+    assert isinstance(sessions_response, ChatSessionListResponse)
+    assert len(sessions_response.sessions) == 2
+    assert sessions_response.sessions[0].session_id == "session-b"

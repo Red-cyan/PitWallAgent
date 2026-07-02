@@ -29,6 +29,9 @@ class SessionStore(Protocol):
     def save(self, session: ConversationSession) -> None:
         """保存会话。"""
 
+    def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
+        """列出最近更新的会话。"""
+
 
 class RedisClientProtocol(Protocol):
     """Redis 客户端最小协议。"""
@@ -38,6 +41,12 @@ class RedisClientProtocol(Protocol):
 
     def setex(self, key: str, time: int, value: str) -> Any:
         """写入带 TTL 的键值。"""
+
+    def zadd(self, key: str, mapping: dict[str, float]) -> Any:
+        """向有序集合写入分值。"""
+
+    def zrevrange(self, key: str, start: int, end: int) -> list[str] | list[bytes]:
+        """按分值倒序读取有序集合。"""
 
 
 class InMemorySessionStore:
@@ -52,11 +61,20 @@ class InMemorySessionStore:
     def save(self, session: ConversationSession) -> None:
         self._sessions[session.session_id] = session
 
+    def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
+        sessions = sorted(
+            self._sessions.values(),
+            key=lambda session: session.updated_at,
+            reverse=True,
+        )
+        return sessions[:limit]
+
 
 class RedisSessionStore:
     """Redis 会话存储。"""
 
     KEY_PREFIX = "pitwall:session:"
+    SESSION_INDEX_KEY = "pitwall:sessions:index"
 
     def __init__(
         self,
@@ -83,6 +101,21 @@ class RedisSessionStore:
             self.ttl_seconds,
             self._serialize_session(session),
         )
+        self.client.zadd(
+            self.SESSION_INDEX_KEY,
+            {session.session_id: session.updated_at.timestamp()},
+        )
+
+    def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
+        session_ids = self.client.zrevrange(self.SESSION_INDEX_KEY, 0, max(limit - 1, 0))
+        sessions: list[ConversationSession] = []
+        for session_id in session_ids:
+            if isinstance(session_id, bytes):
+                session_id = session_id.decode("utf-8")
+            session = self.get(session_id)
+            if session is not None:
+                sessions.append(session)
+        return sessions
 
     def _build_key(self, session_id: str) -> str:
         return f"{self.KEY_PREFIX}{session_id}"
@@ -169,6 +202,9 @@ class SessionService:
     def get_history(self, session_id: str) -> list[ConversationTurn]:
         session = self.get_or_create_session(session_id)
         return list(session.history)
+
+    def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
+        return self.store.list_sessions(limit=limit)
 
     def get_last_intent(self, session_id: str) -> str | None:
         session = self.store.get(session_id)
