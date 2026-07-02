@@ -5,6 +5,7 @@ from app.tools.base import ToolResult
 from app.tools.news_tool import NewsTool
 from app.tools.race_tool import RaceTool
 from app.tools.regulation_tool import RegulationTool
+from app.tools.strategy_tool import StrategyTool
 
 
 class ToolDispatcher:
@@ -15,11 +16,13 @@ class ToolDispatcher:
         news_tool: NewsTool | None = None,
         race_tool: RaceTool | None = None,
         regulation_tool: RegulationTool | None = None,
+        strategy_tool: StrategyTool | None = None,
     ) -> None:
         self.logger = logging.getLogger("pitwall.dispatcher")
         self.news_tool = news_tool or NewsTool()
         self.race_tool = race_tool or RaceTool()
         self.regulation_tool = regulation_tool or RegulationTool()
+        self.strategy_tool = strategy_tool or StrategyTool()
 
     def build_plan(self, intent: str, message: str) -> dict:
         if intent == "news":
@@ -65,6 +68,13 @@ class ToolDispatcher:
             return {
                 "tool_name": self.regulation_tool.name,
                 "action": "ask",
+                "params": {"question": message},
+            }
+
+        if intent == "strategy":
+            return {
+                "tool_name": self.strategy_tool.name,
+                "action": "analyze",
                 "params": {"question": message},
             }
 
@@ -126,6 +136,17 @@ class ToolDispatcher:
 
         if tool_name == self.regulation_tool.name:
             result = self.regulation_tool.invoke(action=action, **params)
+            log_structured(
+                self.logger,
+                "tool_plan_completed",
+                tool_name=result.tool_name,
+                action=action,
+                success=result.success,
+            )
+            return result
+
+        if tool_name == self.strategy_tool.name:
+            result = self.strategy_tool.invoke(action=action, **params)
             log_structured(
                 self.logger,
                 "tool_plan_completed",

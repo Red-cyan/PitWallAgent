@@ -71,6 +71,9 @@ class AgentResponseFormatter:
                 return answer
             return "已完成规则查询。"
 
+        if intent == "strategy":
+            return self._build_strategy_answer(result=result)
+
         return "已完成请求处理。"
 
     def _build_race_answer(self, *, message: str, result: dict[str, Any]) -> str:
@@ -104,6 +107,24 @@ class AgentResponseFormatter:
             return f"已获取赛历，最近一站是 {next_round['grand_prix_name']}。"
 
         return "已完成比赛信息查询。"
+
+    def _build_strategy_answer(self, *, result: dict[str, Any]) -> str:
+        response = result.get("response", {})
+        recommendation = response.get("recommendation")
+        confidence = response.get("confidence")
+        analysis = response.get("analysis", [])
+
+        if recommendation:
+            answer = f"策略建议：{recommendation}"
+            if confidence:
+                answer += f" 置信度：{confidence}。"
+            else:
+                answer += "。"
+            if analysis:
+                answer += f" 关键判断：{analysis[0]}"
+            return answer
+
+        return "已完成策略分析。"
 
     def _select_standing_entry(
         self,

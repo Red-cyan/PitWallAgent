@@ -13,6 +13,24 @@ class IntentRouter:
         "动态",
         "消息",
     )
+    STRATEGY_KEYWORDS = (
+        "strategy",
+        "pit now",
+        "pit stop",
+        "pit under",
+        "undercut",
+        "overcut",
+        "track position",
+        "box now",
+        "should pit",
+        "策略",
+        "进站",
+        "undercut",
+        "overcut",
+        "赛道位置",
+        "是否该进站",
+        "该不该进站",
+    )
     RACE_KEYWORDS = (
         "schedule",
         "calendar",
@@ -74,6 +92,9 @@ class IntentRouter:
 
     def route(self, message: str, fallback_intent: str | None = None) -> str:
         normalized = message.lower()
+
+        if self._contains_any(normalized, self.STRATEGY_KEYWORDS):
+            return "strategy"
 
         if self._contains_any(normalized, self.REGULATION_KEYWORDS):
             return "regulation"
