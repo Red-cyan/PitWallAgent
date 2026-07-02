@@ -113,3 +113,32 @@ def test_get_article_by_id_returns_saved_article() -> None:
         assert article is not None
         assert article.id == saved.id
         assert article.title == "Saved article"
+
+
+def test_list_articles_for_backfill_filters_missing_content_by_default() -> None:
+    with build_session() as session:
+        repository = NewsRepository(session)
+
+        repository.upsert_article(
+            NewsArticleCreate(
+                source_name="formula1",
+                source_article_id="news-001",
+                title="Missing content",
+                article_url="https://www.formula1.com/en/latest/article/test-1.444.html",
+                content=None,
+            )
+        )
+        repository.upsert_article(
+            NewsArticleCreate(
+                source_name="formula1",
+                source_article_id="news-002",
+                title="Has content",
+                article_url="https://www.formula1.com/en/latest/article/test-1.555.html",
+                content="Already filled.",
+            )
+        )
+
+        articles = repository.list_articles_for_backfill(source_name="formula1", limit=10)
+
+        assert len(articles) == 1
+        assert articles[0].title == "Missing content"

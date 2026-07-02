@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from app.db.models import NewsArticleRecord
@@ -45,8 +45,7 @@ class NewsRepository:
 
     def list_recent_articles(self, limit: int = 20) -> list[NewsArticleRead]:
         records = self.session.execute(
-            select(NewsArticleRecord)
-            .where(NewsArticleRecord.is_deleted.is_(False))
+            self._base_active_query()
             .order_by(NewsArticleRecord.published_at.desc(), NewsArticleRecord.id.desc())
             .limit(limit)
         ).scalars().all()
@@ -54,15 +53,27 @@ class NewsRepository:
 
     def get_article_by_id(self, article_id: int) -> NewsArticleRead | None:
         record = self.session.execute(
-            select(NewsArticleRecord).where(
-                NewsArticleRecord.id == article_id,
-                NewsArticleRecord.is_deleted.is_(False),
-            )
+            self._base_active_query().where(NewsArticleRecord.id == article_id)
         ).scalar_one_or_none()
         if record is None:
             return None
 
         return NewsArticleRead.from_record(record)
+
+    def list_articles_for_backfill(
+        self,
+        source_name: str,
+        limit: int = 20,
+        only_missing_content: bool = True,
+    ) -> list[NewsArticleRead]:
+        query = self._base_active_query().where(NewsArticleRecord.source_name == source_name)
+        if only_missing_content:
+            query = query.where(NewsArticleRecord.content.is_(None))
+
+        records = self.session.execute(
+            query.order_by(NewsArticleRecord.id.desc()).limit(limit)
+        ).scalars().all()
+        return [NewsArticleRead.from_record(record) for record in records]
 
     def _find_existing(self, article: NewsArticleCreate) -> NewsArticleRecord | None:
         if article.source_article_id:
@@ -80,3 +91,6 @@ class NewsRepository:
                 NewsArticleRecord.article_url == str(article.article_url)
             )
         ).scalar_one_or_none()
+
+    def _base_active_query(self) -> Select[tuple[NewsArticleRecord]]:
+        return select(NewsArticleRecord).where(NewsArticleRecord.is_deleted.is_(False))
