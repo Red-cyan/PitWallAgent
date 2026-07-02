@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Any, Protocol, cast
 from uuid import uuid4
 
 from app.config.settings import settings
@@ -29,11 +30,18 @@ class SessionStore(Protocol):
         """保存会话。"""
 
 
-class InMemorySessionStore:
-    """内存会话存储。
+class RedisClientProtocol(Protocol):
+    """Redis 客户端最小协议。"""
 
-    当前默认实现，后续可以替换为 Redis。
-    """
+    def get(self, key: str) -> str | bytes | None:
+        """读取键值。"""
+
+    def setex(self, key: str, time: int, value: str) -> Any:
+        """写入带 TTL 的键值。"""
+
+
+class InMemorySessionStore:
+    """内存会话存储。"""
 
     def __init__(self) -> None:
         self._sessions: dict[str, ConversationSession] = {}
@@ -45,6 +53,57 @@ class InMemorySessionStore:
         self._sessions[session.session_id] = session
 
 
+class RedisSessionStore:
+    """Redis 会话存储。"""
+
+    KEY_PREFIX = "pitwall:session:"
+
+    def __init__(
+        self,
+        client: RedisClientProtocol,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> None:
+        self.client = client
+        self.ttl_seconds = ttl_seconds or settings.session_ttl_seconds
+
+    def get(self, session_id: str) -> ConversationSession | None:
+        payload = self.client.get(self._build_key(session_id))
+        if payload is None:
+            return None
+
+        if isinstance(payload, bytes):
+            payload = payload.decode("utf-8")
+
+        return self._deserialize_session(payload)
+
+    def save(self, session: ConversationSession) -> None:
+        self.client.setex(
+            self._build_key(session.session_id),
+            self.ttl_seconds,
+            self._serialize_session(session),
+        )
+
+    def _build_key(self, session_id: str) -> str:
+        return f"{self.KEY_PREFIX}{session_id}"
+
+    def _serialize_session(self, session: ConversationSession) -> str:
+        payload = {
+            "session_id": session.session_id,
+            "updated_at": session.updated_at.isoformat(),
+            "history": [turn.model_dump(mode="json") for turn in session.history],
+        }
+        return json.dumps(payload, ensure_ascii=False)
+
+    def _deserialize_session(self, payload: str) -> ConversationSession:
+        data = json.loads(payload)
+        return ConversationSession(
+            session_id=data["session_id"],
+            updated_at=datetime.fromisoformat(data["updated_at"]).astimezone(UTC),
+            history=[ConversationTurn.model_validate(turn) for turn in data.get("history", [])],
+        )
+
+
 class SessionStoreFactory:
     """会话存储工厂。"""
 
@@ -53,8 +112,22 @@ class SessionStoreFactory:
         backend = settings.session_backend.lower()
         if backend == "memory":
             return InMemorySessionStore()
+        if backend == "redis":
+            return RedisSessionStore(
+                client=SessionStoreFactory._build_redis_client(),
+                ttl_seconds=settings.session_ttl_seconds,
+            )
 
         raise ValueError(f"Unsupported session backend: {settings.session_backend}")
+
+    @staticmethod
+    def _build_redis_client() -> RedisClientProtocol:
+        try:
+            from redis import Redis
+        except ImportError as exc:
+            raise ImportError("redis package is required when session_backend=redis.") from exc
+
+        return cast(RedisClientProtocol, Redis.from_url(settings.resolved_redis_url, decode_responses=True))
 
 
 class SessionService:
