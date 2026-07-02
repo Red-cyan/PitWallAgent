@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
     news_request_timeout_seconds: float = 10.0
     news_user_agent: str = "PitWall-Agent/0.1"
+    race_data_base_url: str = "https://api.jolpi.ca/ergast/f1"
+    race_request_timeout_seconds: float = 10.0
+    race_default_season: str = "current"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "pitwall"

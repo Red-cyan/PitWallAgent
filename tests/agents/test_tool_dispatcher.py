@@ -66,6 +66,15 @@ def test_tool_dispatcher_builds_race_plan_for_next_race() -> None:
     assert plan["action"] == "get_next_race"
 
 
+def test_tool_dispatcher_builds_race_plan_for_previous_race() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="race", message="上一站比赛是什么？")
+
+    assert plan["tool_name"] == "race_tool"
+    assert plan["action"] == "get_previous_race"
+
+
 def test_tool_dispatcher_executes_regulation_plan() -> None:
     dispatcher = build_dispatcher()
 

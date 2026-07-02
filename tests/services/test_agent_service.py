@@ -3,11 +3,13 @@ from app.services.agent_service import AgentService
 
 
 class StubIntentRouter:
-    def route(self, message: str) -> str:
+    def route(self, message: str, fallback_intent: str | None = None) -> str:
         if "红旗" in message:
             return "regulation"
         if "积分榜" in message:
             return "race"
+        if fallback_intent is not None:
+            return fallback_intent
         return "news"
 
 
@@ -20,6 +22,19 @@ class StubToolDispatcher:
                 self.payload = payload
                 self.error = error
 
+        if intent == "race":
+            return Result(
+                tool_name="race_tool",
+                success=True,
+                payload={
+                    "action": "get_driver_standings",
+                    "standings": [
+                        {"position": 1, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 171},
+                        {"position": 2, "driver_name": "George Russell", "team_name": "Mercedes", "points": 131},
+                    ],
+                },
+            )
+
         return Result(
             tool_name=f"{intent}_tool",
             success=True,
@@ -28,7 +43,7 @@ class StubToolDispatcher:
 
 
 class StubRuntime:
-    def run(self, message: str) -> AgentQueryResponse:
+    def run(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
         return AgentQueryResponse(
             intent="regulation",
             tool_name="regulation_tool",
@@ -47,13 +62,13 @@ def test_agent_service_routes_and_dispatches_without_runtime() -> None:
     )
     service.runtime = None
 
-    response = service.handle_query("红旗是什么？")
+    response = service.handle_query("车手积分榜第二名是谁？")
 
-    assert response.intent == "regulation"
-    assert response.tool_name == "regulation_tool"
+    assert response.intent == "race"
+    assert response.tool_name == "race_tool"
     assert response.success is True
-    assert response.result["message"] == "红旗是什么？"
-    assert response.final_answer == "已完成规则查询。"
+    assert "George Russell" in response.final_answer
+    assert "第 2 名" in response.final_answer
 
 
 def test_agent_service_uses_runtime_when_provided() -> None:

@@ -1,6 +1,7 @@
 from typing import Any, TypedDict
 
 from app.agents.intent_router import IntentRouter
+from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.tool_dispatcher import ToolDispatcher
 from app.schemas.agent import AgentQueryResponse
 
@@ -9,6 +10,7 @@ class AgentState(TypedDict, total=False):
     """最小 Agent 状态。"""
 
     message: str
+    fallback_intent: str | None
     intent: str
     tool_plan: dict[str, Any]
     tool_name: str
@@ -25,13 +27,15 @@ class LangGraphAgentRuntime:
         self,
         intent_router: IntentRouter | None = None,
         tool_dispatcher: ToolDispatcher | None = None,
+        response_formatter: AgentResponseFormatter | None = None,
     ) -> None:
         self.intent_router = intent_router or IntentRouter()
         self.tool_dispatcher = tool_dispatcher or ToolDispatcher()
+        self.response_formatter = response_formatter or AgentResponseFormatter()
         self.graph = self._build_graph()
 
-    def run(self, message: str) -> AgentQueryResponse:
-        state = self.graph.invoke({"message": message})
+    def run(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
+        state = self.graph.invoke({"message": message, "fallback_intent": fallback_intent})
         return AgentQueryResponse(
             intent=state["intent"],
             tool_name=state["tool_name"],
@@ -63,8 +67,9 @@ class LangGraphAgentRuntime:
 
     def _classify_intent_node(self, state: AgentState) -> AgentState:
         message = state["message"]
-        intent = self.intent_router.route(message)
-        return {"message": message, "intent": intent}
+        fallback_intent = state.get("fallback_intent")
+        intent = self.intent_router.route(message, fallback_intent=fallback_intent)
+        return {"message": message, "fallback_intent": fallback_intent, "intent": intent}
 
     def _plan_tool_node(self, state: AgentState) -> AgentState:
         message = state["message"]
@@ -72,6 +77,7 @@ class LangGraphAgentRuntime:
         tool_plan = self.tool_dispatcher.build_plan(intent=intent, message=message)
         return {
             "message": message,
+            "fallback_intent": state.get("fallback_intent"),
             "intent": intent,
             "tool_plan": tool_plan,
         }
@@ -83,6 +89,7 @@ class LangGraphAgentRuntime:
         result = self.tool_dispatcher.execute_plan(tool_plan)
         return {
             "message": message,
+            "fallback_intent": state.get("fallback_intent"),
             "intent": intent,
             "tool_plan": tool_plan,
             "tool_name": result.tool_name,
@@ -96,7 +103,8 @@ class LangGraphAgentRuntime:
             **state.get("result", {}),
             "tool_plan": state.get("tool_plan", {}),
         }
-        final_answer = self._build_final_answer(
+        final_answer = self.response_formatter.build(
+            message=state["message"],
             intent=state["intent"],
             tool_name=state["tool_name"],
             success=state["success"],
@@ -105,6 +113,7 @@ class LangGraphAgentRuntime:
         )
         return {
             "message": state["message"],
+            "fallback_intent": state.get("fallback_intent"),
             "intent": state["intent"],
             "tool_name": state["tool_name"],
             "success": state["success"],
@@ -112,51 +121,3 @@ class LangGraphAgentRuntime:
             "error": state.get("error"),
             "final_answer": final_answer,
         }
-
-    def _build_final_answer(
-        self,
-        intent: str,
-        tool_name: str,
-        success: bool,
-        result: dict[str, Any],
-        error: str | None,
-    ) -> str:
-        if not success:
-            return error or f"{tool_name} 执行失败。"
-
-        if intent == "news":
-            articles = result.get("articles", [])
-            if articles:
-                titles = [article["title"] for article in articles[:3] if "title" in article]
-                if titles:
-                    return f"已获取最近的 F1 新闻，重点包括：{'；'.join(titles)}。"
-            return "已完成新闻查询。"
-
-        if intent == "race":
-            race = result.get("race")
-            if race and race.get("grand_prix_name"):
-                return f"下一站比赛是 {race['grand_prix_name']}。"
-
-            standings = result.get("standings", [])
-            if standings:
-                leader = standings[0]
-                if "driver_name" in leader:
-                    return f"当前车手积分榜领先者是 {leader['driver_name']}，积分 {leader['points']}。"
-                if "team_name" in leader:
-                    return f"当前车队积分榜领先者是 {leader['team_name']}，积分 {leader['points']}。"
-
-            schedule = result.get("schedule", [])
-            if schedule:
-                next_round = schedule[0]
-                return f"已获取赛历，最近一站是 {next_round['grand_prix_name']}。"
-
-            return "已完成比赛信息查询。"
-
-        if intent == "regulation":
-            response = result.get("response", {})
-            answer = response.get("answer")
-            if answer:
-                return answer
-            return "已完成规则查询。"
-
-        return "已完成请求处理。"

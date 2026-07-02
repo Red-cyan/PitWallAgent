@@ -31,24 +31,30 @@ class ToolDispatcher:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_constructor_standings",
-                    "params": {"season": 2026},
+                    "params": {},
                 }
             if "driver" in lowered or "championship" in lowered or "积分榜" in message:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_driver_standings",
-                    "params": {"season": 2026},
+                    "params": {},
+                }
+            if "previous" in lowered or "last race" in lowered or "上一站" in message:
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_previous_race",
+                    "params": {},
                 }
             if "next" in lowered or "下一站" in message:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_next_race",
-                    "params": {"season": 2026},
+                    "params": {},
                 }
             return {
                 "tool_name": self.race_tool.name,
                 "action": "list_schedule",
-                "params": {"season": 2026},
+                "params": {},
             }
 
         if intent == "regulation":

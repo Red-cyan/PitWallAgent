@@ -1,5 +1,6 @@
 from typing import Any
 
+from app.config.settings import settings
 from app.services.race_service import RaceService
 from app.tools.base import ToolResult
 
@@ -15,7 +16,7 @@ class RaceTool:
 
     def invoke(self, **kwargs: Any) -> ToolResult:
         action = kwargs.get("action")
-        season = int(kwargs.get("season", 2026))
+        season = kwargs.get("season", settings.race_default_season)
 
         try:
             if action == "list_schedule":
@@ -41,6 +42,19 @@ class RaceTool:
                         "race": race.model_dump(mode="json") if race else None,
                     },
                     error=None if race is not None else "No upcoming race found.",
+                )
+
+            if action == "get_previous_race":
+                race = self.race_service.get_previous_race(season)
+                return ToolResult(
+                    tool_name=self.name,
+                    success=race is not None,
+                    payload={
+                        "action": action,
+                        "season": season,
+                        "race": race.model_dump(mode="json") if race else None,
+                    },
+                    error=None if race is not None else "No previous race found.",
                 )
 
             if action == "get_driver_standings":

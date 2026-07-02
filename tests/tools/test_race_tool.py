@@ -1,61 +1,64 @@
+from datetime import UTC, datetime
+
 from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, RaceWeekend, SessionInfo
 from app.tools.race_tool import RaceTool
 
 
 class StubRaceService:
-    def list_schedule(self, season: int) -> list[RaceWeekend]:
+    def list_schedule(self, season):
         return [
             RaceWeekend(
-                season=season,
-                round_number=9,
-                grand_prix_name="British Grand Prix",
-                circuit_name="Silverstone Circuit",
-                country="United Kingdom",
-                start_date="2026-07-03T00:00:00Z",
-                end_date="2026-07-05T23:59:00Z",
-                sessions=[
-                    SessionInfo(name="Race", start_time="2026-07-05T14:00:00Z"),
-                ],
+                season=2026,
+                round_number=8,
+                grand_prix_name="Austrian Grand Prix",
+                circuit_name="Red Bull Ring",
+                country="Austria",
+                start_date=datetime(2026, 6, 26, 11, 30, tzinfo=UTC),
+                end_date=datetime(2026, 6, 28, 13, 0, tzinfo=UTC),
+                sessions=[SessionInfo(name="Race", start_time=datetime(2026, 6, 28, 13, 0, tzinfo=UTC))],
                 source="stub",
             )
         ]
 
-    def get_next_race(self, season: int):
+    def get_next_race(self, season):
         return self.list_schedule(season)[0]
 
-    def list_driver_standings(self, season: int) -> list[DriverStandingEntry]:
+    def get_previous_race(self, season):
+        return self.list_schedule(season)[0]
+
+    def list_driver_standings(self, season) -> list[DriverStandingEntry]:
         return [
-            DriverStandingEntry(position=1, driver_name="Lando Norris", team_name="McLaren", points=198, source="stub")
+            DriverStandingEntry(position=1, driver_name="Andrea Kimi Antonelli", team_name="Mercedes", points=171, source="stub")
         ]
 
-    def list_constructor_standings(self, season: int) -> list[ConstructorStandingEntry]:
+    def list_constructor_standings(self, season) -> list[ConstructorStandingEntry]:
         return [
-            ConstructorStandingEntry(position=1, team_name="McLaren", points=384, source="stub")
+            ConstructorStandingEntry(position=1, team_name="Mercedes", points=302, source="stub")
         ]
 
 
 def test_race_tool_returns_schedule() -> None:
     tool = RaceTool(race_service=StubRaceService())
 
-    result = tool.invoke(action="list_schedule", season=2026)
+    result = tool.invoke(action="list_schedule")
 
     assert result.success is True
-    assert result.payload["schedule"][0]["grand_prix_name"] == "British Grand Prix"
+    assert result.payload["schedule"][0]["grand_prix_name"] == "Austrian Grand Prix"
 
 
-def test_race_tool_returns_next_race() -> None:
+def test_race_tool_returns_previous_race() -> None:
     tool = RaceTool(race_service=StubRaceService())
 
-    result = tool.invoke(action="get_next_race", season=2026)
+    result = tool.invoke(action="get_previous_race")
 
     assert result.success is True
-    assert result.payload["race"]["round_number"] == 9
+    assert result.payload["race"]["round_number"] == 8
 
 
 def test_race_tool_returns_driver_standings() -> None:
     tool = RaceTool(race_service=StubRaceService())
 
-    result = tool.invoke(action="get_driver_standings", season=2026)
+    result = tool.invoke(action="get_driver_standings")
 
     assert result.success is True
-    assert result.payload["standings"][0]["driver_name"] == "Lando Norris"
+    assert result.payload["standings"][0]["driver_name"] == "Andrea Kimi Antonelli"
