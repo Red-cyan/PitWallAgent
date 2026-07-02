@@ -10,6 +10,7 @@ class StubAgentService:
             intent="regulation",
             tool_name="regulation_tool",
             success=True,
+            final_answer="stub answer",
             result={"message": message, "answer": "stub answer"},
             error=None,
         )
@@ -30,6 +31,7 @@ def test_agent_query_routes_request(monkeypatch) -> None:
     body = response.json()
     assert body["intent"] == "regulation"
     assert body["tool_name"] == "regulation_tool"
+    assert body["final_answer"] == "stub answer"
     assert body["result"]["answer"] == "stub answer"
 
 

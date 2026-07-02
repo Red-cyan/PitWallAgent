@@ -13,5 +13,6 @@ class AgentQueryResponse(BaseModel):
     intent: str = Field(..., min_length=1)
     tool_name: str = Field(..., min_length=1)
     success: bool
+    final_answer: str = Field(..., min_length=1)
     result: dict = Field(default_factory=dict)
     error: str | None = None

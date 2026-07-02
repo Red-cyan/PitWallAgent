@@ -1,7 +1,7 @@
+from app.tools.base import ToolResult
 from app.tools.news_tool import NewsTool
 from app.tools.race_tool import RaceTool
 from app.tools.regulation_tool import RegulationTool
-from app.tools.base import ToolResult
 
 
 class ToolDispatcher:
@@ -17,25 +17,81 @@ class ToolDispatcher:
         self.race_tool = race_tool or RaceTool()
         self.regulation_tool = regulation_tool or RegulationTool()
 
-    def dispatch(self, intent: str, message: str) -> ToolResult:
+    def build_plan(self, intent: str, message: str) -> dict:
         if intent == "news":
-            return self.news_tool.invoke(action="list_recent", limit=5)
+            return {
+                "tool_name": self.news_tool.name,
+                "action": "list_recent",
+                "params": {"limit": 5},
+            }
 
         if intent == "race":
             lowered = message.lower()
             if "constructor" in lowered or "team standings" in lowered or "车队" in message:
-                return self.race_tool.invoke(action="get_constructor_standings", season=2026)
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_constructor_standings",
+                    "params": {"season": 2026},
+                }
             if "driver" in lowered or "championship" in lowered or "积分榜" in message:
-                return self.race_tool.invoke(action="get_driver_standings", season=2026)
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_driver_standings",
+                    "params": {"season": 2026},
+                }
             if "next" in lowered or "下一站" in message:
-                return self.race_tool.invoke(action="get_next_race", season=2026)
-            return self.race_tool.invoke(action="list_schedule", season=2026)
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_next_race",
+                    "params": {"season": 2026},
+                }
+            return {
+                "tool_name": self.race_tool.name,
+                "action": "list_schedule",
+                "params": {"season": 2026},
+            }
 
         if intent == "regulation":
-            return self.regulation_tool.invoke(action="ask", question=message)
+            return {
+                "tool_name": self.regulation_tool.name,
+                "action": "ask",
+                "params": {"question": message},
+            }
+
+        return {
+            "tool_name": "dispatcher",
+            "action": "unsupported",
+            "params": {},
+            "error": f"Unsupported intent: {intent}",
+        }
+
+    def execute_plan(self, plan: dict) -> ToolResult:
+        tool_name = plan["tool_name"]
+        action = plan["action"]
+        params = plan.get("params", {})
+
+        if action == "unsupported":
+            return ToolResult(
+                tool_name=tool_name,
+                success=False,
+                error=plan.get("error", "Unsupported plan."),
+            )
+
+        if tool_name == self.news_tool.name:
+            return self.news_tool.invoke(action=action, **params)
+
+        if tool_name == self.race_tool.name:
+            return self.race_tool.invoke(action=action, **params)
+
+        if tool_name == self.regulation_tool.name:
+            return self.regulation_tool.invoke(action=action, **params)
 
         return ToolResult(
             tool_name="dispatcher",
             success=False,
-            error=f"Unsupported intent: {intent}",
+            error=f"Unsupported tool name: {tool_name}",
         )
+
+    def dispatch(self, intent: str, message: str) -> ToolResult:
+        plan = self.build_plan(intent=intent, message=message)
+        return self.execute_plan(plan)

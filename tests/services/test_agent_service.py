@@ -1,3 +1,4 @@
+from app.schemas.agent import AgentQueryResponse
 from app.services.agent_service import AgentService
 
 
@@ -26,11 +27,25 @@ class StubToolDispatcher:
         )
 
 
-def test_agent_service_routes_and_dispatches() -> None:
+class StubRuntime:
+    def run(self, message: str) -> AgentQueryResponse:
+        return AgentQueryResponse(
+            intent="regulation",
+            tool_name="regulation_tool",
+            success=True,
+            final_answer="graph answer",
+            result={"message": message, "mode": "graph"},
+            error=None,
+        )
+
+
+def test_agent_service_routes_and_dispatches_without_runtime() -> None:
     service = AgentService(
         intent_router=StubIntentRouter(),
         tool_dispatcher=StubToolDispatcher(),
+        runtime=None,
     )
+    service.runtime = None
 
     response = service.handle_query("红旗是什么？")
 
@@ -38,3 +53,18 @@ def test_agent_service_routes_and_dispatches() -> None:
     assert response.tool_name == "regulation_tool"
     assert response.success is True
     assert response.result["message"] == "红旗是什么？"
+    assert response.final_answer == "已完成规则查询。"
+
+
+def test_agent_service_uses_runtime_when_provided() -> None:
+    service = AgentService(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        runtime=StubRuntime(),
+    )
+
+    response = service.handle_query("红旗是什么？")
+
+    assert response.intent == "regulation"
+    assert response.result["mode"] == "graph"
+    assert response.final_answer == "graph answer"
