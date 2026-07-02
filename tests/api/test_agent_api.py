@@ -33,6 +33,8 @@ def test_agent_query_routes_request(monkeypatch) -> None:
     assert body["tool_name"] == "regulation_tool"
     assert body["final_answer"] == "stub answer"
     assert body["result"]["answer"] == "stub answer"
+    assert response.headers["X-PitWall-Endpoint-Mode"] == "debug"
+    assert "/api/chat" in response.headers["X-PitWall-Endpoint-Note"]
 
 
 def test_agent_query_rejects_empty_message() -> None:

@@ -15,6 +15,15 @@ class ConversationTurn(BaseModel):
     tool_name: str | None = None
 
 
+class ChatSessionSummary(BaseModel):
+    """会话摘要。"""
+
+    session_id: str = Field(..., min_length=1)
+    turn_count: int = Field(default=0, ge=0)
+    last_intent: str | None = None
+    updated_at: datetime
+
+
 class ChatRequest(BaseModel):
     """聊天请求。"""
 
@@ -27,4 +36,12 @@ class ChatResponse(BaseModel):
 
     session_id: str = Field(..., min_length=1)
     response: AgentQueryResponse
+    history: list[ConversationTurn] = Field(default_factory=list)
+    session: ChatSessionSummary
+
+
+class ChatHistoryResponse(BaseModel):
+    """会话历史响应。"""
+
+    session: ChatSessionSummary
     history: list[ConversationTurn] = Field(default_factory=list)

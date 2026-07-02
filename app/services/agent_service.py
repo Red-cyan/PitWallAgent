@@ -20,12 +20,21 @@ class AgentService:
         self.response_formatter = response_formatter or AgentResponseFormatter()
         self.runtime = runtime or self._build_default_runtime()
 
-    def handle_query(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
+    def handle_query(
+        self,
+        message: str,
+        fallback_intent: str | None = None,
+        conversation_context: str | None = None,
+    ) -> AgentQueryResponse:
+        effective_message = self._build_effective_message(
+            message=message,
+            conversation_context=conversation_context,
+        )
         if self.runtime is not None:
-            return self.runtime.run(message, fallback_intent=fallback_intent)
+            return self.runtime.run(effective_message, fallback_intent=fallback_intent)
 
-        intent = self.intent_router.route(message, fallback_intent=fallback_intent)
-        result = self.tool_dispatcher.dispatch(intent=intent, message=message)
+        intent = self.intent_router.route(effective_message, fallback_intent=fallback_intent)
+        result = self.tool_dispatcher.dispatch(intent=intent, message=effective_message)
         final_answer = self.response_formatter.build(
             message=message,
             intent=intent,
@@ -52,3 +61,9 @@ class AgentService:
             )
         except ImportError:
             return None
+
+    def _build_effective_message(self, *, message: str, conversation_context: str | None) -> str:
+        if not conversation_context:
+            return message
+
+        return f"{conversation_context}\nUser: {message}"

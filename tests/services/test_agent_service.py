@@ -43,7 +43,11 @@ class StubToolDispatcher:
 
 
 class StubRuntime:
-    def run(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
+    def run(
+        self,
+        message: str,
+        fallback_intent: str | None = None,
+    ) -> AgentQueryResponse:
         return AgentQueryResponse(
             intent="regulation",
             tool_name="regulation_tool",
