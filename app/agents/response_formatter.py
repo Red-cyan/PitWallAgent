@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 
 class AgentResponseFormatter:
     """Build the final user-facing answer."""
 
+    DISPLAY_TIMEZONE = ZoneInfo("Asia/Shanghai")
     POSITION_PATTERNS = (
         ("第一名", 1),
         ("第一", 1),
@@ -109,6 +112,22 @@ class AgentResponseFormatter:
             return error or f"{tool_name} 执行失败。"
 
         if intent == "news":
+            article = result.get("article")
+            if article:
+                summary = article.get("summary") or article.get("content") or "暂无摘要。"
+                return f"{article['title']}：{summary}"
+
+            insights = result.get("insights")
+            if insights:
+                key_points = insights.get("key_points", [])
+                if key_points:
+                    return f"{insights['summary']} 关键点：{'；'.join(key_points[:3])}。"
+                return insights["summary"]
+
+            rules_analysis = result.get("rules_analysis")
+            if rules_analysis:
+                return rules_analysis["analysis_summary"]
+
             articles = result.get("articles", [])
             if articles:
                 titles = [article["title"] for article in articles[:3] if "title" in article]
@@ -142,9 +161,12 @@ class AgentResponseFormatter:
         race = result.get("race")
         if race and race.get("grand_prix_name"):
             action = result.get("action")
-            if action == "get_previous_race":
-                return f"上一站比赛是 {race['grand_prix_name']}。"
-            return f"下一站比赛是 {race['grand_prix_name']}。"
+            label = "上一站比赛" if action == "get_previous_race" else "下一站比赛"
+            return self._format_race_weekend(
+                race,
+                label=label,
+                include_sessions=self._wants_session_times(message),
+            )
 
         standings = result.get("standings", [])
         if standings:
@@ -180,8 +202,11 @@ class AgentResponseFormatter:
 
         schedule = result.get("schedule", [])
         if schedule:
-            next_round = schedule[0]
-            return f"已获取赛历，最近一站是 {next_round['grand_prix_name']}。"
+            return self._format_schedule(
+                schedule,
+                full=self._wants_full_schedule(message),
+                include_sessions=self._wants_session_times(message),
+            )
 
         return "已完成比赛信息查询。"
 
@@ -207,6 +232,103 @@ class AgentResponseFormatter:
         lowered = message.lower()
         has_standings_keyword = any(token in message for token in ("积分榜", "排名", "standings"))
         return has_standings_keyword and any(token in lowered or token in message for token in self.FULL_LIST_KEYWORDS)
+
+    def _wants_full_schedule(self, message: str) -> bool:
+        lowered = message.lower()
+        has_schedule_keyword = any(
+            token in lowered or token in message
+            for token in ("赛历", "赛程", "calendar", "schedule")
+        )
+        full_tokens = (*self.FULL_LIST_KEYWORDS, "全年", "今年", "赛季", "season")
+        return has_schedule_keyword and any(token in lowered or token in message for token in full_tokens)
+
+    def _wants_session_times(self, message: str) -> bool:
+        lowered = message.lower()
+        return any(
+            token in lowered or token in message
+            for token in (
+                "时间",
+                "日期",
+                "几点",
+                "具体",
+                "排位",
+                "练习",
+                "冲刺",
+                "session",
+                "sessions",
+                "time",
+                "date",
+                "when",
+                "qualifying",
+                "practice",
+                "sprint",
+            )
+        )
+
+    def _format_schedule(self, schedule: list[dict[str, Any]], *, full: bool, include_sessions: bool) -> str:
+        if not schedule:
+            return "当前没有可用的赛历数据。"
+
+        races = schedule if full else schedule[:3]
+        title = "当前完整赛历：" if full else "近期赛历："
+        lines = [
+            self._format_race_summary(race, include_sessions=include_sessions)
+            for race in races
+        ]
+        if not full and len(schedule) > len(races):
+            lines.append(f"共获取 {len(schedule)} 场比赛；如需全年列表，请问“完整赛历”。")
+        return title + "\n" + "\n".join(lines)
+
+    def _format_race_weekend(self, race: dict[str, Any], *, label: str, include_sessions: bool) -> str:
+        details = self._format_race_summary(race, include_sessions=include_sessions)
+        return f"{label}：{details}"
+
+    def _format_race_summary(self, race: dict[str, Any], *, include_sessions: bool) -> str:
+        round_number = race.get("round_number")
+        prefix = f"R{round_number} " if round_number else ""
+        location_parts = [
+            part
+            for part in (race.get("circuit_name"), race.get("country"))
+            if part
+        ]
+        location = f"（{'，'.join(location_parts)}）" if location_parts else ""
+        race_time = self._find_session_time(race, "Race") or race.get("end_date")
+        race_time_text = self._format_datetime(race_time)
+        summary = f"{prefix}{race['grand_prix_name']}{location}，正赛时间 {race_time_text}"
+
+        if include_sessions:
+            session_lines = self._format_sessions(race.get("sessions", []))
+            if session_lines:
+                summary += "；周末安排：" + "；".join(session_lines)
+
+        return summary + "。"
+
+    def _format_sessions(self, sessions: list[dict[str, Any]]) -> list[str]:
+        return [
+            f"{session['name']} {self._format_datetime(session.get('start_time'))}"
+            for session in sessions
+            if session.get("name") and session.get("start_time")
+        ]
+
+    def _find_session_time(self, race: dict[str, Any], session_name: str) -> Any:
+        for session in race.get("sessions", []):
+            if session.get("name") == session_name:
+                return session.get("start_time")
+        return None
+
+    def _format_datetime(self, value: Any) -> str:
+        if value is None:
+            return "时间未知"
+        if isinstance(value, str):
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        elif isinstance(value, datetime):
+            parsed = value
+        else:
+            return "时间未知"
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        local_time = parsed.astimezone(self.DISPLAY_TIMEZONE)
+        return local_time.strftime("%Y-%m-%d %H:%M CST")
 
     def _format_full_standings(self, standings: list[dict[str, Any]]) -> str:
         if not standings:

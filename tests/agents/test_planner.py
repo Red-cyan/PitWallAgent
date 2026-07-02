@@ -72,3 +72,31 @@ def test_planner_rejects_invalid_llm_action_and_falls_back() -> None:
 
     assert plan["intent"] == "race"
     assert plan["tool_name"] == "race_tool"
+
+
+def test_planner_supports_news_insights_with_article_id() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient('{"intent":"news","action":"get_insights","params":{"article_id":"42"}}'),
+    )
+
+    plan = planner.plan("分析新闻 42")
+
+    assert plan["intent"] == "news"
+    assert plan["tool_name"] == "news_tool"
+    assert plan["action"] == "get_insights"
+    assert plan["params"]["article_id"] == 42
+
+
+def test_planner_rejects_news_article_action_without_id_and_falls_back() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient('{"intent":"news","action":"get_rules_analysis","params":{}}'),
+    )
+
+    plan = planner.plan("分析这篇新闻和规则的关系")
+
+    assert plan["intent"] == "general"
+    assert plan["tool_name"] == "general_tool"

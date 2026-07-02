@@ -16,10 +16,16 @@ class KnowledgeService:
         self.ingestion_service = ingestion_service or RegulationIngestionService()
 
     def retrieve_regulation_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
-        return self.rule_repository.search_relevant_chunks(question=question, top_k=top_k)
+        try:
+            return self.rule_repository.search_relevant_chunks(question, top_k)
+        except TypeError:
+            return self.rule_repository.search_relevant_chunks(question)
 
     def debug_regulation_retrieval(self, question: str, top_k: int = 3) -> RetrievalDebugResponse:
-        return self.rule_repository.debug_retrieval(question=question, top_k=top_k)
+        try:
+            return self.rule_repository.debug_retrieval(question, top_k)
+        except TypeError:
+            return self.rule_repository.debug_retrieval(question)
 
     def ingest_regulations(
         self,

@@ -30,6 +30,10 @@ class RuleAskResponse(BaseModel):
         default_factory=list,
         description="Retrieved chunks used for answering and debugging.",
     )
+    answer_status: str = Field(default="answered", description="answered or insufficient_evidence.")
+    confidence: str = Field(default="medium", description="Answer confidence derived from retrieval quality.")
+    evidence_count: int = Field(default=0, ge=0, description="Number of evidence chunks used.")
+    source_mode: str = Field(default="regulation_rag", description="Source path used to build the answer.")
 
 
 class RetrievalDebugResponse(BaseModel):

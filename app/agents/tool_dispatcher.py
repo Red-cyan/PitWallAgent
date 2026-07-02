@@ -35,6 +35,20 @@ class ToolDispatcher:
 
         if intent == "race":
             lowered = message.lower()
+            driver_subject_tokens = (
+                "verstappen",
+                "norris",
+                "leclerc",
+                "russell",
+                "hamilton",
+                "piastri",
+                "\u7ef4\u65af\u5854\u6f58",
+                "\u8bfa\u91cc\u65af",
+                "\u52d2\u514b\u83b1\u5c14",
+                "\u62c9\u585e\u5c14",
+                "\u6c49\u5bc6\u5c14\u987f",
+                "\u76ae\u4e9a\u65af\u7279\u91cc",
+            )
 
             if (
                 "constructor" in lowered
@@ -55,6 +69,7 @@ class ToolDispatcher:
                 or "championship" in lowered
                 or "\u8f66\u624b" in message
                 or "\u79ef\u5206" in message
+                or any(token in lowered or token in message for token in driver_subject_tokens)
             ):
                 return {
                     "tool_name": self.race_tool.name,
@@ -62,14 +77,21 @@ class ToolDispatcher:
                     "params": {},
                 }
 
-            if "previous" in lowered or "last race" in lowered or "\u4e0a\u4e00\u7ad9" in message:
+            if "previous" in lowered or "last race" in lowered or "\u4e0a\u4e00\u7ad9" in message or "\u4e0a\u4e00\u573a" in message:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_previous_race",
                     "params": {},
                 }
 
-            if "next" in lowered or "\u4e0b\u4e00\u7ad9" in message:
+            if "next" in lowered or "\u4e0b\u4e00\u7ad9" in message or "\u4e0b\u4e00\u573a" in message:
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_next_race",
+                    "params": {},
+                }
+
+            if any(token in lowered or token in message for token in ("time", "date", "when", "\u65f6\u95f4", "\u65e5\u671f", "\u51e0\u70b9")):
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_next_race",

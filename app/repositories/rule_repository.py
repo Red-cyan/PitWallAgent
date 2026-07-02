@@ -12,6 +12,7 @@ from app.schemas.rules import RetrievalDebugResponse, RetrievedChunk
 
 class RuleRepository:
     VECTOR_CANDIDATE_LIMIT = 12
+    MIN_RERANK_SCORE = 2
     QUERY_SYNONYMS = {
         "红旗": "red flag",
         "黄旗": "yellow flag",
@@ -134,9 +135,14 @@ class RuleRepository:
         scored_chunks.sort(key=lambda item: item[0], reverse=True)
 
         if not scored_chunks:
-            return chunks[:top_k] or self._load_chunks()[:1]
+            return []
 
-        return [chunk for _, chunk in scored_chunks[:top_k]]
+        strong_chunks = [
+            chunk
+            for score, chunk in scored_chunks
+            if score >= self.MIN_RERANK_SCORE
+        ]
+        return strong_chunks[:top_k]
 
     def _normalize_question(self, question: str) -> str:
         normalized_question = question
@@ -189,7 +195,7 @@ class RuleRepository:
                 return filtered_chunks
             return chunks
 
-        return self._load_chunks()
+        return []
 
     def _load_chunks(self) -> list[RetrievedChunk]:
         if self._cached_chunks is not None:
@@ -418,21 +424,25 @@ class RuleRepository:
     ) -> int:
         normalized_content = chunk.content.lower()
         normalized_title = chunk.document_title.lower()
-        score = 0
+        content_score = 0
 
         for phrase in phrases:
             if phrase in normalized_content:
-                score += 10
+                content_score += 10
 
         for keyword in keywords:
             if keyword in normalized_content:
-                score += 1
+                content_score += 1
 
+        if chunk.article and any(keyword in chunk.article.lower() for keyword in keywords):
+            content_score += 3
+
+        if content_score == 0:
+            return 0
+
+        score = content_score
         for section in preferred_sections:
             if section.lower() in normalized_title:
                 score += 8
-
-        if chunk.article and any(keyword in chunk.article.lower() for keyword in keywords):
-            score += 3
 
         return score

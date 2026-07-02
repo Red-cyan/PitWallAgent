@@ -33,6 +33,8 @@ def test_qa_service_returns_llm_answer() -> None:
     assert len(response.citations) == 1
     assert response.citations[0].page == 9
     assert response.retrieved_chunks[0].document_title.startswith("FIA 2026 F1 Regulations")
+    assert response.answer_status == "answered"
+    assert response.evidence_count == 1
 
 
 def test_qa_service_falls_back_when_no_chunks() -> None:
@@ -48,5 +50,8 @@ def test_qa_service_falls_back_when_no_chunks() -> None:
     response = service.ask(RuleAskRequest(question="What is parc ferme?"))
 
     assert "未检索到" in response.answer
+    assert "避免编造规则" in response.answer
     assert response.citations == []
     assert response.retrieved_chunks == []
+    assert response.answer_status == "insufficient_evidence"
+    assert response.confidence == "low"

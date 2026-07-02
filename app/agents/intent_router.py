@@ -15,6 +15,10 @@ class IntentRouter:
         "strategy",
         "pit now",
         "pit stop",
+        "pit",
+        "tyre",
+        "tire",
+        "degradation",
         "pit under",
         "undercut",
         "overcut",
@@ -24,6 +28,8 @@ class IntentRouter:
         "\u7b56\u7565",
         "\u8fdb\u7ad9",
         "\u8fdb\u5751",
+        "\u8f6e\u80ce",
+        "\u8870\u9000",
         "\u8d5b\u9053\u4f4d\u7f6e",
         "\u662f\u5426\u8be5\u8fdb\u7ad9",
         "\u8be5\u4e0d\u8be5\u8fdb\u7ad9",
@@ -57,12 +63,25 @@ class IntentRouter:
         "\u8f66\u624b",
         "\u8f66\u961f",
         "\u6392\u540d",
+        "\u6392\u7b2c",
         "\u699c\u9996",
         "\u7b2c\u4e00\u540d",
         "\u9886\u8dd1",
         "\u9886\u5148",
+        "\u7ef4\u65af\u5854\u6f58",
+        "\u8bfa\u91cc\u65af",
+        "\u52d2\u514b\u83b1\u5c14",
+        "\u62c9\u585e\u5c14",
+        "\u6c49\u5bc6\u5c14\u987f",
+        "\u76ae\u4e9a\u65af\u7279\u91cc",
+        "\u6cd5\u62c9\u5229",
+        "\u8fc8\u51ef\u4f26",
+        "\u7ea2\u725b",
+        "\u6885\u5954",
         "\u4e0b\u4e00\u7ad9",
+        "\u4e0b\u4e00\u573a",
         "\u4e0a\u4e00\u7ad9",
+        "\u4e0a\u4e00\u573a",
         "\u6392\u4f4d",
     )
     REGULATION_KEYWORDS = (
@@ -92,14 +111,29 @@ class IntentRouter:
         "\u7136\u540e\u5462",
         "\u8fd9\u4e2a\u5462",
         "\u90a3\u4e2a\u5462",
+        "\u4ed6",
+        "\u5979",
+        "\u5b83",
+        "\u8fd9\u7bc7",
+        "\u8fd9\u6761",
+        "\u8fd9\u4e2a",
+        "\u90a3\u4e2a",
         "what about",
         "how about",
         "and that",
         "then what",
+        "it ",
+        "he ",
+        "she ",
+        "that ",
+        "this ",
     )
 
     def route(self, message: str, fallback_intent: str | None = None) -> str:
         normalized = message.lower().strip()
+
+        if self._contains_any(normalized, self._EXPLICIT_REGULATION_KEYWORDS):
+            return "regulation"
 
         if self._contains_any(normalized, self.STRATEGY_KEYWORDS):
             return "strategy"
@@ -131,10 +165,23 @@ class IntentRouter:
         }:
             return True
 
-        if len(stripped) <= 12 and "\u5462" in stripped:
+        if len(stripped) <= 18 and any(
+            token in stripped
+            for token in ("\u5462", "\u4ed6", "\u5979", "\u5b83", "\u8fd9", "\u90a3")
+        ):
             return True
 
         return any(keyword in stripped for keyword in self.FOLLOW_UP_KEYWORDS)
 
     def _contains_any(self, message: str, keywords: tuple[str, ...]) -> bool:
         return any(keyword in message for keyword in keywords)
+
+    _EXPLICIT_REGULATION_KEYWORDS = (
+        "regulation",
+        "rule",
+        "rules",
+        "technical directive",
+        "\u89c4\u5219",
+        "\u6761\u4f8b",
+        "\u6280\u672f\u6307\u4ee4",
+    )

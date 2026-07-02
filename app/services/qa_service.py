@@ -30,7 +30,10 @@ class RegulationQAService:
 
     def _build_fallback_answer(self, question: str, chunks: list[RetrievedChunk]) -> str:
         if not chunks:
-            return f"未检索到与问题“{question}”相关的 FIA 规则内容。"
+            return (
+                f"未检索到与问题“{question}”相关的 FIA 规则证据。"
+                "为了避免编造规则，我不能基于当前资料给出确定答案。"
+            )
 
         primary_chunk = chunks[0]
         article_text = primary_chunk.article or "未识别具体条款"
@@ -137,11 +140,17 @@ class RegulationQAService:
         )
         answer = self._generate_answer(request.question, retrieved_chunks)
         citations = self._build_citations(retrieved_chunks)
+        answer_status = "answered" if retrieved_chunks else "insufficient_evidence"
+        confidence = "medium" if retrieved_chunks else "low"
 
         return RuleAskResponse(
             answer=answer,
             citations=citations,
             retrieved_chunks=retrieved_chunks,
+            answer_status=answer_status,
+            confidence=confidence,
+            evidence_count=len(retrieved_chunks),
+            source_mode="regulation_rag",
         )
 
     def debug_retrieval(self, request: RuleAskRequest) -> RetrievalDebugResponse:

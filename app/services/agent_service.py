@@ -66,16 +66,31 @@ class AgentService:
             intent=intent,
             tool_name=result.tool_name,
             success=result.success,
-            result=result.payload,
+            result={**result.payload, "tool_plan": tool_plan},
             error=result.error,
         )
+        response_payload = result.payload.get("response", {})
         response = AgentQueryResponse(
             intent=intent,
             tool_name=result.tool_name,
             success=result.success,
             final_answer=final_answer,
-            result=result.payload,
+            result={**result.payload, "tool_plan": tool_plan},
             error=result.error,
+            trace={
+                "intent": intent,
+                "tool_name": result.tool_name,
+                "action": result.payload.get("action") or tool_plan.get("action"),
+                "params": tool_plan.get("params", {}),
+                "success": result.success,
+                "error": result.error,
+                "answer_status": response_payload.get("answer_status")
+                or result.payload.get("answer_status")
+                or ("answered" if result.success else "error"),
+                "confidence": response_payload.get("confidence") or result.payload.get("confidence"),
+                "evidence_count": response_payload.get("evidence_count") or result.payload.get("evidence_count", 0),
+                "source_mode": response_payload.get("source_mode") or result.payload.get("source_mode"),
+            },
         )
         log_structured(
             self.logger,

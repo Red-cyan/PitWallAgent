@@ -31,3 +31,4 @@ def test_intent_router_uses_fallback_intent_for_follow_up() -> None:
     router = IntentRouter()
 
     assert router.route("那呢？", fallback_intent="race") == "race"
+    assert router.route("他现在排第几？", fallback_intent="race") == "race"

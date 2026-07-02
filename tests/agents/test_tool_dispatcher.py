@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from app.agents.tool_dispatcher import ToolDispatcher
 
 
@@ -55,10 +57,10 @@ class StubGeneralTool:
 
 def build_dispatcher() -> ToolDispatcher:
     return ToolDispatcher(
-        news_tool=StubNewsTool(),
-        race_tool=StubRaceTool(),
-        regulation_tool=StubRegulationTool(),
-        general_tool=StubGeneralTool(),
+        news_tool=cast(Any, StubNewsTool()),
+        race_tool=cast(Any, StubRaceTool()),
+        regulation_tool=cast(Any, StubRegulationTool()),
+        general_tool=cast(Any, StubGeneralTool()),
     )
 
 
@@ -87,6 +89,15 @@ def test_tool_dispatcher_builds_race_plan_for_previous_race() -> None:
 
     assert plan["tool_name"] == "race_tool"
     assert plan["action"] == "get_previous_race"
+
+
+def test_tool_dispatcher_builds_race_plan_for_next_race_time_question() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="race", message="比赛日期和具体时间是多少")
+
+    assert plan["tool_name"] == "race_tool"
+    assert plan["action"] == "get_next_race"
 
 
 def test_tool_dispatcher_builds_race_plan_for_constructor_leader_question() -> None:

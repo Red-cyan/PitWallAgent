@@ -16,3 +16,4 @@ class AgentQueryResponse(BaseModel):
     final_answer: str = Field(..., min_length=1)
     result: dict = Field(default_factory=dict)
     error: str | None = None
+    trace: dict = Field(default_factory=dict)

@@ -14,7 +14,7 @@ class LLMQueryPlanner:
     """Use an LLM to choose the right capability, with heuristic fallback."""
 
     _SUPPORTED_ACTIONS = {
-        "news": {"list_recent"},
+        "news": {"list_recent", "get_article", "get_insights", "get_rules_analysis"},
         "race": {
             "list_schedule",
             "get_next_race",
@@ -88,7 +88,7 @@ class LLMQueryPlanner:
                     "Choose exactly one intent and one action. "
                     "Return only JSON with keys: intent, action, params. "
                     "Supported intents and actions: "
-                    "news:list_recent; "
+                    "news:list_recent|get_article|get_insights|get_rules_analysis; "
                     "race:list_schedule|get_next_race|get_previous_race|get_driver_standings|get_constructor_standings; "
                     "regulation:ask; "
                     "strategy:analyze; "
@@ -97,7 +97,9 @@ class LLMQueryPlanner:
                     "Use race for standings, schedules, next/previous race, teams, drivers, championship leaders. "
                     "Use regulation for FIA rules and flags. "
                     "Use strategy for pit stop or tactical analysis. "
-                    "Use news only when the user explicitly asks for news, headlines, or recent updates."
+                    "Use news only when the user explicitly asks for news, headlines, or recent updates. "
+                    "Use news:get_article for a specific article by id, get_insights for article analysis, "
+                    "and get_rules_analysis when the user asks how a news article relates to FIA rules."
                 ),
             },
             {
@@ -106,7 +108,8 @@ class LLMQueryPlanner:
                     f"Fallback intent from previous turn: {fallback_text}\n"
                     f"User message:\n{message}\n\n"
                     "If regulation/strategy/general is selected, include params.question with the user message. "
-                    "If news is selected, params should include limit=5. "
+                    "If news:list_recent is selected, params should include limit=5. "
+                    "If a news article action is selected, params must include article_id as an integer. "
                     "Otherwise params can be empty."
                 ),
             },
@@ -128,7 +131,13 @@ class LLMQueryPlanner:
         if intent in {"regulation", "strategy", "general"}:
             params["question"] = message
         elif intent == "news":
-            params.setdefault("limit", 5)
+            if action == "list_recent":
+                params.setdefault("limit", 5)
+            else:
+                try:
+                    params["article_id"] = int(params["article_id"])
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise ValueError("News article actions require integer article_id.") from exc
 
         return {
             "intent": intent,

@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from app.agents.runtime_graph import LangGraphAgentRuntime
 
 
@@ -61,8 +63,8 @@ class StubToolDispatcher:
 
 def test_langgraph_runtime_runs_end_to_end() -> None:
     runtime = LangGraphAgentRuntime(
-        planner=StubPlanner(),
-        tool_dispatcher=StubToolDispatcher(),
+        planner=cast(Any, StubPlanner()),
+        tool_dispatcher=cast(Any, StubToolDispatcher()),
     )
 
     response = runtime.run("今天有什么新闻？")
@@ -71,13 +73,15 @@ def test_langgraph_runtime_runs_end_to_end() -> None:
     assert response.tool_name == "news_tool"
     assert response.success is True
     assert response.result["tool_plan"]["action"] == "list_recent"
+    assert response.trace["action"] == "list_recent"
+    assert response.trace["intent"] == "news"
     assert response.final_answer.startswith("已获取最近的 F1 新闻")
 
 
 def test_langgraph_runtime_formats_requested_race_position() -> None:
     runtime = LangGraphAgentRuntime(
-        planner=StubPlanner(),
-        tool_dispatcher=StubToolDispatcher(),
+        planner=cast(Any, StubPlanner()),
+        tool_dispatcher=cast(Any, StubToolDispatcher()),
     )
 
     response = runtime.run("车手积分榜第二名是谁？")
@@ -91,8 +95,8 @@ def test_langgraph_runtime_formats_requested_race_position() -> None:
 
 def test_langgraph_runtime_supports_general_answers() -> None:
     runtime = LangGraphAgentRuntime(
-        planner=StubPlanner(),
-        tool_dispatcher=StubToolDispatcher(),
+        planner=cast(Any, StubPlanner()),
+        tool_dispatcher=cast(Any, StubToolDispatcher()),
     )
 
     response = runtime.run("你好")
