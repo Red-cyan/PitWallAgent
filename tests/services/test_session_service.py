@@ -46,6 +46,9 @@ class FakeRedisClient:
                 removed += 1
         return removed
 
+    def ping(self) -> bool:
+        return True
+
 
 def test_session_service_creates_session_and_tracks_history() -> None:
     service = SessionService()
@@ -125,6 +128,30 @@ def test_session_store_factory_returns_redis_store(monkeypatch) -> None:
 
     assert isinstance(store, RedisSessionStore)
     assert store.ttl_seconds == 300
+
+
+def test_session_store_factory_uses_resolved_redis_url(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class RedisFactory:
+        @staticmethod
+        def from_url(url: str, decode_responses: bool):
+            captured["url"] = url
+            captured["decode_responses"] = decode_responses
+            return FakeRedisClient()
+
+    import redis
+
+    monkeypatch.setattr(session_service.settings, "redis_url", "redis://example.test:6380/2")
+    monkeypatch.setattr(redis, "Redis", RedisFactory)
+
+    client = SessionStoreFactory._build_redis_client()
+
+    assert isinstance(client, FakeRedisClient)
+    assert captured == {
+        "url": "redis://example.test:6380/2",
+        "decode_responses": True,
+    }
 
 
 def test_in_memory_session_store_lists_recent_sessions() -> None:

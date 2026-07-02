@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from app.schemas.agent import AgentQueryResponse
 from app.schemas.chat import (
     ChatHistoryResponse,
@@ -6,7 +8,8 @@ from app.schemas.chat import (
     ChatSessionSummary,
 )
 from app.services.chat_service import ChatService
-from app.services.session_service import SessionService
+from app.services.session_service import RedisSessionStore, SessionService
+from tests.services.test_session_service import FakeRedisClient
 
 
 class StubAgentService:
@@ -45,7 +48,7 @@ class StubAgentService:
 def test_chat_service_reuses_session_and_passes_last_intent() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     first_response = chat_service.handle_chat("下一站比赛是什么？")
     second_response = chat_service.handle_chat("那呢？", session_id=first_response.session_id)
@@ -63,7 +66,7 @@ def test_chat_service_reuses_session_and_passes_last_intent() -> None:
 def test_chat_service_returns_history() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     response = chat_service.handle_chat("下一站比赛是什么？", session_id="session-001")
     history_response = chat_service.get_history(response.session_id)
@@ -77,7 +80,7 @@ def test_chat_service_returns_history() -> None:
 def test_chat_service_lists_sessions() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
     chat_service.handle_chat("上一站比赛是什么？", session_id="session-b")
@@ -91,7 +94,7 @@ def test_chat_service_lists_sessions() -> None:
 def test_chat_service_returns_single_session_summary() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
     summary = chat_service.get_session("session-a")
@@ -104,7 +107,7 @@ def test_chat_service_returns_single_session_summary() -> None:
 def test_chat_service_deletes_session() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
     result = chat_service.delete_session("session-a")
@@ -117,7 +120,7 @@ def test_chat_service_deletes_session() -> None:
 def test_chat_service_streams_session_and_status_before_agent_work() -> None:
     agent_service = StubAgentService()
     session_service = SessionService()
-    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+    chat_service = ChatService(agent_service=cast(Any, agent_service), session_service=session_service)
 
     stream = chat_service.stream_chat("下一站比赛是什么？")
     first_event = next(stream)
@@ -135,3 +138,26 @@ def test_chat_service_streams_session_and_status_before_agent_work() -> None:
     assert remaining_event_names[-1] == "message_completed"
     assert "message_delta" in remaining_event_names
     assert agent_service.received_fallback_intent is None
+
+
+def test_chat_service_reads_history_after_new_service_instance() -> None:
+    redis_client = FakeRedisClient()
+    first_session_service = SessionService(store=RedisSessionStore(client=redis_client, ttl_seconds=120))
+    first_chat_service = ChatService(
+        agent_service=cast(Any, StubAgentService()),
+        session_service=first_session_service,
+    )
+
+    response = first_chat_service.handle_chat("下一站比赛是什么？", session_id="persistent-session")
+
+    second_session_service = SessionService(store=RedisSessionStore(client=redis_client, ttl_seconds=120))
+    second_chat_service = ChatService(
+        agent_service=cast(Any, StubAgentService()),
+        session_service=second_session_service,
+    )
+    history_response = second_chat_service.get_history(response.session_id)
+
+    assert history_response.session.session_id == "persistent-session"
+    assert history_response.session.turn_count == 2
+    assert history_response.history[0].message == "下一站比赛是什么？"
+    assert history_response.history[1].message == "下一站比赛是 British Grand Prix。"

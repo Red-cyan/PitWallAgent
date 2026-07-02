@@ -1,6 +1,6 @@
 import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
@@ -121,7 +121,7 @@ class RegulationIngestionService:
 
     def ingest_documents(
         self,
-        pdf_paths: list[str | Path],
+        pdf_paths: Sequence[str | Path],
         output_path: str | Path = "data/regulations/processed/chunks.json",
         *,
         persist_json: bool = True,

@@ -4,7 +4,7 @@ from typing import Any, Protocol
 
 @dataclass
 class ToolResult:
-    """工具执行结果。"""
+    """Result returned by every agent tool."""
 
     tool_name: str
     success: bool
@@ -13,10 +13,11 @@ class ToolResult:
 
 
 class Tool(Protocol):
-    """工具统一接口。"""
+    """Common interface exposed by all agent tools."""
 
     name: str
     description: str
 
     def invoke(self, **kwargs: Any) -> ToolResult:
-        """执行工具。"""
+        """Execute the tool."""
+        ...

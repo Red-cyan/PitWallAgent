@@ -3,8 +3,11 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import CursorResult
+from sqlalchemy.sql.schema import Table
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -59,7 +62,7 @@ def upsert_chunks(rows: list[dict]) -> int:
     if not rows:
         return 0
 
-    table = RegulationChunkRecord.__table__
+    table = cast(Table, RegulationChunkRecord.__table__)
     statement = insert(table).values(rows)
     statement = statement.on_conflict_do_update(
         index_elements=[table.c.chunk_id],
@@ -74,7 +77,7 @@ def upsert_chunks(rows: list[dict]) -> int:
     )
 
     with SessionLocal.begin() as session:
-        result = session.execute(statement)
+        result = cast(CursorResult, session.execute(statement))
 
     return result.rowcount or 0
 

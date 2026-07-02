@@ -1,6 +1,8 @@
 import logging
+from typing import Any, cast
 
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from app.config.settings import settings
 from app.core.logging import log_structured
@@ -18,7 +20,7 @@ class LLMClient:
             base_url=settings.llm_base_url,
         )
 
-    def chat(self, messages: list[dict], temperature: float = 0.2) -> str:
+    def chat(self, messages: list[dict[str, Any]], temperature: float = 0.2) -> str:
         log_structured(
             self.logger,
             "llm_request_started",
@@ -29,7 +31,7 @@ class LLMClient:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=messages,
+                messages=cast(list[ChatCompletionMessageParam], messages),
                 temperature=temperature,
             )
         except Exception as exc:

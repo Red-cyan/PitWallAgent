@@ -30,4 +30,4 @@ Recent commits use short, imperative Chinese summaries. Keep messages concise an
 
 ## Security & Configuration Tips
 
-Do not commit secrets. Keep local configuration in `.env`, and document new required variables in the PR. Treat `data/regulations/raw` as source assets and avoid rewriting large generated files unless the change requires it.
+Do not commit secrets. Keep local configuration in `.env`, and document new required variables in the PR. For persistent chat history, run Redis with `docker compose up -d redis` and set `SESSION_BACKEND=redis`, `REDIS_URL=redis://localhost:6379/0`, and `SESSION_TTL_SECONDS=604800`. Treat `data/regulations/raw` as source assets and avoid rewriting large generated files unless the change requires it.

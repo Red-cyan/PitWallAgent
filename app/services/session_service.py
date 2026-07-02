@@ -25,15 +25,19 @@ class SessionStore(Protocol):
 
     def get(self, session_id: str) -> ConversationSession | None:
         """按 ID 获取会话。"""
+        ...
 
     def save(self, session: ConversationSession) -> None:
         """保存会话。"""
+        ...
 
     def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
         """列出最近更新的会话。"""
+        ...
 
     def delete(self, session_id: str) -> bool:
         """删除会话。"""
+        ...
 
 
 class RedisClientProtocol(Protocol):
@@ -41,21 +45,31 @@ class RedisClientProtocol(Protocol):
 
     def get(self, key: str) -> str | bytes | None:
         """读取键值。"""
+        ...
 
     def setex(self, key: str, time: int, value: str) -> Any:
         """写入带 TTL 的键值。"""
+        ...
 
     def zadd(self, key: str, mapping: dict[str, float]) -> Any:
         """向有序集合写入分值。"""
+        ...
 
     def zrevrange(self, key: str, start: int, end: int) -> list[str] | list[bytes]:
         """按分值倒序读取有序集合。"""
+        ...
 
     def delete(self, key: str) -> int:
         """删除键。"""
+        ...
 
     def zrem(self, key: str, *members: str) -> int:
         """从有序集合移除成员。"""
+        ...
+
+    def ping(self) -> Any:
+        """检查 Redis 连接。"""
+        ...
 
 
 class InMemorySessionStore:
@@ -177,7 +191,12 @@ class SessionStoreFactory:
         except ImportError as exc:
             raise ImportError("redis package is required when session_backend=redis.") from exc
 
-        return cast(RedisClientProtocol, Redis.from_url(settings.resolved_redis_url, decode_responses=True))
+        client = Redis.from_url(settings.resolved_redis_url, decode_responses=True)
+        try:
+            client.ping()
+        except Exception as exc:
+            raise ConnectionError(f"Unable to connect to Redis session store: {settings.resolved_redis_url}") from exc
+        return cast(RedisClientProtocol, client)
 
 
 class SessionService:

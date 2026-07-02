@@ -35,7 +35,7 @@ def load_target_records(limit: int | None, overwrite: bool) -> list[RegulationCh
         statement = statement.limit(limit)
 
     with SessionLocal() as session:
-        return session.execute(statement).scalars().all()
+        return list(session.execute(statement).scalars().all())
 
 
 def chunk_records(

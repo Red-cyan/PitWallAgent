@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from app.schemas.rules import RetrievedChunk
 
@@ -13,7 +13,7 @@ class NewsArticleCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=512)
     summary: str | None = Field(default=None)
     content: str | None = Field(default=None)
-    article_url: HttpUrl
+    article_url: str
     author: str | None = Field(default=None, max_length=255)
     published_at: datetime | None = Field(default=None)
     tags: list[str] = Field(default_factory=list)

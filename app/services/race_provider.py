@@ -8,20 +8,23 @@ from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, Race
 
 
 class RaceDataProvider(Protocol):
-    """比赛数据提供者接口。"""
+    """Provider interface for F1 schedule and standings data."""
 
     def list_schedule(self, season: int | str) -> list[RaceWeekend]:
-        """获取指定赛季赛历。"""
+        """Return the schedule for a season."""
+        ...
 
     def list_driver_standings(self, season: int | str) -> list[DriverStandingEntry]:
-        """获取车手积分榜。"""
+        """Return driver standings for a season."""
+        ...
 
     def list_constructor_standings(self, season: int | str) -> list[ConstructorStandingEntry]:
-        """获取车队积分榜。"""
+        """Return constructor standings for a season."""
+        ...
 
 
 class StaticRaceDataProvider:
-    """本地种子比赛数据提供者。"""
+    """Local seed provider used when the live race API is unavailable."""
 
     SOURCE = "local_seed"
 
@@ -88,7 +91,7 @@ class StaticRaceDataProvider:
 
 
 class JolpicaRaceDataProvider:
-    """基于 Jolpica / Ergast 兼容接口的比赛数据提供者。"""
+    """Jolpica / Ergast-compatible race data provider."""
 
     SOURCE = "jolpica_api"
     SESSION_KEYS = (
@@ -103,7 +106,7 @@ class JolpicaRaceDataProvider:
     def __init__(
         self,
         base_url: str | None = None,
-        fetch_json: Callable[[str], dict] | None = None,
+        fetch_json: Callable[[str], dict[str, Any]] | None = None,
         fallback_provider: RaceDataProvider | None = None,
     ) -> None:
         self.base_url = (base_url or settings.race_data_base_url).rstrip("/")
@@ -134,7 +137,7 @@ class JolpicaRaceDataProvider:
         except Exception:
             return self.fallback_provider.list_constructor_standings(season)
 
-    def _fetch_json(self, path: str) -> dict:
+    def _fetch_json(self, path: str) -> dict[str, Any]:
         response = httpx.get(
             f"{self.base_url}/{path}",
             timeout=settings.race_request_timeout_seconds,

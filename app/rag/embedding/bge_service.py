@@ -1,13 +1,27 @@
 import os
+from typing import Any, Protocol, cast
 
 from app.config.settings import settings
 from app.rag.embedding.base import EmbeddingService
 
 
+class SentenceTransformerModel(Protocol):
+    def encode(
+        self,
+        sentences: list[str],
+        *,
+        batch_size: int,
+        normalize_embeddings: bool,
+        convert_to_numpy: bool,
+        show_progress_bar: bool,
+    ) -> Any:
+        ...
+
+
 class BgeEmbeddingService(EmbeddingService):
     """基于 BGE-M3 的本地向量服务。"""
 
-    _model_cache: dict[tuple[str, str], object] = {}
+    _model_cache: dict[tuple[str, str], SentenceTransformerModel] = {}
 
     def __init__(self, model_name: str | None = None, device: str | None = None) -> None:
         if settings.hf_token:
@@ -29,7 +43,10 @@ class BgeEmbeddingService(EmbeddingService):
         cache_key = (self.model_name, self.device)
 
         if cache_key not in self._model_cache:
-            self._model_cache[cache_key] = SentenceTransformer(self.model_name, device=self.device)
+            self._model_cache[cache_key] = cast(
+                SentenceTransformerModel,
+                SentenceTransformer(self.model_name, device=self.device),
+            )
 
         self.model = self._model_cache[cache_key]
 
@@ -44,4 +61,4 @@ class BgeEmbeddingService(EmbeddingService):
             convert_to_numpy=True,
             show_progress_bar=False,
         )
-        return embeddings.tolist()
+        return cast(Any, embeddings).tolist()
