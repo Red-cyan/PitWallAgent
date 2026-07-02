@@ -1,3 +1,6 @@
+import logging
+
+from app.core.logging import log_structured
 from app.tools.base import ToolResult
 from app.tools.news_tool import NewsTool
 from app.tools.race_tool import RaceTool
@@ -13,6 +16,7 @@ class ToolDispatcher:
         race_tool: RaceTool | None = None,
         regulation_tool: RegulationTool | None = None,
     ) -> None:
+        self.logger = logging.getLogger("pitwall.dispatcher")
         self.news_tool = news_tool or NewsTool()
         self.race_tool = race_tool or RaceTool()
         self.regulation_tool = regulation_tool or RegulationTool()
@@ -76,27 +80,74 @@ class ToolDispatcher:
         action = plan["action"]
         params = plan.get("params", {})
 
+        log_structured(
+            self.logger,
+            "tool_plan_executing",
+            tool_name=tool_name,
+            action=action,
+        )
+
         if action == "unsupported":
-            return ToolResult(
+            result = ToolResult(
                 tool_name=tool_name,
                 success=False,
                 error=plan.get("error", "Unsupported plan."),
             )
+            log_structured(
+                self.logger,
+                "tool_plan_completed",
+                tool_name=result.tool_name,
+                action=action,
+                success=result.success,
+            )
+            return result
 
         if tool_name == self.news_tool.name:
-            return self.news_tool.invoke(action=action, **params)
+            result = self.news_tool.invoke(action=action, **params)
+            log_structured(
+                self.logger,
+                "tool_plan_completed",
+                tool_name=result.tool_name,
+                action=action,
+                success=result.success,
+            )
+            return result
 
         if tool_name == self.race_tool.name:
-            return self.race_tool.invoke(action=action, **params)
+            result = self.race_tool.invoke(action=action, **params)
+            log_structured(
+                self.logger,
+                "tool_plan_completed",
+                tool_name=result.tool_name,
+                action=action,
+                success=result.success,
+            )
+            return result
 
         if tool_name == self.regulation_tool.name:
-            return self.regulation_tool.invoke(action=action, **params)
+            result = self.regulation_tool.invoke(action=action, **params)
+            log_structured(
+                self.logger,
+                "tool_plan_completed",
+                tool_name=result.tool_name,
+                action=action,
+                success=result.success,
+            )
+            return result
 
-        return ToolResult(
+        result = ToolResult(
             tool_name="dispatcher",
             success=False,
             error=f"Unsupported tool name: {tool_name}",
         )
+        log_structured(
+            self.logger,
+            "tool_plan_completed",
+            tool_name=result.tool_name,
+            action=action,
+            success=result.success,
+        )
+        return result
 
     def dispatch(self, intent: str, message: str) -> ToolResult:
         plan = self.build_plan(intent=intent, message=message)

@@ -1,3 +1,6 @@
+import logging
+
+from app.core.logging import log_structured
 from app.agents.intent_router import IntentRouter
 from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.runtime_graph import LangGraphAgentRuntime
@@ -15,6 +18,7 @@ class AgentService:
         runtime: LangGraphAgentRuntime | None = None,
         response_formatter: AgentResponseFormatter | None = None,
     ) -> None:
+        self.logger = logging.getLogger("pitwall.agent")
         self.intent_router = intent_router or IntentRouter()
         self.tool_dispatcher = tool_dispatcher or ToolDispatcher()
         self.response_formatter = response_formatter or AgentResponseFormatter()
@@ -30,8 +34,23 @@ class AgentService:
             message=message,
             conversation_context=conversation_context,
         )
+        log_structured(
+            self.logger,
+            "agent_query_received",
+            has_fallback_intent=fallback_intent is not None,
+            has_conversation_context=conversation_context is not None,
+        )
         if self.runtime is not None:
-            return self.runtime.run(effective_message, fallback_intent=fallback_intent)
+            response = self.runtime.run(effective_message, fallback_intent=fallback_intent)
+            log_structured(
+                self.logger,
+                "agent_query_completed",
+                intent=response.intent,
+                tool_name=response.tool_name,
+                success=response.success,
+                runtime_mode="langgraph",
+            )
+            return response
 
         intent = self.intent_router.route(effective_message, fallback_intent=fallback_intent)
         result = self.tool_dispatcher.dispatch(intent=intent, message=effective_message)
@@ -43,7 +62,7 @@ class AgentService:
             result=result.payload,
             error=result.error,
         )
-        return AgentQueryResponse(
+        response = AgentQueryResponse(
             intent=intent,
             tool_name=result.tool_name,
             success=result.success,
@@ -51,6 +70,15 @@ class AgentService:
             result=result.payload,
             error=result.error,
         )
+        log_structured(
+            self.logger,
+            "agent_query_completed",
+            intent=response.intent,
+            tool_name=response.tool_name,
+            success=response.success,
+            runtime_mode="fallback",
+        )
+        return response
 
     def _build_default_runtime(self) -> LangGraphAgentRuntime | None:
         try:

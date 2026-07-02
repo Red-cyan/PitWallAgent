@@ -1,3 +1,6 @@
+import logging
+
+from app.core.logging import log_structured
 from app.repositories.rule_repository import RuleRepository
 from app.schemas.rules import (
     Citation,
@@ -17,6 +20,7 @@ class RegulationQAService:
         repository: RuleRepository | None = None,
         llm_client: LLMClient | None = None,
     ) -> None:
+        self.logger = logging.getLogger("pitwall.regulation")
         self.repository = repository or RuleRepository()
         self.llm_client = llm_client
 
@@ -78,13 +82,33 @@ class RegulationQAService:
 
     def _generate_answer(self, question: str, chunks: list[RetrievedChunk]) -> str:
         if not chunks:
+            log_structured(
+                self.logger,
+                "regulation_answer_fallback_used",
+                reason="no_chunks",
+                retrieved_chunk_count=0,
+            )
             return self._build_fallback_answer(question, chunks)
 
         try:
             llm_client = self.llm_client or LLMClient()
             messages = self._build_messages(question, chunks)
-            return llm_client.chat(messages=messages, temperature=0).strip()
-        except Exception:
+            answer = llm_client.chat(messages=messages, temperature=0).strip()
+            log_structured(
+                self.logger,
+                "regulation_answer_generated",
+                mode="llm",
+                retrieved_chunk_count=len(chunks),
+            )
+            return answer
+        except Exception as exc:
+            log_structured(
+                self.logger,
+                "regulation_answer_fallback_used",
+                reason="llm_error",
+                retrieved_chunk_count=len(chunks),
+                error_type=exc.__class__.__name__,
+            )
             return self._build_fallback_answer(question, chunks)
 
     def _build_citations(self, chunks: list[RetrievedChunk]) -> list[Citation]:
@@ -101,6 +125,12 @@ class RegulationQAService:
 
     def ask(self, request: RuleAskRequest) -> RuleAskResponse:
         retrieved_chunks = self.repository.search_relevant_chunks(request.question)
+        log_structured(
+            self.logger,
+            "regulation_retrieval_completed",
+            question_length=len(request.question),
+            retrieved_chunk_count=len(retrieved_chunks),
+        )
         answer = self._generate_answer(request.question, retrieved_chunks)
         citations = self._build_citations(retrieved_chunks)
 
@@ -111,4 +141,11 @@ class RegulationQAService:
         )
 
     def debug_retrieval(self, request: RuleAskRequest) -> RetrievalDebugResponse:
-        return self.repository.debug_retrieval(request.question)
+        response = self.repository.debug_retrieval(request.question)
+        log_structured(
+            self.logger,
+            "regulation_debug_retrieval_completed",
+            question_length=len(request.question),
+            retrieved_chunk_count=len(response.retrieved_chunks),
+        )
+        return response
