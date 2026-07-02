@@ -53,6 +53,10 @@ class StubChatService:
             "data": {"session_id": response.session_id},
         }
         yield {
+            "event": "status",
+            "data": {"session_id": response.session_id, "message": "thinking"},
+        }
+        yield {
             "event": "message_delta",
             "data": {"session_id": response.session_id, "delta": "streamed "},
         }
@@ -247,6 +251,8 @@ def test_chat_stream_routes_request(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
     assert "event: session_started" in response.text
+    assert response.text.index("event: session_started") < response.text.index("event: message_completed")
+    assert "event: status" in response.text
     assert "event: message_delta" in response.text
     assert "event: message_completed" in response.text
 

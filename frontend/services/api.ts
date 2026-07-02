@@ -115,14 +115,15 @@ export async function streamChatMessage(
 function parseSseEvent(rawEvent: string): StreamEvent | null {
   const lines = rawEvent.split("\n");
   const eventLine = lines.find((line) => line.startsWith("event:"));
-  const dataLine = lines.find((line) => line.startsWith("data:"));
+  const dataLines = lines.filter((line) => line.startsWith("data:"));
 
-  if (!eventLine || !dataLine) {
+  if (!eventLine || dataLines.length === 0) {
     return null;
   }
 
   const event = eventLine.replace("event:", "").trim();
-  const data = JSON.parse(dataLine.replace("data:", "").trim()) as StreamEvent["data"];
+  const dataPayload = dataLines.map((line) => line.replace("data:", "").trim()).join("\n");
+  const data = JSON.parse(dataPayload) as StreamEvent["data"];
 
   return { event, data } as StreamEvent;
 }

@@ -19,7 +19,7 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
   background:
     radial-gradient(circle at top left, rgba(203, 75, 22, 0.18), transparent 28%),
     radial-gradient(circle at right 20%, rgba(31, 111, 67, 0.1), transparent 30%),
@@ -29,7 +29,8 @@ body {
 }
 
 body {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 a {
@@ -44,9 +45,11 @@ textarea {
 }
 
 .pitwall-shell {
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   display: grid;
   grid-template-columns: 320px 1fr;
+  overflow: hidden;
 }
 
 .pitwall-sidebar {
@@ -57,12 +60,16 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pitwall-main {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pitwall-header {
@@ -90,9 +97,11 @@ textarea {
 .pitwall-content {
   flex: 1;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 16px;
   padding: 0 28px 24px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pitwall-card {
@@ -139,15 +148,18 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-messages {
+  flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overscroll-behavior: contain;
 }
 
 .message-row {
@@ -188,6 +200,10 @@ textarea {
 .message-markdown {
   line-height: 1.7;
   overflow-wrap: anywhere;
+}
+
+.typing-indicator {
+  color: var(--muted);
 }
 
 .message-markdown p:first-child {
@@ -367,6 +383,7 @@ textarea {
 
   .pitwall-main {
     min-width: 0;
+    height: 100dvh;
   }
 
   .pitwall-header {

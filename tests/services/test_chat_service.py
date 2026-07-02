@@ -112,3 +112,26 @@ def test_chat_service_deletes_session() -> None:
     assert isinstance(result, ChatSessionDeleteResponse)
     assert result.deleted is True
     assert chat_service.get_session("session-a") is None
+
+
+def test_chat_service_streams_session_and_status_before_agent_work() -> None:
+    agent_service = StubAgentService()
+    session_service = SessionService()
+    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+
+    stream = chat_service.stream_chat("下一站比赛是什么？")
+    first_event = next(stream)
+    second_event = next(stream)
+
+    assert first_event["event"] == "session_started"
+    assert second_event["event"] == "status"
+    assert second_event["data"]["message"] == "thinking"
+    assert agent_service.received_fallback_intent is None
+
+    remaining_events = list(stream)
+
+    remaining_event_names = [event["event"] for event in remaining_events]
+    assert remaining_event_names[0] == "message_delta"
+    assert remaining_event_names[-1] == "message_completed"
+    assert "message_delta" in remaining_event_names
+    assert agent_service.received_fallback_intent is None

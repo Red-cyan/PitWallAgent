@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import Iterator
 
 from app.core.logging import log_structured
@@ -71,7 +72,18 @@ class ChatService:
         )
 
     def stream_chat(self, message: str, session_id: str | None = None) -> Iterator[dict]:
-        response = self.handle_chat(message=message, session_id=session_id)
+        session = self.session_service.get_or_create_session(session_id)
+
+        yield {
+            "event": "session_started",
+            "data": {"session_id": session.session_id},
+        }
+        yield {
+            "event": "status",
+            "data": {"session_id": session.session_id, "message": "thinking"},
+        }
+
+        response = self.handle_chat(message=message, session_id=session.session_id)
         full_answer = response.response.final_answer
 
         log_structured(
@@ -81,16 +93,12 @@ class ChatService:
             output_length=len(full_answer),
         )
 
-        yield {
-            "event": "session_started",
-            "data": {"session_id": response.session_id},
-        }
-
         for delta in self._chunk_text(full_answer):
             yield {
                 "event": "message_delta",
                 "data": {"session_id": response.session_id, "delta": delta},
             }
+            time.sleep(0.02)
 
         yield {
             "event": "message_completed",

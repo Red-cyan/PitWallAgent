@@ -53,6 +53,7 @@ export type ChatSessionDeleteResponse = {
 
 export type StreamEvent =
   | { event: "session_started"; data: { session_id: string } }
+  | { event: "status"; data: { session_id: string; message: string } }
   | { event: "message_delta"; data: { session_id: string; delta: string } }
   | { event: "message_completed"; data: ChatResponse }
   | { event: "error"; data: { message: string; error_type?: string } };

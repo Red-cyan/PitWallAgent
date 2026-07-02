@@ -26,7 +26,11 @@ export function MessageBubble({
           {pending ? <span>streaming...</span> : null}
         </div>
         <div className="message-markdown">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.message}</ReactMarkdown>
+          {pending && !turn.message ? (
+            <span className="typing-indicator">思考中...</span>
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.message}</ReactMarkdown>
+          )}
         </div>
         {citations.length > 0 ? (
           <div className="citations">

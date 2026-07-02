@@ -139,6 +139,14 @@ export default function HomePage() {
             }));
           }
 
+          if (eventPayload.event === "status") {
+            setStatusMessage(eventPayload.data.message === "thinking" ? "PitWall 正在思考..." : eventPayload.data.message);
+            setStreamingAssistant((previous) => ({
+              text: previous?.text ?? "",
+              sessionId: eventPayload.data.session_id,
+            }));
+          }
+
           if (eventPayload.event === "message_delta") {
             setStreamingAssistant((previous) => ({
               text: `${previous?.text ?? ""}${eventPayload.data.delta}`,
@@ -191,7 +199,7 @@ export default function HomePage() {
   }
 
   const assistantPreview =
-    streamingAssistant && streamingAssistant.text
+    streamingAssistant
       ? {
           role: "assistant" as const,
           message: streamingAssistant.text,
