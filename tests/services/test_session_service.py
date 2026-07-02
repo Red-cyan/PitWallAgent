@@ -32,6 +32,20 @@ class FakeRedisClient:
             return names[start:]
         return names[start : end + 1]
 
+    def delete(self, key: str) -> int:
+        existed = key in self.values
+        self.values.pop(key, None)
+        return 1 if existed else 0
+
+    def zrem(self, key: str, *members: str) -> int:
+        removed = 0
+        entries = self.sorted_sets.get(key, {})
+        for member in members:
+            if member in entries:
+                del entries[member]
+                removed += 1
+        return removed
+
 
 def test_session_service_creates_session_and_tracks_history() -> None:
     service = SessionService()
@@ -140,3 +154,26 @@ def test_redis_session_store_lists_recent_sessions() -> None:
     assert len(sessions) == 2
     assert sessions[0].session_id == "session-b"
     assert sessions[1].session_id == "session-a"
+
+
+def test_session_service_deletes_session() -> None:
+    service = SessionService(store=InMemorySessionStore())
+    service.append_user_message("session-a", "第一场对话")
+
+    deleted = service.delete_session("session-a")
+
+    assert deleted is True
+    assert service.get_session("session-a") is None
+
+
+def test_redis_session_store_deletes_session_and_index() -> None:
+    client = FakeRedisClient()
+    store = RedisSessionStore(client=client, ttl_seconds=120)
+    service = SessionService(store=store)
+    service.append_user_message("session-a", "第一场对话")
+
+    deleted = service.delete_session("session-a")
+
+    assert deleted is True
+    assert store.get("session-a") is None
+    assert client.sorted_sets[store.SESSION_INDEX_KEY] == {}

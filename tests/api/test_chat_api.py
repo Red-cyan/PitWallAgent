@@ -2,7 +2,14 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.agent import AgentQueryResponse
-from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionListResponse, ChatSessionSummary, ConversationTurn
+from app.schemas.chat import (
+    ChatHistoryResponse,
+    ChatResponse,
+    ChatSessionDeleteResponse,
+    ChatSessionListResponse,
+    ChatSessionSummary,
+    ConversationTurn,
+)
 
 
 class StubChatService:
@@ -81,6 +88,22 @@ class StubChatService:
             ][:limit]
         )
 
+    def get_session(self, session_id: str) -> ChatSessionSummary | None:
+        if session_id == "missing":
+            return None
+        return ChatSessionSummary(
+            session_id=session_id,
+            turn_count=2,
+            last_intent="race",
+            updated_at="2026-07-02T00:00:01Z",
+        )
+
+    def delete_session(self, session_id: str) -> ChatSessionDeleteResponse:
+        return ChatSessionDeleteResponse(
+            session_id=session_id,
+            deleted=session_id != "missing",
+        )
+
 
 def test_chat_routes_request(monkeypatch) -> None:
     from app.api import chat
@@ -132,6 +155,56 @@ def test_chat_sessions_routes_request(monkeypatch) -> None:
     assert len(body["sessions"]) == 2
     assert body["sessions"][0]["session_id"] == "session-002"
     assert response.headers["X-PitWall-Endpoint-Mode"] == "primary"
+
+
+def test_chat_session_routes_request(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.get("/api/chat/session-001")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["session_id"] == "session-001"
+    assert body["last_intent"] == "race"
+
+
+def test_chat_session_returns_404_when_missing(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.get("/api/chat/missing")
+
+    assert response.status_code == 404
+
+
+def test_delete_chat_session_routes_request(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.delete("/api/chat/session-001")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["session_id"] == "session-001"
+    assert body["deleted"] is True
+
+
+def test_delete_chat_session_returns_404_when_missing(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.delete("/api/chat/missing")
+
+    assert response.status_code == 404
 
 
 def test_chat_rejects_empty_message() -> None:

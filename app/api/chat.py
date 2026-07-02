@@ -1,6 +1,13 @@
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 
-from app.schemas.chat import ChatHistoryResponse, ChatRequest, ChatResponse, ChatSessionListResponse
+from app.schemas.chat import (
+    ChatHistoryResponse,
+    ChatRequest,
+    ChatResponse,
+    ChatSessionDeleteResponse,
+    ChatSessionListResponse,
+    ChatSessionSummary,
+)
 from app.services.chat_service import ChatService
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -34,6 +41,36 @@ def list_chat_sessions(
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     return chat_service.list_sessions(limit=limit)
+
+
+@router.get(
+    "/{session_id}",
+    response_model=ChatSessionSummary,
+    summary="Get chat session metadata",
+    description="Fetch metadata for a single chat session.",
+)
+def get_chat_session(session_id: str, response: Response) -> ChatSessionSummary:
+    response.headers["X-PitWall-Endpoint-Mode"] = "primary"
+    response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
+    session = chat_service.get_session(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Chat session not found.")
+    return session
+
+
+@router.delete(
+    "/{session_id}",
+    response_model=ChatSessionDeleteResponse,
+    summary="Delete a chat session",
+    description="Delete a stored chat session and its metadata.",
+)
+def delete_chat_session(session_id: str, response: Response) -> ChatSessionDeleteResponse:
+    response.headers["X-PitWall-Endpoint-Mode"] = "primary"
+    response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
+    result = chat_service.delete_session(session_id)
+    if not result.deleted:
+        raise HTTPException(status_code=404, detail="Chat session not found.")
+    return result
 
 
 @router.get(

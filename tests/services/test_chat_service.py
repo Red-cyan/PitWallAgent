@@ -1,7 +1,10 @@
-from datetime import UTC, datetime
-
 from app.schemas.agent import AgentQueryResponse
-from app.schemas.chat import ChatHistoryResponse, ChatSessionListResponse, ChatSessionSummary, ConversationTurn
+from app.schemas.chat import (
+    ChatHistoryResponse,
+    ChatSessionDeleteResponse,
+    ChatSessionListResponse,
+    ChatSessionSummary,
+)
 from app.services.chat_service import ChatService
 from app.services.session_service import SessionService
 
@@ -83,3 +86,29 @@ def test_chat_service_lists_sessions() -> None:
     assert isinstance(sessions_response, ChatSessionListResponse)
     assert len(sessions_response.sessions) == 2
     assert sessions_response.sessions[0].session_id == "session-b"
+
+
+def test_chat_service_returns_single_session_summary() -> None:
+    agent_service = StubAgentService()
+    session_service = SessionService()
+    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+
+    chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
+    summary = chat_service.get_session("session-a")
+
+    assert isinstance(summary, ChatSessionSummary)
+    assert summary.session_id == "session-a"
+    assert summary.turn_count == 2
+
+
+def test_chat_service_deletes_session() -> None:
+    agent_service = StubAgentService()
+    session_service = SessionService()
+    chat_service = ChatService(agent_service=agent_service, session_service=session_service)
+
+    chat_service.handle_chat("下一站比赛是什么？", session_id="session-a")
+    result = chat_service.delete_session("session-a")
+
+    assert isinstance(result, ChatSessionDeleteResponse)
+    assert result.deleted is True
+    assert chat_service.get_session("session-a") is None

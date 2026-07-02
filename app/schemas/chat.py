@@ -51,3 +51,10 @@ class ChatSessionListResponse(BaseModel):
     """会话列表响应。"""
 
     sessions: list[ChatSessionSummary] = Field(default_factory=list)
+
+
+class ChatSessionDeleteResponse(BaseModel):
+    """会话删除响应。"""
+
+    session_id: str = Field(..., min_length=1)
+    deleted: bool

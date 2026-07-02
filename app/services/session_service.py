@@ -32,6 +32,9 @@ class SessionStore(Protocol):
     def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
         """列出最近更新的会话。"""
 
+    def delete(self, session_id: str) -> bool:
+        """删除会话。"""
+
 
 class RedisClientProtocol(Protocol):
     """Redis 客户端最小协议。"""
@@ -47,6 +50,12 @@ class RedisClientProtocol(Protocol):
 
     def zrevrange(self, key: str, start: int, end: int) -> list[str] | list[bytes]:
         """按分值倒序读取有序集合。"""
+
+    def delete(self, key: str) -> int:
+        """删除键。"""
+
+    def zrem(self, key: str, *members: str) -> int:
+        """从有序集合移除成员。"""
 
 
 class InMemorySessionStore:
@@ -68,6 +77,9 @@ class InMemorySessionStore:
             reverse=True,
         )
         return sessions[:limit]
+
+    def delete(self, session_id: str) -> bool:
+        return self._sessions.pop(session_id, None) is not None
 
 
 class RedisSessionStore:
@@ -116,6 +128,11 @@ class RedisSessionStore:
             if session is not None:
                 sessions.append(session)
         return sessions
+
+    def delete(self, session_id: str) -> bool:
+        removed = self.client.delete(self._build_key(session_id))
+        self.client.zrem(self.SESSION_INDEX_KEY, session_id)
+        return removed > 0
 
     def _build_key(self, session_id: str) -> str:
         return f"{self.KEY_PREFIX}{session_id}"
@@ -177,6 +194,9 @@ class SessionService:
             self.store.save(session)
         return session
 
+    def get_session(self, session_id: str) -> ConversationSession | None:
+        return self.store.get(session_id)
+
     def append_user_message(self, session_id: str, message: str) -> ConversationTurn:
         session = self.get_or_create_session(session_id)
         turn = ConversationTurn(
@@ -205,6 +225,9 @@ class SessionService:
 
     def list_sessions(self, limit: int = 20) -> list[ConversationSession]:
         return self.store.list_sessions(limit=limit)
+
+    def delete_session(self, session_id: str) -> bool:
+        return self.store.delete(session_id)
 
     def get_last_intent(self, session_id: str) -> str | None:
         session = self.store.get(session_id)

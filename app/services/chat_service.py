@@ -1,4 +1,10 @@
-from app.schemas.chat import ChatHistoryResponse, ChatResponse, ChatSessionListResponse, ChatSessionSummary
+from app.schemas.chat import (
+    ChatHistoryResponse,
+    ChatResponse,
+    ChatSessionDeleteResponse,
+    ChatSessionListResponse,
+    ChatSessionSummary,
+)
 from app.services.agent_service import AgentService
 from app.services.context_builder import ContextBuilder
 from app.services.session_service import SessionService
@@ -57,6 +63,16 @@ class ChatService:
                 for session in sessions
             ]
         )
+
+    def get_session(self, session_id: str) -> ChatSessionSummary | None:
+        session = self.session_service.get_session(session_id)
+        if session is None:
+            return None
+        return self._build_summary(session.session_id, list(session.history))
+
+    def delete_session(self, session_id: str) -> ChatSessionDeleteResponse:
+        deleted = self.session_service.delete_session(session_id)
+        return ChatSessionDeleteResponse(session_id=session_id, deleted=deleted)
 
     def _build_summary(self, session_id: str, history: list) -> ChatSessionSummary:
         session = self.session_service.get_or_create_session(session_id)
