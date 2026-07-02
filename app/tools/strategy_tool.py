@@ -3,6 +3,9 @@ from typing import Any
 
 from app.core.logging import log_structured
 from app.schemas.strategy import StrategyAnalysisRequest
+from app.services.knowledge_service import KnowledgeService
+from app.services.news_service import NewsService
+from app.services.race_service import RaceService
 from app.services.strategy import StrategyAnalysisService
 from app.tools.base import ToolResult
 
@@ -15,7 +18,11 @@ class StrategyTool:
 
     def __init__(self, strategy_service: StrategyAnalysisService | None = None) -> None:
         self.logger = logging.getLogger("pitwall.tool.strategy")
-        self.strategy_service = strategy_service or StrategyAnalysisService()
+        self.strategy_service = strategy_service or StrategyAnalysisService(
+            race_service=RaceService(),
+            news_service=NewsService(),
+            knowledge_service=KnowledgeService(),
+        )
 
     def invoke(self, **kwargs: Any) -> ToolResult:
         action = kwargs.get("action")

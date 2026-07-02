@@ -85,6 +85,29 @@ class NewsTool:
                 log_structured(self.logger, "news_tool_completed", action=action, success=result.success)
                 return result
 
+            if action == "get_rules_analysis":
+                article_id = int(kwargs["article_id"])
+                top_k = int(kwargs.get("top_k", 3))
+                analysis = self.news_service.analyze_article_rules(article_id=article_id, top_k=top_k)
+                if analysis is None:
+                    result = ToolResult(
+                        tool_name=self.name,
+                        success=False,
+                        error="News article not found.",
+                    )
+                    log_structured(self.logger, "news_tool_completed", action=action, success=result.success)
+                    return result
+                result = ToolResult(
+                    tool_name=self.name,
+                    success=True,
+                    payload={
+                        "action": action,
+                        "rules_analysis": analysis.model_dump(mode="json"),
+                    },
+                )
+                log_structured(self.logger, "news_tool_completed", action=action, success=result.success)
+                return result
+
             result = ToolResult(
                 tool_name=self.name,
                 success=False,

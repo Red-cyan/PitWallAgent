@@ -1,5 +1,6 @@
+from typing import List
+
 from pydantic import BaseModel
-from typing import List, Optional
 
 class StrategyAdvice(BaseModel):
     decision: str          # e.g. "BOX NOW"

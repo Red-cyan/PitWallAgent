@@ -9,6 +9,7 @@ from app.schemas.rules import (
     RuleAskRequest,
     RuleAskResponse,
 )
+from app.services.knowledge_service import KnowledgeService
 from app.services.llm.client import LLMClient
 
 
@@ -17,11 +18,14 @@ class RegulationQAService:
 
     def __init__(
         self,
+        knowledge_service: KnowledgeService | None = None,
         repository: RuleRepository | None = None,
         llm_client: LLMClient | None = None,
     ) -> None:
         self.logger = logging.getLogger("pitwall.regulation")
-        self.repository = repository or RuleRepository()
+        self.knowledge_service = knowledge_service or KnowledgeService(
+            rule_repository=repository or RuleRepository()
+        )
         self.llm_client = llm_client
 
     def _build_fallback_answer(self, question: str, chunks: list[RetrievedChunk]) -> str:
@@ -116,7 +120,7 @@ class RegulationQAService:
             Citation(
                 document_title=chunk.document_title,
                 article=chunk.article,
-                section=None,
+                section=chunk.section,
                 page=chunk.page,
                 excerpt=chunk.content,
             )
@@ -124,7 +128,7 @@ class RegulationQAService:
         ]
 
     def ask(self, request: RuleAskRequest) -> RuleAskResponse:
-        retrieved_chunks = self.repository.search_relevant_chunks(request.question)
+        retrieved_chunks = self.knowledge_service.retrieve_regulation_chunks(request.question)
         log_structured(
             self.logger,
             "regulation_retrieval_completed",
@@ -141,7 +145,7 @@ class RegulationQAService:
         )
 
     def debug_retrieval(self, request: RuleAskRequest) -> RetrievalDebugResponse:
-        response = self.repository.debug_retrieval(request.question)
+        response = self.knowledge_service.debug_regulation_retrieval(request.question)
         log_structured(
             self.logger,
             "regulation_debug_retrieval_completed",

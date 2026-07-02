@@ -219,6 +219,7 @@ class RuleRepository:
                 score=None,
                 document_title=record.document_title,
                 article=record.article,
+                section=record.section_code,
                 page=record.page,
             )
             for record in records
@@ -273,6 +274,7 @@ class RuleRepository:
                 score=None,
                 document_title=record.document_title,
                 article=record.article,
+                section=record.section_code,
                 page=record.page,
             )
             for record in records

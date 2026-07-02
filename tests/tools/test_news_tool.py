@@ -1,6 +1,13 @@
 from datetime import UTC, datetime
 
-from app.schemas.news import NewsArticleRead, NewsEntity, NewsInsightResponse
+from app.schemas.news import (
+    NewsArticleRead,
+    NewsEntity,
+    NewsInsightResponse,
+    NewsRuleAnalysisResponse,
+    RuleTopicMatch,
+)
+from app.schemas.rules import RetrievedChunk
 from app.tools.news_tool import NewsTool
 
 
@@ -35,12 +42,40 @@ class StubNewsService:
         return NewsInsightResponse(
             article=article,
             category_key="race_control",
-            category_label="赛会控制与处罚",
+            category_label="Race Control",
             summary=article.summary or article.title,
             key_points=[article.summary or article.title],
             entities=[NewsEntity(entity_type="circuit", name="Silverstone")],
             rule_relevance="direct",
-            rule_relevance_reason="新闻直接包含规则或裁判相关术语：red flag",
+            rule_relevance_reason="Matched red flag terminology.",
+        )
+
+    def analyze_article_rules(self, article_id: int, top_k: int = 3) -> NewsRuleAnalysisResponse | None:
+        article = self.get_article_by_id(article_id)
+        if article is None:
+            return None
+        return NewsRuleAnalysisResponse(
+            article=article,
+            matched_topics=[
+                RuleTopicMatch(
+                    topic_key="red_flag",
+                    title="Red Flag Procedure",
+                    reason="matched red flag",
+                )
+            ],
+            suggested_questions=["What is the red flag procedure in Formula 1?"],
+            related_chunks=[
+                RetrievedChunk(
+                    chunk_id="chunk-red-flag",
+                    content="When the race is suspended, red flags will be shown.",
+                    score=12.0,
+                    document_title="FIA 2026 F1 Regulations - Section B [Sporting]",
+                    article="ARTICLE 57",
+                    section="Section B",
+                    page=47,
+                )
+            ],
+            analysis_summary="Rule analysis is available.",
         )
 
 
@@ -70,3 +105,12 @@ def test_news_tool_returns_error_for_missing_article() -> None:
 
     assert result.success is False
     assert result.error == "News article not found."
+
+
+def test_news_tool_returns_rules_analysis() -> None:
+    tool = NewsTool(news_service=StubNewsService())
+
+    result = tool.invoke(action="get_rules_analysis", article_id=1, top_k=2)
+
+    assert result.success is True
+    assert result.payload["rules_analysis"]["matched_topics"][0]["topic_key"] == "red_flag"
