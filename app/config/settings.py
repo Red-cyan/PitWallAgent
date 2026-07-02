@@ -7,6 +7,7 @@ class Settings(BaseSettings):
 
     app_name: str = "PitWall Agent"
     app_log_level: str = "INFO"
+    cors_allow_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     llm_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("LLM_API_KEY", "DEEPSEEK_API_KEY"),
@@ -72,6 +73,14 @@ class Settings(BaseSettings):
 
         password_part = f":{self.redis_password}@" if self.redis_password else ""
         return f"redis://{password_part}{self.redis_host}:{self.redis_port}/{self.redis_db}"
+
+    @property
+    def resolved_cors_allow_origins(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_allow_origins.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()

@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterator
 
 from app.core.logging import log_structured
 from app.schemas.chat import (
@@ -69,6 +70,40 @@ class ChatService:
             session=summary,
         )
 
+    def stream_chat(self, message: str, session_id: str | None = None) -> Iterator[dict]:
+        response = self.handle_chat(message=message, session_id=session_id)
+        full_answer = response.response.final_answer
+
+        log_structured(
+            self.logger,
+            "chat_stream_started",
+            session_id=response.session_id,
+            output_length=len(full_answer),
+        )
+
+        yield {
+            "event": "session_started",
+            "data": {"session_id": response.session_id},
+        }
+
+        for delta in self._chunk_text(full_answer):
+            yield {
+                "event": "message_delta",
+                "data": {"session_id": response.session_id, "delta": delta},
+            }
+
+        yield {
+            "event": "message_completed",
+            "data": response.model_dump(mode="json"),
+        }
+
+        log_structured(
+            self.logger,
+            "chat_stream_completed",
+            session_id=response.session_id,
+            output_length=len(full_answer),
+        )
+
     def get_history(self, session_id: str) -> ChatHistoryResponse:
         session = self.session_service.get_or_create_session(session_id)
         history = self.session_service.get_history(session.session_id)
@@ -133,3 +168,9 @@ class ChatService:
             last_intent=self.session_service.get_last_intent(session_id),
             updated_at=session.updated_at,
         )
+
+    def _chunk_text(self, text: str, chunk_size: int = 24) -> list[str]:
+        if not text:
+            return [""]
+
+        return [text[index : index + chunk_size] for index in range(0, len(text), chunk_size)]

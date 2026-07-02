@@ -1,4 +1,7 @@
+import json
+
 from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 
 from app.schemas.chat import (
     ChatHistoryResponse,
@@ -26,6 +29,37 @@ def chat(request: ChatRequest, response: Response) -> ChatResponse:
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     return chat_service.handle_chat(message=request.message, session_id=request.session_id)
+
+
+@router.post(
+    "/stream",
+    summary="Send a chat message with SSE streaming",
+    description=PRIMARY_ENDPOINT_NOTE,
+)
+def stream_chat(request: ChatRequest) -> StreamingResponse:
+    def event_stream():
+        try:
+            for event in chat_service.stream_chat(
+                message=request.message,
+                session_id=request.session_id,
+            ):
+                yield _format_sse_event(event["event"], event["data"])
+        except Exception as exc:
+            yield _format_sse_event(
+                "error",
+                {"message": str(exc), "error_type": exc.__class__.__name__},
+            )
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-PitWall-Endpoint-Mode": "primary",
+            "X-PitWall-Endpoint-Note": PRIMARY_ENDPOINT_NOTE,
+        },
+    )
 
 
 @router.get(
@@ -83,3 +117,7 @@ def get_chat_history(session_id: str, response: Response) -> ChatHistoryResponse
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     return chat_service.get_history(session_id)
+
+
+def _format_sse_event(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"

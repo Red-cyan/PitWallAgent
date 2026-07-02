@@ -46,6 +46,21 @@ class StubChatService:
             ),
         )
 
+    def stream_chat(self, message: str, session_id: str | None = None):
+        response = self.handle_chat(message=message, session_id=session_id)
+        yield {
+            "event": "session_started",
+            "data": {"session_id": response.session_id},
+        }
+        yield {
+            "event": "message_delta",
+            "data": {"session_id": response.session_id, "delta": "streamed "},
+        }
+        yield {
+            "event": "message_completed",
+            "data": response.model_dump(mode="json"),
+        }
+
     def get_history(self, session_id: str) -> ChatHistoryResponse:
         return ChatHistoryResponse(
             session=ChatSessionSummary(
@@ -216,3 +231,36 @@ def test_chat_rejects_empty_message() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_chat_stream_routes_request(monkeypatch) -> None:
+    from app.api import chat
+
+    monkeypatch.setattr(chat, "chat_service", StubChatService())
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/chat/stream",
+        json={"message": "Who leads the championship?"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: session_started" in response.text
+    assert "event: message_delta" in response.text
+    assert "event: message_completed" in response.text
+
+
+def test_chat_stream_allows_cors_preflight() -> None:
+    client = TestClient(app)
+
+    response = client.options(
+        "/api/chat/stream",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
