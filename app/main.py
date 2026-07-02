@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 
 from app.api.router import router
+from app.core.logging import configure_logging
+from app.middleware.access_log import AccessLogMiddleware
+from app.middleware.request_context import RequestContextMiddleware
+
+configure_logging()
 
 app = FastAPI(
     title="PitWall Agent",
@@ -12,4 +17,6 @@ app = FastAPI(
     ),
 )
 
+app.add_middleware(AccessLogMiddleware)
+app.add_middleware(RequestContextMiddleware)
 app.include_router(router)

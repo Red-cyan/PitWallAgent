@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     """项目运行配置。"""
 
     app_name: str = "PitWall Agent"
+    app_log_level: str = "INFO"
     llm_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("LLM_API_KEY", "DEEPSEEK_API_KEY"),
