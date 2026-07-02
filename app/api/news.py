@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.schemas.news import NewsArticleRead
+from app.schemas.news import NewsArticleRead, NewsInsightResponse, NewsRuleAnalysisResponse
 from app.services.news_service import NewsService
 
 router = APIRouter(prefix="/api/news", tags=["news"])
@@ -19,3 +19,24 @@ def get_news_article(article_id: int) -> NewsArticleRead:
         raise HTTPException(status_code=404, detail="News article not found.")
 
     return article
+
+
+@router.get("/{article_id}/insights", response_model=NewsInsightResponse)
+def get_news_article_insights(article_id: int) -> NewsInsightResponse:
+    insights = news_service.get_article_insights(article_id)
+    if insights is None:
+        raise HTTPException(status_code=404, detail="News article not found.")
+
+    return insights
+
+
+@router.get("/{article_id}/rules-analysis", response_model=NewsRuleAnalysisResponse)
+def analyze_news_article_rules(
+    article_id: int,
+    top_k: int = Query(default=3, ge=1, le=10),
+) -> NewsRuleAnalysisResponse:
+    analysis = news_service.analyze_article_rules(article_id=article_id, top_k=top_k)
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="News article not found.")
+
+    return analysis

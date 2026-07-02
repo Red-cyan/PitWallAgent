@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from app.schemas.rules import RetrievedChunk
+
 
 class NewsArticleCreate(BaseModel):
     """新闻文章创建请求。"""
@@ -70,3 +72,41 @@ class NewsArticleRead(BaseModel):
             published_at=self.published_at,
             tags=self.tags if tags is None else tags,
         )
+
+
+class NewsEntity(BaseModel):
+    """新闻实体。"""
+
+    entity_type: str = Field(..., description="Entity type, such as driver, team, circuit, or topic.")
+    name: str = Field(..., min_length=1, description="Normalized entity name.")
+
+
+class NewsInsightResponse(BaseModel):
+    """新闻独立分析结果。"""
+
+    article: NewsArticleRead
+    category_key: str = Field(..., min_length=1)
+    category_label: str = Field(..., min_length=1)
+    summary: str = Field(..., min_length=1)
+    key_points: list[str] = Field(default_factory=list)
+    entities: list[NewsEntity] = Field(default_factory=list)
+    rule_relevance: str = Field(..., description="none, possible, or direct")
+    rule_relevance_reason: str = Field(..., min_length=1)
+
+
+class RuleTopicMatch(BaseModel):
+    """新闻匹配到的规则主题。"""
+
+    topic_key: str
+    title: str
+    reason: str
+
+
+class NewsRuleAnalysisResponse(BaseModel):
+    """新闻与规则联动分析结果。"""
+
+    article: NewsArticleRead
+    matched_topics: list[RuleTopicMatch] = Field(default_factory=list)
+    suggested_questions: list[str] = Field(default_factory=list)
+    related_chunks: list[RetrievedChunk] = Field(default_factory=list)
+    analysis_summary: str = Field(..., min_length=1)
