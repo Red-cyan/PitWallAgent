@@ -5,7 +5,7 @@ from typing import Any
 
 
 class AgentResponseFormatter:
-    """统一生成 Agent 的最终回答。"""
+    """Build the final user-facing answer."""
 
     POSITION_PATTERNS = (
         ("第一名", 1),
@@ -39,6 +39,61 @@ class AgentResponseFormatter:
         ("5th", 5),
         ("fifth", 5),
     )
+    FULL_LIST_KEYWORDS = (
+        "完整",
+        "全部",
+        "所有",
+        "全体",
+        "full",
+        "complete",
+        "entire",
+        "whole",
+    )
+    DRIVER_ALIASES = {
+        "维斯塔潘": "Max Verstappen",
+        "max verstappen": "Max Verstappen",
+        "verstappen": "Max Verstappen",
+        "诺里斯": "Lando Norris",
+        "norris": "Lando Norris",
+        "勒克莱尔": "Charles Leclerc",
+        "leclerc": "Charles Leclerc",
+        "拉塞尔": "George Russell",
+        "george russell": "George Russell",
+        "russell": "George Russell",
+        "汉密尔顿": "Lewis Hamilton",
+        "hamilton": "Lewis Hamilton",
+        "安东内利": "Andrea Kimi Antonelli",
+        "antonelli": "Andrea Kimi Antonelli",
+        "kimi antonelli": "Andrea Kimi Antonelli",
+        "皮亚斯特里": "Oscar Piastri",
+        "piastri": "Oscar Piastri",
+        "阿隆索": "Fernando Alonso",
+        "alonso": "Fernando Alonso",
+        "塞恩斯": "Carlos Sainz",
+        "sainz": "Carlos Sainz",
+    }
+    TEAM_ALIASES = {
+        "红牛": "Red Bull",
+        "red bull": "Red Bull",
+        "梅奔": "Mercedes",
+        "奔驰": "Mercedes",
+        "mercedes": "Mercedes",
+        "法拉利": "Ferrari",
+        "ferrari": "Ferrari",
+        "迈凯伦": "McLaren",
+        "mclaren": "McLaren",
+        "威廉姆斯": "Williams",
+        "williams": "Williams",
+        "阿斯顿马丁": "Aston Martin",
+        "aston martin": "Aston Martin",
+        "哈斯": "Haas",
+        "haas": "Haas",
+        "索伯": "Audi",
+        "奥迪": "Audi",
+        "audi": "Audi",
+        "alpine": "Alpine",
+        "rb": "RB",
+    }
 
     def build(
         self,
@@ -74,6 +129,13 @@ class AgentResponseFormatter:
         if intent == "strategy":
             return self._build_strategy_answer(result=result)
 
+        if intent == "general":
+            response = result.get("response", {})
+            answer = response.get("answer")
+            if answer:
+                return answer
+            return "已完成通用问答。"
+
         return "已完成请求处理。"
 
     def _build_race_answer(self, *, message: str, result: dict[str, Any]) -> str:
@@ -86,6 +148,21 @@ class AgentResponseFormatter:
 
         standings = result.get("standings", [])
         if standings:
+            if self._wants_full_standings(message):
+                return self._format_full_standings(standings)
+
+            subject_entry = self._find_subject_entry(message, standings)
+            if subject_entry is not None:
+                if "driver_name" in subject_entry:
+                    return (
+                        f"{subject_entry['driver_name']} 当前排在车手积分榜第 {subject_entry['position']} 名，"
+                        f"所属车队 {subject_entry['team_name']}，积分 {subject_entry['points']}。"
+                    )
+                return (
+                    f"{subject_entry['team_name']} 当前排在车队积分榜第 {subject_entry['position']} 名，"
+                    f"积分 {subject_entry['points']}。"
+                )
+
             requested_position = self._extract_requested_position(message)
             entry = self._select_standing_entry(standings, requested_position)
             actual_position = entry.get("position", requested_position)
@@ -125,6 +202,89 @@ class AgentResponseFormatter:
             return answer
 
         return "已完成策略分析。"
+
+    def _wants_full_standings(self, message: str) -> bool:
+        lowered = message.lower()
+        has_standings_keyword = any(token in message for token in ("积分榜", "排名", "standings"))
+        return has_standings_keyword and any(token in lowered or token in message for token in self.FULL_LIST_KEYWORDS)
+
+    def _format_full_standings(self, standings: list[dict[str, Any]]) -> str:
+        if not standings:
+            return "当前没有可用的积分榜数据。"
+
+        if "driver_name" in standings[0]:
+            lines = [
+                f"{entry['position']}. {entry['driver_name']} | {entry['team_name']} | {entry['points']}分"
+                for entry in standings
+            ]
+            return "当前完整车手积分榜：\n" + "\n".join(lines)
+
+        lines = [
+            f"{entry['position']}. {entry['team_name']} | {entry['points']}分"
+            for entry in standings
+        ]
+        return "当前完整车队积分榜：\n" + "\n".join(lines)
+
+    def _find_subject_entry(
+        self,
+        message: str,
+        standings: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        if not standings:
+            return None
+
+        is_driver_standings = "driver_name" in standings[0]
+        direct_entry = self._match_entry_in_text(message, standings, is_driver_standings=is_driver_standings)
+        if direct_entry is not None:
+            return direct_entry
+
+        lines = [line.strip() for line in message.splitlines() if line.strip()]
+        if len(lines) <= 1:
+            return None
+
+        for line in reversed(lines[:-1]):
+            matched = self._match_entry_in_text(line, standings, is_driver_standings=is_driver_standings)
+            if matched is not None:
+                return matched
+
+        return None
+
+    def _match_entry_in_text(
+        self,
+        text: str,
+        standings: list[dict[str, Any]],
+        *,
+        is_driver_standings: bool,
+    ) -> dict[str, Any] | None:
+        normalized = text.lower()
+
+        for entry in standings:
+            if is_driver_standings:
+                driver_name = entry["driver_name"]
+                if driver_name.lower() in normalized:
+                    return entry
+                if self._matches_alias(normalized, driver_name, self.DRIVER_ALIASES):
+                    return entry
+            else:
+                team_name = entry["team_name"]
+                if team_name.lower() in normalized:
+                    return entry
+                if self._matches_alias(normalized, team_name, self.TEAM_ALIASES):
+                    return entry
+
+        return None
+
+    def _matches_alias(
+        self,
+        normalized_text: str,
+        canonical_name: str,
+        aliases: dict[str, str],
+    ) -> bool:
+        canonical_lower = canonical_name.lower()
+        for alias, mapped_name in aliases.items():
+            if alias in normalized_text and mapped_name.lower() in canonical_lower:
+                return True
+        return False
 
     def _select_standing_entry(
         self,

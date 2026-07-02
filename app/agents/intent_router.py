@@ -1,17 +1,15 @@
 class IntentRouter:
-    """基于规则的最小意图路由器。"""
-
     NEWS_KEYWORDS = (
         "news",
         "today",
         "paddock",
         "headline",
         "latest",
-        "新闻",
-        "今天",
-        "围场",
-        "动态",
-        "消息",
+        "\u65b0\u95fb",
+        "\u4eca\u5929",
+        "\u56f4\u573a",
+        "\u52a8\u6001",
+        "\u6d88\u606f",
     )
     STRATEGY_KEYWORDS = (
         "strategy",
@@ -23,13 +21,12 @@ class IntentRouter:
         "track position",
         "box now",
         "should pit",
-        "策略",
-        "进站",
-        "undercut",
-        "overcut",
-        "赛道位置",
-        "是否该进站",
-        "该不该进站",
+        "\u7b56\u7565",
+        "\u8fdb\u7ad9",
+        "\u8fdb\u5751",
+        "\u8d5b\u9053\u4f4d\u7f6e",
+        "\u662f\u5426\u8be5\u8fdb\u7ad9",
+        "\u8be5\u4e0d\u8be5\u8fdb\u7ad9",
     )
     RACE_KEYWORDS = (
         "schedule",
@@ -42,20 +39,31 @@ class IntentRouter:
         "standings",
         "championship",
         "drivers",
+        "driver",
         "constructors",
-        "赛程",
-        "赛历",
-        "比赛",
-        "大奖赛",
-        "积分榜",
-        "积分",
-        "车手榜",
-        "车队榜",
-        "车手排名",
-        "车队排名",
-        "下一站",
-        "上一站",
-        "排位",
+        "constructor",
+        "team",
+        "teams",
+        "leader",
+        "leading",
+        "who leads",
+        "who is first",
+        "\u8d5b\u7a0b",
+        "\u8d5b\u5386",
+        "\u6bd4\u8d5b",
+        "\u5927\u5956\u8d5b",
+        "\u79ef\u5206\u699c",
+        "\u79ef\u5206",
+        "\u8f66\u624b",
+        "\u8f66\u961f",
+        "\u6392\u540d",
+        "\u699c\u9996",
+        "\u7b2c\u4e00\u540d",
+        "\u9886\u8dd1",
+        "\u9886\u5148",
+        "\u4e0b\u4e00\u7ad9",
+        "\u4e0a\u4e00\u7ad9",
+        "\u6392\u4f4d",
     )
     REGULATION_KEYWORDS = (
         "regulation",
@@ -68,22 +76,22 @@ class IntentRouter:
         "vsc",
         "plank",
         "technical directive",
-        "规则",
-        "条例",
-        "红旗",
-        "黄旗",
-        "安全车",
-        "虚拟安全车",
-        "封闭维修区",
-        "底板",
-        "技术规则",
-        "比赛规则",
+        "\u89c4\u5219",
+        "\u6761\u4f8b",
+        "\u7ea2\u65d7",
+        "\u9ec4\u65d7",
+        "\u5b89\u5168\u8f66",
+        "\u865a\u62df\u5b89\u5168\u8f66",
+        "\u5c01\u95ed\u7ef4\u4fee\u533a",
+        "\u5e95\u677f",
+        "\u6280\u672f\u89c4\u5219",
+        "\u6bd4\u8d5b\u89c4\u5219",
     )
     FOLLOW_UP_KEYWORDS = (
-        "那呢",
-        "然后呢",
-        "这个呢",
-        "那个呢",
+        "\u90a3\u5462",
+        "\u7136\u540e\u5462",
+        "\u8fd9\u4e2a\u5462",
+        "\u90a3\u4e2a\u5462",
         "what about",
         "how about",
         "and that",
@@ -91,7 +99,7 @@ class IntentRouter:
     )
 
     def route(self, message: str, fallback_intent: str | None = None) -> str:
-        normalized = message.lower()
+        normalized = message.lower().strip()
 
         if self._contains_any(normalized, self.STRATEGY_KEYWORDS):
             return "strategy"
@@ -105,20 +113,28 @@ class IntentRouter:
         if self._contains_any(normalized, self.NEWS_KEYWORDS):
             return "news"
 
-        if fallback_intent and self._looks_like_follow_up(normalized):
+        if fallback_intent and self.looks_like_follow_up(normalized):
             return fallback_intent
 
-        return "news"
+        return "general"
 
-    def _contains_any(self, message: str, keywords: tuple[str, ...]) -> bool:
-        return any(keyword in message for keyword in keywords)
-
-    def _looks_like_follow_up(self, message: str) -> bool:
-        stripped = message.strip()
-        if stripped in {"呢", "然后", "然后呢", "那", "那呢", "这个", "那个"}:
+    def looks_like_follow_up(self, message: str) -> bool:
+        stripped = message.strip().lower()
+        if stripped in {
+            "\u5462",
+            "\u7136\u540e",
+            "\u7136\u540e\u5462",
+            "\u90a3",
+            "\u90a3\u5462",
+            "\u8fd9\u4e2a",
+            "\u90a3\u4e2a",
+        }:
             return True
 
-        if len(stripped) <= 12 and "呢" in stripped:
+        if len(stripped) <= 12 and "\u5462" in stripped:
             return True
 
         return any(keyword in stripped for keyword in self.FOLLOW_UP_KEYWORDS)
+
+    def _contains_any(self, message: str, keywords: tuple[str, ...]) -> bool:
+        return any(keyword in message for keyword in keywords)

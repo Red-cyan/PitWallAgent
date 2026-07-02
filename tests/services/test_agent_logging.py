@@ -6,12 +6,22 @@ from app.services.agent_service import AgentService
 
 
 class StubIntentRouter:
-    def route(self, message: str, fallback_intent: str | None = None) -> str:
-        return "race"
+    def looks_like_follow_up(self, message: str) -> bool:
+        return False
+
+
+class StubPlanner:
+    def plan(self, message: str, fallback_intent: str | None = None) -> dict:
+        return {
+            "intent": "race",
+            "tool_name": "race_tool",
+            "action": "get_driver_standings",
+            "params": {},
+        }
 
 
 class StubToolDispatcher:
-    def dispatch(self, intent: str, message: str):
+    def execute_plan(self, plan: dict):
         class Result:
             tool_name = "race_tool"
             success = True
@@ -45,6 +55,7 @@ class StubRuntime:
 def test_agent_service_emits_structured_logs_for_fallback_path(caplog) -> None:
     service = AgentService(
         intent_router=StubIntentRouter(),
+        planner=StubPlanner(),
         tool_dispatcher=StubToolDispatcher(),
         runtime=None,
     )
@@ -63,6 +74,7 @@ def test_agent_service_emits_structured_logs_for_fallback_path(caplog) -> None:
 def test_agent_service_emits_structured_logs_for_runtime_path(caplog) -> None:
     service = AgentService(
         intent_router=StubIntentRouter(),
+        planner=StubPlanner(),
         tool_dispatcher=StubToolDispatcher(),
         runtime=StubRuntime(),
     )

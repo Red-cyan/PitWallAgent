@@ -1,6 +1,7 @@
 from typing import Any, TypedDict
 
 from app.agents.intent_router import IntentRouter
+from app.agents.planner import LLMQueryPlanner
 from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.tool_dispatcher import ToolDispatcher
 from app.schemas.agent import AgentQueryResponse
@@ -26,11 +27,16 @@ class LangGraphAgentRuntime:
     def __init__(
         self,
         intent_router: IntentRouter | None = None,
+        planner: LLMQueryPlanner | None = None,
         tool_dispatcher: ToolDispatcher | None = None,
         response_formatter: AgentResponseFormatter | None = None,
     ) -> None:
         self.intent_router = intent_router or IntentRouter()
         self.tool_dispatcher = tool_dispatcher or ToolDispatcher()
+        self.planner = planner or LLMQueryPlanner(
+            intent_router=self.intent_router,
+            tool_dispatcher=self.tool_dispatcher,
+        )
         self.response_formatter = response_formatter or AgentResponseFormatter()
         self.graph = self._build_graph()
 
@@ -68,13 +74,18 @@ class LangGraphAgentRuntime:
     def _classify_intent_node(self, state: AgentState) -> AgentState:
         message = state["message"]
         fallback_intent = state.get("fallback_intent")
-        intent = self.intent_router.route(message, fallback_intent=fallback_intent)
-        return {"message": message, "fallback_intent": fallback_intent, "intent": intent}
+        tool_plan = self.planner.plan(message, fallback_intent=fallback_intent)
+        return {
+            "message": message,
+            "fallback_intent": fallback_intent,
+            "intent": tool_plan["intent"],
+            "tool_plan": tool_plan,
+        }
 
     def _plan_tool_node(self, state: AgentState) -> AgentState:
         message = state["message"]
         intent = state["intent"]
-        tool_plan = self.tool_dispatcher.build_plan(intent=intent, message=message)
+        tool_plan = state.get("tool_plan") or self.tool_dispatcher.build_plan(intent=intent, message=message)
         return {
             "message": message,
             "fallback_intent": state.get("fallback_intent"),

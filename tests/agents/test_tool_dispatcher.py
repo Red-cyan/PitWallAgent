@@ -40,11 +40,25 @@ class StubRegulationTool:
         return Result()
 
 
+class StubGeneralTool:
+    name = "general_tool"
+
+    def invoke(self, **kwargs):
+        class Result:
+            tool_name = "general_tool"
+            success = True
+            payload = kwargs
+            error = None
+
+        return Result()
+
+
 def build_dispatcher() -> ToolDispatcher:
     return ToolDispatcher(
         news_tool=StubNewsTool(),
         race_tool=StubRaceTool(),
         regulation_tool=StubRegulationTool(),
+        general_tool=StubGeneralTool(),
     )
 
 
@@ -73,6 +87,25 @@ def test_tool_dispatcher_builds_race_plan_for_previous_race() -> None:
 
     assert plan["tool_name"] == "race_tool"
     assert plan["action"] == "get_previous_race"
+
+
+def test_tool_dispatcher_builds_race_plan_for_constructor_leader_question() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="race", message="现在哪只车队是第一名")
+
+    assert plan["tool_name"] == "race_tool"
+    assert plan["action"] == "get_constructor_standings"
+
+
+def test_tool_dispatcher_builds_general_plan() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="general", message="你好")
+
+    assert plan["tool_name"] == "general_tool"
+    assert plan["action"] == "answer"
+    assert plan["params"]["question"] == "你好"
 
 
 def test_tool_dispatcher_executes_regulation_plan() -> None:

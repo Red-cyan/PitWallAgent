@@ -43,11 +43,25 @@ class StubRegulationTool:
         return Result()
 
 
+class StubGeneralTool:
+    name = "general_tool"
+
+    def invoke(self, **kwargs):
+        class Result:
+            tool_name = "general_tool"
+            success = True
+            payload = kwargs
+            error = None
+
+        return Result()
+
+
 def test_tool_dispatcher_emits_structured_logs(caplog) -> None:
     dispatcher = ToolDispatcher(
         news_tool=StubNewsTool(),
         race_tool=StubRaceTool(),
         regulation_tool=StubRegulationTool(),
+        general_tool=StubGeneralTool(),
     )
     plan = {
         "tool_name": "race_tool",

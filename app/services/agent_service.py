@@ -2,6 +2,7 @@ import logging
 
 from app.core.logging import log_structured
 from app.agents.intent_router import IntentRouter
+from app.agents.planner import LLMQueryPlanner
 from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.runtime_graph import LangGraphAgentRuntime
 from app.agents.tool_dispatcher import ToolDispatcher
@@ -14,6 +15,7 @@ class AgentService:
     def __init__(
         self,
         intent_router: IntentRouter | None = None,
+        planner: LLMQueryPlanner | None = None,
         tool_dispatcher: ToolDispatcher | None = None,
         runtime: LangGraphAgentRuntime | None = None,
         response_formatter: AgentResponseFormatter | None = None,
@@ -21,6 +23,10 @@ class AgentService:
         self.logger = logging.getLogger("pitwall.agent")
         self.intent_router = intent_router or IntentRouter()
         self.tool_dispatcher = tool_dispatcher or ToolDispatcher()
+        self.planner = planner or LLMQueryPlanner(
+            intent_router=self.intent_router,
+            tool_dispatcher=self.tool_dispatcher,
+        )
         self.response_formatter = response_formatter or AgentResponseFormatter()
         self.runtime = runtime or self._build_default_runtime()
 
@@ -52,10 +58,11 @@ class AgentService:
             )
             return response
 
-        intent = self.intent_router.route(effective_message, fallback_intent=fallback_intent)
-        result = self.tool_dispatcher.dispatch(intent=intent, message=effective_message)
+        tool_plan = self.planner.plan(effective_message, fallback_intent=fallback_intent)
+        intent = tool_plan["intent"]
+        result = self.tool_dispatcher.execute_plan(tool_plan)
         final_answer = self.response_formatter.build(
-            message=message,
+            message=effective_message,
             intent=intent,
             tool_name=result.tool_name,
             success=result.success,
@@ -84,6 +91,7 @@ class AgentService:
         try:
             return LangGraphAgentRuntime(
                 intent_router=self.intent_router,
+                planner=self.planner,
                 tool_dispatcher=self.tool_dispatcher,
                 response_formatter=self.response_formatter,
             )
@@ -93,5 +101,6 @@ class AgentService:
     def _build_effective_message(self, *, message: str, conversation_context: str | None) -> str:
         if not conversation_context:
             return message
-
+        if not self.intent_router.looks_like_follow_up(message):
+            return message
         return f"{conversation_context}\nUser: {message}"
