@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     race_data_base_url: str = "https://api.jolpi.ca/ergast/f1"
     race_request_timeout_seconds: float = 10.0
     race_default_season: str = "current"
+    session_backend: str = "memory"
+    session_history_max_turns: int = 20
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "pitwall"
