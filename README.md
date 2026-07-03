@@ -77,10 +77,18 @@ SESSION_TTL_SECONDS=604800
 uv run ruff check .
 uv run pyright
 uv run pytest
+uv run python scripts/run_agent_eval.py
 cd frontend && npm run build
 ```
 
-当前目标是四项全部通过。`pytest` 覆盖 API、服务、工具、Agent runtime、RAG 检索、日志和 50 条 golden eval case。
+当前目标是后端 lint、类型检查、pytest、Agent eval 和前端 build 全部通过。`pytest` 覆盖 API、服务、工具、Agent runtime、RAG 检索、日志和 golden eval case；`scripts/run_agent_eval.py` 从 `data/evals/agent_cases.jsonl` 读取同一批样例并输出 intent/tool/action/answer/evidence/latency 指标。
+
+## 当前优化重点
+
+- Agent 质量评估：`data/evals/agent_cases.jsonl` 是 pytest golden test 和独立 eval script 的共同数据源。
+- RAG overview：规则问答会区分 `fact_lookup`、`section_overview`、`document_overview`，用于回答 `SectionA讲了什么内容`、`F1的大体规则是什么样的` 等概览问题。
+- 前端可观测性：最后一条 assistant 回答带默认折叠的“调试 / 证据”面板，展示 intent、tool、action、answer status、confidence、evidence、latency、citations 和 retrieved chunks。
+- 面试材料：中文讲解见 `docs/cn/03_Interview_Guide_zh.md`。
 
 ## 诊断接口
 

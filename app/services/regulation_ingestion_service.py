@@ -54,6 +54,9 @@ class SqlAlchemyRegulationChunkStore:
                 embedding = embeddings[index] if embeddings is not None else None
                 metadata = {
                     "page_number": chunk.page_number,
+                    "page_start": chunk.page_start or chunk.page_number,
+                    "page_end": chunk.page_end or chunk.page_number,
+                    "heading_path": chunk.heading_path,
                     "chunk_index": chunk.chunk_index,
                     "source_path": chunk.source_path,
                 }

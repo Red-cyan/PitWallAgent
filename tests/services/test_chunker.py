@@ -26,6 +26,9 @@ def test_chunker_extracts_document_metadata_and_article() -> None:
     assert chunks[0].section_code == "Section B"
     assert chunks[0].article == "B5.14"
     assert chunks[0].page_number == 7
+    assert chunks[0].page_start == 7
+    assert chunks[0].page_end == 7
+    assert chunks[0].heading_path == ["Section B", "B5.14"]
     assert chunks[0].chunk_index == 1
     assert chunks[0].source_path == "data/regulations/raw/section-b.pdf"
     assert chunks[0].chunk_id.startswith("fia-2026-f1-regulations-section-b-sporting")

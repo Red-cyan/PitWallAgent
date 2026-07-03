@@ -5,6 +5,7 @@ export type AgentResponse = {
   final_answer: string;
   result: Record<string, unknown>;
   error: string | null;
+  trace?: AgentTrace;
 };
 
 export type ConversationTurn = {
@@ -28,6 +29,31 @@ export type Citation = {
   section?: string | null;
   page?: number | null;
   excerpt?: string | null;
+};
+
+export type RetrievedChunk = {
+  chunk_id?: string;
+  content?: string;
+  score?: number | null;
+  document_title?: string;
+  article?: string | null;
+  section?: string | null;
+  page?: number | null;
+  heading_path?: string[];
+};
+
+export type AgentTrace = {
+  intent?: string;
+  tool_name?: string;
+  action?: string;
+  answer_status?: string;
+  confidence?: string | null;
+  evidence_count?: number;
+  source_mode?: string | null;
+  query_type?: string | null;
+  citations?: Citation[];
+  retrieved_chunks?: RetrievedChunk[];
+  latency_ms_by_stage?: Record<string, number>;
 };
 
 export type ChatResponse = {

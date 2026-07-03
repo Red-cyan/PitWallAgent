@@ -12,7 +12,7 @@ import {
   sendChatMessage,
   streamChatMessage,
 } from "@/services/api";
-import { ChatResponse, ChatSessionSummary, Citation, ConversationTurn } from "@/types/chat";
+import { AgentTrace, ChatResponse, ChatSessionSummary, Citation, ConversationTurn } from "@/types/chat";
 
 type StreamingAssistantState = {
   text: string;
@@ -28,6 +28,10 @@ function extractCitations(response: ChatResponse | null): Citation[] {
     response?: { citations?: Citation[] };
   };
   return result.response?.citations ?? [];
+}
+
+function extractTrace(response: ChatResponse | null): AgentTrace | null {
+  return response?.response.trace ?? null;
 }
 
 export default function HomePage() {
@@ -274,6 +278,7 @@ export default function HomePage() {
                       key={`${turn.created_at}-${index}`}
                       turn={turn}
                       citations={isLastAssistant ? extractCitations(completedResponse) : []}
+                      trace={isLastAssistant ? extractTrace(completedResponse) : null}
                     />
                   );
                 })}

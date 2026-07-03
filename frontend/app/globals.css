@@ -245,6 +245,60 @@ textarea {
   font-size: 0.82rem;
 }
 
+.citation-excerpt {
+  max-height: 7.5rem;
+  overflow: hidden;
+}
+
+.trace-panel {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.trace-panel summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.trace-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.trace-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.5);
+  min-width: 0;
+}
+
+.trace-item span,
+.trace-section-title {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.trace-item strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.trace-section {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
 .composer {
   padding: 18px;
 }

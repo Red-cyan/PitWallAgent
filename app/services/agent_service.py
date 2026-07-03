@@ -93,6 +93,9 @@ class AgentService:
                 "confidence": response_payload.get("confidence") or result.payload.get("confidence"),
                 "evidence_count": response_payload.get("evidence_count") or result.payload.get("evidence_count", 0),
                 "source_mode": response_payload.get("source_mode") or result.payload.get("source_mode"),
+                "query_type": response_payload.get("query_type") or result.payload.get("query_type"),
+                "citations": response_payload.get("citations") or result.payload.get("citations", []),
+                "retrieved_chunks": response_payload.get("retrieved_chunks") or result.payload.get("retrieved_chunks", []),
             },
         )
         response.trace = self._with_latency_trace(response.trace, started_at)

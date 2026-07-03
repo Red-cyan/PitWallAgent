@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 from typing import Any, cast
 
 from app.agents.intent_router import IntentRouter
@@ -93,6 +95,8 @@ class EvalToolDispatcher(ToolDispatcher):
                             {"position": 1, "team_name": "Mercedes", "points": 302},
                             {"position": 2, "team_name": "Ferrari", "points": 204},
                             {"position": 3, "team_name": "McLaren", "points": 159},
+                            {"position": 4, "team_name": "Red Bull", "points": 115},
+                            {"position": 5, "team_name": "Williams", "points": 64},
                         ],
                     }
                 )
@@ -110,6 +114,38 @@ class EvalToolDispatcher(ToolDispatcher):
                             "evidence_count": 0,
                             "source_mode": "regulation_rag",
                             "citations": [],
+                        },
+                    }
+                )
+            if "SectionA" in question or "Section A" in question:
+                return Result(
+                    {
+                        "action": action,
+                        "response": {
+                            "answer": "Section A 是 General Provisions，主要讲锦标赛治理、适用原则和总体合规框架。",
+                            "answer_status": "answered",
+                            "confidence": "medium",
+                            "evidence_count": 2,
+                            "source_mode": "regulation_overview",
+                            "query_type": "section_overview",
+                            "citations": [{"document_title": "Section A", "article": "A1.1", "page": 5}],
+                            "retrieved_chunks": [{"document_title": "Section A", "article": "A1.1", "page": 5, "score": 1.0}],
+                        },
+                    }
+                )
+            if "大体规则" in question or "规则是什么样" in question or "分几部分" in question:
+                return Result(
+                    {
+                        "action": action,
+                        "response": {
+                            "answer": "2026 FIA F1 Regulations 当前索引大致分为 Section A-F：Section A General Provisions；Section B Sporting；Section C Technical；Section D/E Financial；Section F Operational。",
+                            "answer_status": "answered",
+                            "confidence": "medium",
+                            "evidence_count": 6,
+                            "source_mode": "regulation_overview",
+                            "query_type": "document_overview",
+                            "citations": [{"document_title": "Section A", "article": "A1.1", "page": 5}],
+                            "retrieved_chunks": [{"document_title": "Section A", "article": "A1.1", "page": 5, "score": 1.0}],
                         },
                     }
                 )
@@ -177,58 +213,37 @@ class EvalCase:
     expected_status: str | None = None
 
 
-CASES = [
-    EvalCase("full-calendar-cn", ["今年完整赛历是什么"], "race", "race_tool", "list_schedule", ["Austrian Grand Prix", "British Grand Prix", "Belgian Grand Prix"]),
-    EvalCase("full-calendar-typo", ["今年完整赛历是是什么"], "race", "race_tool", "list_schedule", ["当前完整赛历", "R9 British Grand Prix"]),
-    EvalCase("all-schedule-cn", ["所有比赛赛程"], "race", "race_tool", "list_schedule", ["R8", "R10"]),
-    EvalCase("season-calendar-en", ["full season calendar"], "race", "race_tool", "list_schedule", ["Austrian Grand Prix", "Belgian Grand Prix"]),
-    EvalCase("schedule-cn", ["最新赛程是什么"], "race", "race_tool", "list_schedule", ["近期赛历", "British Grand Prix"]),
-    EvalCase("calendar-cn", ["赛历"], "race", "race_tool", "list_schedule", ["近期赛历"]),
-    EvalCase("next-race-cn", ["下一场比赛是哪个"], "race", "race_tool", "get_next_race", ["British Grand Prix", "Silverstone Circuit"]),
-    EvalCase("next-race-en", ["next race"], "race", "race_tool", "get_next_race", ["British Grand Prix"]),
-    EvalCase("previous-race-cn", ["上一站比赛是什么"], "race", "race_tool", "get_previous_race", ["Austrian Grand Prix"]),
-    EvalCase("previous-race-en", ["previous race"], "race", "race_tool", "get_previous_race", ["Austrian Grand Prix"]),
-    EvalCase("race-time-cn", ["比赛日期和具体时间是多少"], "race", "race_tool", "get_next_race", ["2026-07-05 22:00 CST", "Qualifying"]),
-    EvalCase("race-time-en", ["when is the next race"], "race", "race_tool", "get_next_race", ["2026-07-05 22:00 CST"]),
-    EvalCase("qualifying-time", ["下一站排位赛时间"], "race", "race_tool", "get_next_race", ["Qualifying 2026-07-04 22:00 CST"]),
-    EvalCase("practice-time", ["下一站练习赛几点"], "race", "race_tool", "get_next_race", ["Practice 1"]),
-    EvalCase("follow-up-race-time", ["下一场比赛是哪个", "比赛日期和具体时间是多少"], "race", "race_tool", "get_next_race", ["British Grand Prix", "2026-07-05 22:00 CST"]),
-    EvalCase("driver-standings-cn", ["车手积分榜"], "race", "race_tool", "get_driver_standings", ["Andrea Kimi Antonelli", "171"]),
-    EvalCase("driver-leader-cn", ["现在谁是车手积分榜第一名"], "race", "race_tool", "get_driver_standings", ["Andrea Kimi Antonelli", "第 1 名"]),
-    EvalCase("driver-second-cn", ["车手积分榜第二名是谁"], "race", "race_tool", "get_driver_standings", ["George Russell", "第 2 名"]),
-    EvalCase("driver-specific-cn", ["维斯塔潘排第几"], "race", "race_tool", "get_driver_standings", ["Max Verstappen", "第 4 名"]),
-    EvalCase("driver-standings-en", ["driver standings"], "race", "race_tool", "get_driver_standings", ["Andrea Kimi Antonelli"]),
-    EvalCase("constructor-standings-cn", ["车队积分榜"], "race", "race_tool", "get_constructor_standings", ["Mercedes", "302"]),
-    EvalCase("constructor-leader-cn", ["现在哪只车队是第一名"], "race", "race_tool", "get_constructor_standings", ["Mercedes", "第 1 名"]),
-    EvalCase("constructor-standings-en", ["constructor standings"], "race", "race_tool", "get_constructor_standings", ["Mercedes"]),
-    EvalCase("team-specific-cn", ["法拉利车队排第几"], "race", "race_tool", "get_constructor_standings", ["Ferrari", "第 2 名"]),
-    EvalCase("team-third-cn", ["车队第三名是谁"], "race", "race_tool", "get_constructor_standings", ["McLaren", "第 3 名"]),
-    EvalCase("red-flag-rule", ["红旗规则是什么"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("safety-car-rule", ["安全车规则"], "regulation", "regulation_tool", "ask", ["安全车"], expected_status="answered"),
-    EvalCase("parc-ferme-rule", ["parc ferme 是什么规则"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("unsafe-release-rule", ["unsafe release 怎么处罚"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("yellow-flag-rule", ["黄旗规则"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("vsc-rule", ["虚拟安全车规则"], "regulation", "regulation_tool", "ask", ["安全车"], expected_status="answered"),
-    EvalCase("plank-rule", ["底板规则"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("technical-directive", ["technical directive 是什么"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-    EvalCase("no-rule-evidence-cn", ["外星维修区规则是什么"], "regulation", "regulation_tool", "ask", ["避免编造规则"], ["ARTICLE"], "insufficient_evidence"),
-    EvalCase("no-rule-evidence-en", ["alien pit lane rule"], "regulation", "regulation_tool", "ask", ["避免编造规则"], ["ARTICLE"], "insufficient_evidence"),
-    EvalCase("latest-news-cn", ["今天 F1 有什么新闻"], "news", "news_tool", "list_recent", ["McLaren upgrade", "British GP preview"]),
-    EvalCase("latest-news-en", ["latest F1 headlines"], "news", "news_tool", "list_recent", ["McLaren upgrade"]),
-    EvalCase("article-detail", ["新闻 42 详情"], "news", "news_tool", "get_article", ["Article 42", "floor upgrade"]),
-    EvalCase("article-insight", ["分析新闻 42"], "news", "news_tool", "get_insights", ["McLaren", "底板升级"]),
-    EvalCase("article-rules", ["新闻 42 和规则有什么关系"], "news", "news_tool", "get_rules_analysis", ["floor/plank"]),
-    EvalCase("strategy-safety-car", ["安全车下 Ferrari 要不要进站"], "strategy", "strategy_tool", "analyze", ["置信度：low", "安全车"]),
-    EvalCase("strategy-undercut", ["undercut 策略怎么判断"], "strategy", "strategy_tool", "analyze", ["进站损失"]),
-    EvalCase("strategy-tyre", ["轮胎衰退严重该不该 pit"], "strategy", "strategy_tool", "analyze", ["轮胎"]),
-    EvalCase("strategy-low-context", ["现在应该进站吗"], "strategy", "strategy_tool", "analyze", ["low"], ["高置信度"]),
-    EvalCase("strategy-track-position", ["保赛道位置还是进站"], "strategy", "strategy_tool", "analyze", ["赛道位置"]),
-    EvalCase("greeting", ["你好啊，你都能做什么"], "general", "general_tool", "answer", ["赛历", "积分榜", "规则"]),
-    EvalCase("general-history", ["塞纳为什么伟大"], "general", "general_tool", "answer", ["F1"]),
-    EvalCase("correction", ["不对不对"], "general", "general_tool", "answer", ["F1"]),
-    EvalCase("broad-f1", ["介绍一下 F1"], "general", "general_tool", "answer", ["F1"]),
-    EvalCase("general-no-live-guess", ["现在最新规则是什么"], "regulation", "regulation_tool", "ask", ["Section B"], expected_status="answered"),
-]
+
+AGENT_CASES_PATH = Path("data/evals/agent_cases.jsonl")
+
+
+def load_cases(path: Path = AGENT_CASES_PATH) -> list[EvalCase]:
+    cases: list[EvalCase] = []
+    with path.open("r", encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            payload = json.loads(stripped)
+            try:
+                cases.append(
+                    EvalCase(
+                        name=payload["name"],
+                        messages=payload["messages"],
+                        expected_intent=payload["expected_intent"],
+                        expected_tool=payload["expected_tool"],
+                        expected_action=payload["expected_action"],
+                        must_include=payload.get("must_include", []),
+                        must_not_include=payload.get("must_not_include", []),
+                        expected_status=payload.get("expected_answer_status"),
+                    )
+                )
+            except KeyError as exc:
+                raise ValueError(f"Invalid eval case at {path}:{line_number}: missing {exc.args[0]}") from exc
+    return cases
+
+
+CASES = load_cases()
 
 
 def build_service() -> AgentService:
@@ -271,7 +286,7 @@ def run_case(service: AgentService, case: EvalCase) -> AgentQueryResponse:
 def test_golden_agent_quality_cases() -> None:
     service = build_service()
 
-    assert len(CASES) == 50
+    assert len(CASES) == 56
     for case in CASES:
         response = run_case(service, case)
         assert response.intent == case.expected_intent, case.name

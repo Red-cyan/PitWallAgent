@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     llm_planner_enabled: bool = True
     llm_planner_max_tokens: int = 160
     llm_planner_timeout_seconds: float = 4.0
+    query_rewrite_max_tokens: int = 180
+    query_rewrite_timeout_seconds: float = 4.0
     hf_token: str | None = Field(
         default=None,
         validation_alias=AliasChoices("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"),

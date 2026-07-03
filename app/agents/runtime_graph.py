@@ -173,4 +173,7 @@ class LangGraphAgentRuntime:
             "confidence": response.get("confidence") or result.get("confidence"),
             "evidence_count": response.get("evidence_count") or result.get("evidence_count", 0),
             "source_mode": response.get("source_mode") or result.get("source_mode"),
+            "query_type": response.get("query_type") or result.get("query_type"),
+            "citations": response.get("citations") or result.get("citations", []),
+            "retrieved_chunks": response.get("retrieved_chunks") or result.get("retrieved_chunks", []),
         }

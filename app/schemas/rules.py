@@ -21,6 +21,13 @@ class RetrievedChunk(BaseModel):
     article: str | None = Field(default=None, description="Article number or clause identifier.")
     section: str | None = Field(default=None, description="High-level regulation section code.")
     page: int | None = Field(default=None, ge=1, description="Page number in the source document.")
+    page_start: int | None = Field(default=None, ge=1, description="First source page covered by this chunk.")
+    page_end: int | None = Field(default=None, ge=1, description="Last source page covered by this chunk.")
+    heading_path: list[str] = Field(default_factory=list, description="Section/article heading path.")
+    score_components: dict[str, float] = Field(
+        default_factory=dict,
+        description="Explainable retrieval/rerank score components.",
+    )
 
 
 class RuleAskResponse(BaseModel):
@@ -30,10 +37,11 @@ class RuleAskResponse(BaseModel):
         default_factory=list,
         description="Retrieved chunks used for answering and debugging.",
     )
-    answer_status: str = Field(default="answered", description="answered or insufficient_evidence.")
+    answer_status: str = Field(default="answered", description="answered, partial_evidence, or insufficient_evidence.")
     confidence: str = Field(default="medium", description="Answer confidence derived from retrieval quality.")
     evidence_count: int = Field(default=0, ge=0, description="Number of evidence chunks used.")
     source_mode: str = Field(default="regulation_rag", description="Source path used to build the answer.")
+    query_type: str = Field(default="fact_lookup", description="fact_lookup, section_overview, or document_overview.")
 
 
 class RetrievalDebugResponse(BaseModel):
@@ -58,6 +66,18 @@ class RetrievalDebugResponse(BaseModel):
     preferred_sections: list[str] = Field(
         default_factory=list,
         description="Sections preferred by routing heuristics.",
+    )
+    vector_candidates: list[RetrievedChunk] = Field(
+        default_factory=list,
+        description="Candidates returned by vector retrieval before hybrid fusion.",
+    )
+    keyword_candidates: list[RetrievedChunk] = Field(
+        default_factory=list,
+        description="Candidates returned by keyword/BM25 retrieval before hybrid fusion.",
+    )
+    hybrid_candidates: list[RetrievedChunk] = Field(
+        default_factory=list,
+        description="Candidates after hybrid fusion before final rerank.",
     )
     retrieved_chunks: list[RetrievedChunk] = Field(
         default_factory=list,

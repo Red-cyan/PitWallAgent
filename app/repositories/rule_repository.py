@@ -1,4 +1,6 @@
 import json
+import math
+import re
 from pathlib import Path
 
 from sqlalchemy import select
@@ -11,8 +13,13 @@ from app.schemas.rules import RetrievalDebugResponse, RetrievedChunk
 
 
 class RuleRepository:
-    VECTOR_CANDIDATE_LIMIT = 12
-    MIN_RERANK_SCORE = 2
+    VECTOR_CANDIDATE_LIMIT = 40
+    KEYWORD_CANDIDATE_LIMIT = 40
+    HYBRID_CANDIDATE_LIMIT = 50
+    MIN_RERANK_SCORE = 8
+    PARTIAL_RERANK_SCORE = 1
+    MIN_KEYWORD_EVIDENCE_SCORE = 6
+    RRF_K = 60
     QUERY_SYNONYMS = {
         "红旗": "red flag",
         "黄旗": "yellow flag",
@@ -52,9 +59,6 @@ class RuleRepository:
             "ferme",
             "pit",
             "lane",
-            "speed",
-            "speeding",
-            "limit",
             "penalty",
             "stewards",
             "dangerous",
@@ -95,6 +99,21 @@ class RuleRepository:
         debug_data = self.debug_retrieval(question=question, top_k=top_k)
         return debug_data.retrieved_chunks
 
+    def get_section_chunks(self, section_code: str, limit: int = 6) -> list[RetrievedChunk]:
+        normalized_section = self._normalize_section_code(section_code)
+        chunks = [
+            chunk
+            for chunk in self._load_chunks()
+            if self._chunk_section_code(chunk) == normalized_section
+        ]
+        return self._select_representative_section_chunks(chunks, limit=limit)
+
+    def get_document_overview_chunks(self, limit_per_section: int = 1) -> list[RetrievedChunk]:
+        overview_chunks: list[RetrievedChunk] = []
+        for section_code in ("Section A", "Section B", "Section C", "Section D", "Section E", "Section F"):
+            overview_chunks.extend(self.get_section_chunks(section_code, limit=limit_per_section))
+        return overview_chunks
+
     def debug_retrieval(self, question: str, top_k: int = 3) -> RetrievalDebugResponse:
         normalized_question = self._normalize_question(question)
         rewritten_queries = self.query_rewriter.rewrite(question)
@@ -110,8 +129,11 @@ class RuleRepository:
             keywords=keywords,
             preferred_sections=preferred_sections,
         )
+        vector_candidates = chunks["vector"]
+        keyword_candidates = chunks["keyword"]
+        hybrid_candidates = chunks["hybrid"]
         scored_chunks = self._rerank_chunks(
-            chunks=chunks,
+            chunks=hybrid_candidates,
             top_k=top_k,
             phrases=phrases,
             keywords=keywords,
@@ -125,6 +147,9 @@ class RuleRepository:
             extracted_phrases=phrases,
             expanded_keywords=keywords,
             preferred_sections=preferred_sections,
+            vector_candidates=vector_candidates,
+            keyword_candidates=keyword_candidates,
+            hybrid_candidates=hybrid_candidates,
             retrieved_chunks=scored_chunks,
         )
 
@@ -136,7 +161,7 @@ class RuleRepository:
         keywords: list[str],
         preferred_sections: list[str],
     ) -> list[RetrievedChunk]:
-        scored_chunks: list[tuple[int, RetrievedChunk]] = []
+        scored_chunks: list[tuple[float, RetrievedChunk]] = []
 
         for chunk in chunks:
             score = self._score_chunk(
@@ -145,9 +170,28 @@ class RuleRepository:
                 keywords=keywords,
                 preferred_sections=preferred_sections,
             )
-            if score > 0:
-                scored_chunk = chunk.model_copy(update={"score": float(score)})
-                scored_chunks.append((score, scored_chunk))
+            phrase_matches = self._count_phrase_matches(chunk, phrases)
+            hybrid_score = min(chunk.score or 0.0, 25.0)
+            final_score = score + hybrid_score
+            if final_score > 0:
+                is_strong = (
+                    final_score >= self.MIN_RERANK_SCORE
+                    and (phrase_matches > 0 or score >= self.MIN_KEYWORD_EVIDENCE_SCORE)
+                )
+                scored_chunk = chunk.model_copy(
+                    update={
+                        "score": float(final_score),
+                        "score_components": {
+                            **chunk.score_components,
+                            "rerank_keyword": float(score),
+                            "rerank_phrase_matches": float(phrase_matches),
+                            "rerank_hybrid": round(hybrid_score, 4),
+                            "rerank_final": round(final_score, 4),
+                            "evidence_strength": 1.0 if is_strong else 0.0,
+                        },
+                    }
+                )
+                scored_chunks.append((final_score, scored_chunk))
 
         scored_chunks.sort(key=lambda item: item[0], reverse=True)
 
@@ -158,11 +202,26 @@ class RuleRepository:
             chunk
             for score, chunk in scored_chunks
             if score >= self.MIN_RERANK_SCORE
+            and chunk.score_components.get("evidence_strength") == 1.0
         ]
-        return strong_chunks[:top_k]
+        if strong_chunks:
+            return strong_chunks[:top_k]
+
+        weak_chunks = [
+            chunk
+            for score, chunk in scored_chunks
+            if score >= self.PARTIAL_RERANK_SCORE
+        ]
+        return weak_chunks[:top_k]
 
     def _normalize_question(self, question: str) -> str:
         normalized_question = question
+        normalized_question = re.sub(
+            r"(?<![a-z])section\s*([a-f])(?![a-z])",
+            lambda match: f"Section {match.group(1).upper()}",
+            normalized_question,
+            flags=re.IGNORECASE,
+        )
 
         for source, target in self.QUERY_SYNONYMS.items():
             if source in normalized_question and target not in normalized_question.lower():
@@ -193,7 +252,7 @@ class RuleRepository:
         phrases: list[str],
         keywords: list[str],
         preferred_sections: list[str],
-    ) -> list[RetrievedChunk]:
+    ) -> dict[str, list[RetrievedChunk]]:
         vector_chunks = self._search_by_vector_queries(
             questions,
             top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
@@ -202,17 +261,20 @@ class RuleRepository:
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
-            top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+            top_k=max(top_k, self.KEYWORD_CANDIDATE_LIMIT),
         )
 
-        chunks = self._merge_candidates(vector_chunks, keyword_chunks, top_k=self.VECTOR_CANDIDATE_LIMIT)
+        chunks = self._fuse_candidates(vector_chunks, keyword_chunks, top_k=self.HYBRID_CANDIDATE_LIMIT)
         if chunks:
             filtered_chunks = self._filter_chunks_by_section(chunks, preferred_sections)
             if filtered_chunks:
-                return filtered_chunks
-            return chunks
+                chunks = filtered_chunks
 
-        return []
+        return {
+            "vector": vector_chunks,
+            "keyword": keyword_chunks,
+            "hybrid": chunks,
+        }
 
     def _load_chunks(self) -> list[RetrievedChunk]:
         if self._cached_chunks is not None:
@@ -244,6 +306,9 @@ class RuleRepository:
                 article=record.article,
                 section=record.section_code,
                 page=record.page,
+                page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
+                page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
+                heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
             )
             for record in records
         ]
@@ -253,6 +318,54 @@ class RuleRepository:
             chunk_data = json.load(file)
 
         return [RetrievedChunk(**item) for item in chunk_data]
+
+    def _normalize_section_code(self, section_code: str) -> str:
+        match = re.search(r"section\s*([a-f])", section_code, flags=re.IGNORECASE)
+        if match:
+            return f"Section {match.group(1).upper()}"
+        match = re.fullmatch(r"\s*([a-f])\s*", section_code, flags=re.IGNORECASE)
+        if not match:
+            return section_code
+        return f"Section {match.group(1).upper()}"
+
+    def _chunk_section_code(self, chunk: RetrievedChunk) -> str:
+        if chunk.section:
+            return self._normalize_section_code(chunk.section)
+        match = re.search(r"Section\s*([A-F])", chunk.document_title, flags=re.IGNORECASE)
+        if match:
+            return f"Section {match.group(1).upper()}"
+        return ""
+
+    def _select_representative_section_chunks(
+        self,
+        chunks: list[RetrievedChunk],
+        limit: int,
+    ) -> list[RetrievedChunk]:
+        if not chunks:
+            return []
+
+        selected: list[RetrievedChunk] = []
+        seen_articles: set[str] = set()
+
+        for chunk in chunks:
+            article = chunk.article or ""
+            if not article or article in seen_articles:
+                continue
+            if not re.fullmatch(r"[A-F]\d+(?:\.\d+)?", article, flags=re.IGNORECASE):
+                continue
+            seen_articles.add(article)
+            selected.append(chunk.model_copy(update={"score": chunk.score or 1.0}))
+            if len(selected) >= limit:
+                return selected
+
+        for chunk in chunks:
+            if chunk.chunk_id in {selected_chunk.chunk_id for selected_chunk in selected}:
+                continue
+            selected.append(chunk.model_copy(update={"score": chunk.score or 1.0}))
+            if len(selected) >= limit:
+                break
+
+        return selected
 
     def _search_by_vector_queries(self, questions: list[str], top_k: int) -> list[RetrievedChunk]:
         merged_chunks: list[RetrievedChunk] = []
@@ -265,10 +378,8 @@ class RuleRepository:
                 seen_chunk_ids.add(chunk.chunk_id)
                 merged_chunks.append(chunk)
 
-                if len(merged_chunks) >= top_k:
-                    return merged_chunks
-
-        return merged_chunks
+        merged_chunks.sort(key=lambda chunk: chunk.score or 0, reverse=True)
+        return merged_chunks[:top_k]
 
     def _search_by_vector(self, question: str, top_k: int) -> list[RetrievedChunk]:
         try:
@@ -299,6 +410,9 @@ class RuleRepository:
                 article=record.article,
                 section=record.section_code,
                 page=record.page,
+                page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
+                page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
+                heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
             )
             for record in records
         ]
@@ -310,40 +424,86 @@ class RuleRepository:
         preferred_sections: list[str],
         top_k: int,
     ) -> list[RetrievedChunk]:
-        scored_chunks: list[tuple[int, RetrievedChunk]] = []
+        all_chunks = self._load_chunks()
+        idf = self._build_idf(all_chunks, keywords)
+        scored_chunks: list[tuple[float, RetrievedChunk]] = []
 
-        for chunk in self._load_chunks():
-            score = self._score_chunk(
+        for chunk in all_chunks:
+            bm25_score = self._score_chunk_bm25(chunk=chunk, keywords=keywords, idf=idf)
+            heuristic_score = self._score_chunk(
                 chunk=chunk,
                 phrases=phrases,
                 keywords=keywords,
                 preferred_sections=preferred_sections,
             )
+            score = bm25_score + heuristic_score
             if score > 0:
-                scored_chunks.append((score, chunk))
+                scored_chunks.append(
+                    (
+                        score,
+                        chunk.model_copy(
+                            update={
+                                "score": float(score),
+                                "score_components": {
+                                    "keyword_bm25": round(bm25_score, 4),
+                                    "keyword_heuristic": float(heuristic_score),
+                                },
+                            }
+                        ),
+                    )
+                )
 
-        scored_chunks.sort(key=lambda item: item[0], reverse=True)
+        scored_chunks.sort(
+            key=lambda item: (
+                self._matches_preferred_section(item[1], preferred_sections),
+                item[0],
+            ),
+            reverse=True,
+        )
         return [chunk for _, chunk in scored_chunks[:top_k]]
 
-    def _merge_candidates(
+    def _fuse_candidates(
         self,
-        primary_chunks: list[RetrievedChunk],
-        secondary_chunks: list[RetrievedChunk],
+        vector_chunks: list[RetrievedChunk],
+        keyword_chunks: list[RetrievedChunk],
         top_k: int,
     ) -> list[RetrievedChunk]:
-        merged_chunks: list[RetrievedChunk] = []
-        seen_chunk_ids: set[str] = set()
+        by_id: dict[str, RetrievedChunk] = {}
+        scores: dict[str, dict[str, float]] = {}
 
-        for chunk in [*primary_chunks, *secondary_chunks]:
-            if chunk.chunk_id in seen_chunk_ids:
-                continue
-            seen_chunk_ids.add(chunk.chunk_id)
-            merged_chunks.append(chunk)
+        for rank, chunk in enumerate(vector_chunks, start=1):
+            by_id.setdefault(chunk.chunk_id, chunk)
+            scores.setdefault(chunk.chunk_id, {})["vector_rrf"] = 1 / (self.RRF_K + rank)
 
-            if len(merged_chunks) >= top_k:
-                break
+        for rank, chunk in enumerate(keyword_chunks, start=1):
+            by_id.setdefault(chunk.chunk_id, chunk)
+            keyword_rrf = 1 / (self.RRF_K + rank)
+            scores.setdefault(chunk.chunk_id, {})["keyword_rrf"] = keyword_rrf
+            if chunk.score is not None:
+                scores[chunk.chunk_id]["keyword_score"] = chunk.score
 
-        return merged_chunks
+        fused: list[RetrievedChunk] = []
+        for chunk_id, chunk in by_id.items():
+            components = scores.get(chunk_id, {})
+            rrf_score = components.get("vector_rrf", 0.0) + components.get("keyword_rrf", 0.0)
+            keyword_score = components.get("keyword_score", 0.0)
+            final_score = (rrf_score * 100) + min(keyword_score, 20)
+            fused.append(
+                chunk.model_copy(
+                    update={
+                        "score": round(final_score, 4),
+                        "score_components": {
+                            **chunk.score_components,
+                            **{key: round(value, 4) for key, value in components.items()},
+                            "hybrid_rrf": round(rrf_score, 4),
+                            "hybrid_score": round(final_score, 4),
+                        },
+                    }
+                )
+            )
+
+        fused.sort(key=lambda chunk: chunk.score or 0, reverse=True)
+        return fused[:top_k]
 
     def _extract_phrases(self, question: str) -> list[str]:
         normalized_question = question.lower()
@@ -366,6 +526,18 @@ class RuleRepository:
 
         if "virtual safety car" in normalized_question or " vsc" in normalized_question:
             phrases.append("virtual safety car")
+
+        if "pit lane speed" in normalized_question or "pit lane speeding" in normalized_question:
+            phrases.append("pit lane speed")
+
+        if "dangerous driving" in normalized_question:
+            phrases.append("dangerous driving")
+
+        if "track limits" in normalized_question:
+            phrases.append("track limits")
+
+        if "impeding" in normalized_question:
+            phrases.append("impeding")
 
         return phrases
 
@@ -422,11 +594,16 @@ class RuleRepository:
         normalized_question = question.lower()
         matched_sections: list[str] = []
 
+        for match in re.finditer(r"(?<![a-z])section\s*([a-f])(?![a-z])", normalized_question, flags=re.IGNORECASE):
+            section = f"Section {match.group(1).upper()}"
+            if section not in matched_sections:
+                matched_sections.append(section)
+
         for section, keywords in self.SECTION_KEYWORDS.items():
             if any(keyword in normalized_question for keyword in keywords):
                 matched_sections.append(section)
 
-        return matched_sections
+        return list(dict.fromkeys(matched_sections))
 
     def _filter_chunks_by_section(
         self,
@@ -439,9 +616,23 @@ class RuleRepository:
         filtered = [
             chunk
             for chunk in chunks
-            if any(section.lower() in chunk.document_title.lower() for section in preferred_sections)
+            if self._matches_preferred_section(chunk, preferred_sections)
         ]
         return filtered or chunks
+
+    def _matches_preferred_section(self, chunk: RetrievedChunk, preferred_sections: list[str]) -> bool:
+        if not preferred_sections:
+            return False
+        normalized_title = chunk.document_title.lower()
+        normalized_section = self._chunk_section_code(chunk).lower()
+        return any(
+            section.lower() in normalized_title or section.lower() == normalized_section
+            for section in preferred_sections
+        )
+
+    def _count_phrase_matches(self, chunk: RetrievedChunk, phrases: list[str]) -> int:
+        normalized_content = chunk.content.lower()
+        return sum(1 for phrase in phrases if phrase in normalized_content)
 
     def _score_chunk(
         self,
@@ -474,3 +665,51 @@ class RuleRepository:
                 score += 8
 
         return score
+
+    def _tokenize(self, text: str) -> list[str]:
+        return re.findall(r"[a-z0-9]+", text.lower())
+
+    def _build_idf(self, chunks: list[RetrievedChunk], keywords: list[str]) -> dict[str, float]:
+        if not chunks:
+            return {}
+
+        doc_count = len(chunks)
+        idf: dict[str, float] = {}
+        for keyword in keywords:
+            if not keyword:
+                continue
+            matches = sum(1 for chunk in chunks if keyword in chunk.content.lower())
+            idf[keyword] = math.log(1 + (doc_count - matches + 0.5) / (matches + 0.5)) if matches else 0.0
+        return idf
+
+    def _score_chunk_bm25(
+        self,
+        *,
+        chunk: RetrievedChunk,
+        keywords: list[str],
+        idf: dict[str, float],
+    ) -> float:
+        tokens = self._tokenize(chunk.content)
+        if not tokens:
+            return 0.0
+
+        token_counts: dict[str, int] = {}
+        for token in tokens:
+            token_counts[token] = token_counts.get(token, 0) + 1
+
+        k1 = 1.5
+        b = 0.75
+        avgdl = 180
+        doc_len = len(tokens)
+        score = 0.0
+        for keyword in keywords:
+            normalized = keyword.lower()
+            tf = token_counts.get(normalized, 0)
+            if tf == 0 and " " in normalized and normalized in chunk.content.lower():
+                tf = 1
+            if tf == 0:
+                continue
+            denominator = tf + k1 * (1 - b + b * doc_len / avgdl)
+            score += idf.get(normalized, 0.0) * ((tf * (k1 + 1)) / denominator)
+
+        return round(score, 4)

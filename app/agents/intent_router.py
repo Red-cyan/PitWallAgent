@@ -129,6 +129,15 @@ class IntentRouter:
         "赛会干事",
         "干事调查",
         "事故调查",
+        "sectiona",
+        "section a",
+        "sectionb",
+        "section b",
+        "sectionc",
+        "section c",
+        "大体规则",
+        "规则是什么样",
+        "分几部分",
     )
     FOLLOW_UP_KEYWORDS = (
         "\u90a3\u5462",
