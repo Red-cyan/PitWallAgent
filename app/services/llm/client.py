@@ -18,9 +18,17 @@ class LLMClient:
         self.client = OpenAI(
             api_key=settings.llm_api_key,
             base_url=settings.llm_base_url,
+            timeout=settings.llm_timeout_seconds,
+            max_retries=settings.llm_max_retries,
         )
 
-    def chat(self, messages: list[dict[str, Any]], temperature: float = 0.2) -> str:
+    def chat(
+        self,
+        messages: list[dict[str, Any]],
+        temperature: float = 0.2,
+        max_tokens: int | None = None,
+        timeout: float | None = None,
+    ) -> str:
         log_structured(
             self.logger,
             "llm_request_started",
@@ -33,6 +41,8 @@ class LLMClient:
                 model=self.model,
                 messages=cast(list[ChatCompletionMessageParam], messages),
                 temperature=temperature,
+                max_tokens=max_tokens if max_tokens is not None else settings.llm_max_tokens,
+                timeout=timeout,
             )
         except Exception as exc:
             log_structured(

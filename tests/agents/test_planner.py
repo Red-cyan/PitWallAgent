@@ -23,28 +23,92 @@ class StubToolDispatcher:
 class StubLLMClient:
     def __init__(self, response: str) -> None:
         self.response = response
+        self.last_max_tokens: int | None = None
+        self.last_timeout: float | None = None
 
-    def chat(self, messages: list[dict], temperature: float = 0) -> str:
+    def chat(
+        self,
+        messages: list[dict],
+        temperature: float = 0,
+        max_tokens: int | None = None,
+        timeout: float | None = None,
+    ) -> str:
+        self.last_max_tokens = max_tokens
+        self.last_timeout = timeout
         return self.response
 
 
 class FailingLLMClient:
-    def chat(self, messages: list[dict], temperature: float = 0) -> str:
+    def chat(
+        self,
+        messages: list[dict],
+        temperature: float = 0,
+        max_tokens: int | None = None,
+        timeout: float | None = None,
+    ) -> str:
         raise RuntimeError("boom")
 
 
 def test_planner_uses_llm_plan_when_valid() -> None:
+    llm_client = StubLLMClient('{"intent":"general","action":"answer","params":{}}')
     planner = LLMQueryPlanner(
         intent_router=StubIntentRouter(),
         tool_dispatcher=StubToolDispatcher(),
-        llm_client=StubLLMClient('{"intent":"general","action":"answer","params":{}}'),
+        llm_client=llm_client,
+    )
+
+    plan = planner.plan("解释一下 DRS 规则争议")
+
+    assert plan["intent"] == "general"
+    assert plan["tool_name"] == "general_tool"
+    assert plan["params"]["question"] == "解释一下 DRS 规则争议"
+    assert llm_client.last_max_tokens == 160
+    assert llm_client.last_timeout == 4.0
+
+
+def test_planner_keeps_casual_general_messages_on_heuristics() -> None:
+    llm_client = StubLLMClient('{"intent":"regulation","action":"ask","params":{}}')
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=llm_client,
     )
 
     plan = planner.plan("你好")
 
     assert plan["intent"] == "general"
     assert plan["tool_name"] == "general_tool"
-    assert plan["params"]["question"] == "你好"
+    assert llm_client.last_max_tokens is None
+
+
+def test_planner_uses_llm_to_route_ambiguous_rule_question_to_regulation() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient('{"intent":"regulation","action":"ask","params":{}}'),
+    )
+
+    plan = planner.plan("维修通道白线能不能压")
+
+    assert plan["intent"] == "regulation"
+    assert plan["tool_name"] == "regulation_tool"
+    assert plan["action"] == "ask"
+    assert plan["params"]["question"] == "维修通道白线能不能压"
+
+
+def test_planner_does_not_call_llm_for_high_confidence_heuristic_race_query() -> None:
+    llm_client = StubLLMClient('{"intent":"general","action":"answer","params":{}}')
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=llm_client,
+    )
+
+    plan = planner.plan("车队积分榜第一是谁")
+
+    assert plan["intent"] == "race"
+    assert plan["tool_name"] == "race_tool"
+    assert llm_client.last_max_tokens is None
 
 
 def test_planner_falls_back_to_heuristics_when_llm_fails() -> None:

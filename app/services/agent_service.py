@@ -1,4 +1,5 @@
 import logging
+import time
 
 from app.core.logging import log_structured
 from app.agents.intent_router import IntentRouter
@@ -36,6 +37,7 @@ class AgentService:
         fallback_intent: str | None = None,
         conversation_context: str | None = None,
     ) -> AgentQueryResponse:
+        started_at = time.perf_counter()
         effective_message = self._build_effective_message(
             message=message,
             conversation_context=conversation_context,
@@ -48,6 +50,7 @@ class AgentService:
         )
         if self.runtime is not None:
             response = self.runtime.run(effective_message, fallback_intent=fallback_intent)
+            response.trace = self._with_latency_trace(response.trace, started_at)
             log_structured(
                 self.logger,
                 "agent_query_completed",
@@ -92,6 +95,7 @@ class AgentService:
                 "source_mode": response_payload.get("source_mode") or result.payload.get("source_mode"),
             },
         )
+        response.trace = self._with_latency_trace(response.trace, started_at)
         log_structured(
             self.logger,
             "agent_query_completed",
@@ -119,3 +123,12 @@ class AgentService:
         if not self.intent_router.looks_like_follow_up(message):
             return message
         return f"{conversation_context}\nUser: {message}"
+
+    def _with_latency_trace(self, trace: dict, started_at: float) -> dict:
+        return {
+            **trace,
+            "latency_ms_by_stage": {
+                **trace.get("latency_ms_by_stage", {}),
+                "agent_total": round((time.perf_counter() - started_at) * 1000, 2),
+            },
+        }

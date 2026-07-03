@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     )
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-v4-flash"
+    llm_timeout_seconds: float = 20.0
+    llm_max_retries: int = 1
+    llm_max_tokens: int | None = 700
+    llm_planner_enabled: bool = True
+    llm_planner_max_tokens: int = 160
+    llm_planner_timeout_seconds: float = 4.0
     hf_token: str | None = Field(
         default=None,
         validation_alias=AliasChoices("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"),
@@ -32,7 +38,8 @@ class Settings(BaseSettings):
     news_request_timeout_seconds: float = 10.0
     news_user_agent: str = "PitWall-Agent/0.1"
     race_data_base_url: str = "https://api.jolpi.ca/ergast/f1"
-    race_request_timeout_seconds: float = 10.0
+    race_request_timeout_seconds: float = 3.0
+    race_cache_ttl_seconds: int = 300
     race_default_season: str = "current"
     session_backend: str = "memory"
     session_history_max_turns: int = 20

@@ -1,3 +1,6 @@
+import re
+
+
 class IntentRouter:
     NEWS_KEYWORDS = (
         "news",
@@ -95,6 +98,14 @@ class IntentRouter:
         "vsc",
         "plank",
         "technical directive",
+        "pit lane speed",
+        "pit lane speeding",
+        "speeding in the pit lane",
+        "dangerous driving",
+        "driving infringement",
+        "penalty",
+        "stewards",
+        "investigation",
         "\u89c4\u5219",
         "\u6761\u4f8b",
         "\u7ea2\u65d7",
@@ -105,6 +116,19 @@ class IntentRouter:
         "\u5e95\u677f",
         "\u6280\u672f\u89c4\u5219",
         "\u6bd4\u8d5b\u89c4\u5219",
+        "维修区超速",
+        "维修区限速",
+        "维修区速度",
+        "维修区通道",
+        "危险驾驶",
+        "危险返回赛道",
+        "不安全驾驶",
+        "罚时",
+        "罚退",
+        "处罚",
+        "赛会干事",
+        "干事调查",
+        "事故调查",
     )
     FOLLOW_UP_KEYWORDS = (
         "\u90a3\u5462",
@@ -154,6 +178,12 @@ class IntentRouter:
 
     def looks_like_follow_up(self, message: str) -> bool:
         stripped = message.strip().lower()
+        if stripped in {"?", "？", "??", "？？"}:
+            return True
+
+        if self._has_explicit_domain_signal(stripped):
+            return False
+
         if stripped in {
             "\u5462",
             "\u7136\u540e",
@@ -171,10 +201,25 @@ class IntentRouter:
         ):
             return True
 
+        if re.search(r"(前\s*\d+\s*名|前[一二三四五六七八九十]+名|第\s*\d+\s*名|第[一二三四五六七八九十]+名)", stripped):
+            return True
+
+        if any(token in stripped for token in ("不是第一", "不是第1", "我问你", "刚才问的是")):
+            return True
+
         return any(keyword in stripped for keyword in self.FOLLOW_UP_KEYWORDS)
 
     def _contains_any(self, message: str, keywords: tuple[str, ...]) -> bool:
         return any(keyword in message for keyword in keywords)
+
+    def _has_explicit_domain_signal(self, message: str) -> bool:
+        return (
+            self._contains_any(message, self.NEWS_KEYWORDS)
+            or self._contains_any(message, self.STRATEGY_KEYWORDS)
+            or self._contains_any(message, self.REGULATION_KEYWORDS)
+            or self._contains_any(message, self.RACE_KEYWORDS)
+            or self._contains_any(message, self._EXPLICIT_REGULATION_KEYWORDS)
+        )
 
     _EXPLICIT_REGULATION_KEYWORDS = (
         "regulation",

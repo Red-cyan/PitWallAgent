@@ -73,6 +73,7 @@ class ChatService:
 
     def stream_chat(self, message: str, session_id: str | None = None) -> Iterator[dict]:
         session = self.session_service.get_or_create_session(session_id)
+        started_at = time.perf_counter()
 
         yield {
             "event": "session_started",
@@ -82,8 +83,43 @@ class ChatService:
             "event": "status",
             "data": {"session_id": session.session_id, "message": "thinking"},
         }
+        yield {
+            "event": "status",
+            "data": {"session_id": session.session_id, "message": "routing"},
+        }
 
-        response = self.handle_chat(message=message, session_id=session.session_id)
+        history = self.session_service.get_history(session.session_id)
+        fallback_intent = self.session_service.get_last_intent(session.session_id)
+        conversation_context = self.context_builder.build_context(history, message)
+
+        self.session_service.append_user_message(session.session_id, message)
+        yield {
+            "event": "status",
+            "data": {"session_id": session.session_id, "message": "retrieving"},
+        }
+
+        response_payload = self.agent_service.handle_query(
+            message,
+            fallback_intent=fallback_intent,
+            conversation_context=conversation_context,
+        )
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        response_payload.trace = {
+            **response_payload.trace,
+            "latency_ms_by_stage": {
+                **response_payload.trace.get("latency_ms_by_stage", {}),
+                "total_before_stream": elapsed_ms,
+            },
+        }
+        self.session_service.append_agent_response(session.session_id, response_payload)
+
+        updated_history = self.session_service.get_history(session.session_id)
+        response = ChatResponse(
+            session_id=session.session_id,
+            response=response_payload,
+            history=updated_history,
+            session=self._build_summary(session.session_id, updated_history),
+        )
         full_answer = response.response.final_answer
 
         log_structured(
@@ -92,6 +128,10 @@ class ChatService:
             session_id=response.session_id,
             output_length=len(full_answer),
         )
+        yield {
+            "event": "status",
+            "data": {"session_id": response.session_id, "message": "generating"},
+        }
 
         for delta in self._chunk_text(full_answer):
             yield {

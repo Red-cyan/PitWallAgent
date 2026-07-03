@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+import time
 from typing import Any, Callable, Protocol
 
 import httpx
@@ -112,30 +113,55 @@ class JolpicaRaceDataProvider:
         self.base_url = (base_url or settings.race_data_base_url).rstrip("/")
         self.fetch_json = fetch_json or self._fetch_json
         self.fallback_provider = fallback_provider or StaticRaceDataProvider()
+        self._cache: dict[str, tuple[float, Any]] = {}
 
     def list_schedule(self, season: int | str) -> list[RaceWeekend]:
+        cache_key = f"schedule:{season}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         try:
             payload = self.fetch_json(f"{season}.json")
             races = payload["MRData"]["RaceTable"]["Races"]
-            return [self._parse_race_weekend(item) for item in races]
+            schedule = [self._parse_race_weekend(item) for item in races]
         except Exception:
-            return self.fallback_provider.list_schedule(season)
+            schedule = self.fallback_provider.list_schedule(season)
+
+        self._set_cached(cache_key, schedule)
+        return schedule
 
     def list_driver_standings(self, season: int | str) -> list[DriverStandingEntry]:
+        cache_key = f"driver_standings:{season}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         try:
             payload = self.fetch_json(f"{season}/driverstandings.json")
             standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
-            return [self._parse_driver_standing(item) for item in standings]
+            parsed = [self._parse_driver_standing(item) for item in standings]
         except Exception:
-            return self.fallback_provider.list_driver_standings(season)
+            parsed = self.fallback_provider.list_driver_standings(season)
+
+        self._set_cached(cache_key, parsed)
+        return parsed
 
     def list_constructor_standings(self, season: int | str) -> list[ConstructorStandingEntry]:
+        cache_key = f"constructor_standings:{season}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         try:
             payload = self.fetch_json(f"{season}/constructorstandings.json")
             standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
-            return [self._parse_constructor_standing(item) for item in standings]
+            parsed = [self._parse_constructor_standing(item) for item in standings]
         except Exception:
-            return self.fallback_provider.list_constructor_standings(season)
+            parsed = self.fallback_provider.list_constructor_standings(season)
+
+        self._set_cached(cache_key, parsed)
+        return parsed
 
     def _fetch_json(self, path: str) -> dict[str, Any]:
         response = httpx.get(
@@ -206,3 +232,20 @@ class JolpicaRaceDataProvider:
         time_part = time_value or "00:00:00Z"
         normalized = f"{date_value}T{time_part.replace('Z', '+00:00')}"
         return datetime.fromisoformat(normalized).astimezone(UTC)
+
+    def _get_cached(self, key: str) -> Any | None:
+        cached = self._cache.get(key)
+        if cached is None:
+            return None
+
+        expires_at, value = cached
+        if expires_at <= time.monotonic():
+            self._cache.pop(key, None)
+            return None
+        return value
+
+    def _set_cached(self, key: str, value: Any) -> None:
+        ttl_seconds = max(settings.race_cache_ttl_seconds, 0)
+        if ttl_seconds == 0:
+            return
+        self._cache[key] = (time.monotonic() + ttl_seconds, value)

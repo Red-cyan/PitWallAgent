@@ -87,6 +87,33 @@ def test_response_formatter_formats_full_driver_standings() -> None:
     assert "2. George Russell | Mercedes | 131分" in answer
 
 
+def test_response_formatter_formats_top_constructor_standings() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="车队积分榜前五名是谁",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "standings": [
+                {"position": 1, "team_name": "Mercedes", "points": 302},
+                {"position": 2, "team_name": "Ferrari", "points": 204},
+                {"position": 3, "team_name": "McLaren", "points": 159},
+                {"position": 4, "team_name": "Red Bull", "points": 115},
+                {"position": 5, "team_name": "Williams", "points": 64},
+                {"position": 6, "team_name": "Aston Martin", "points": 52},
+            ]
+        },
+        error=None,
+    )
+
+    assert answer.startswith("当前车队积分榜前 5 名：")
+    assert "1. Mercedes | 302分" in answer
+    assert "5. Williams | 64分" in answer
+    assert "6. Aston Martin" not in answer
+
+
 def test_response_formatter_formats_specific_driver_ranking() -> None:
     formatter = AgentResponseFormatter()
 
@@ -105,6 +132,28 @@ def test_response_formatter_formats_specific_driver_ranking() -> None:
     )
 
     assert answer == "Max Verstappen 当前排在车手积分榜第 4 名，所属车队 Red Bull，积分 115。"
+
+
+def test_response_formatter_does_not_fallback_to_first_when_position_missing() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="车队积分榜第5名是谁",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "standings": [
+                {"position": 1, "team_name": "Mercedes", "points": 302},
+                {"position": 2, "team_name": "Ferrari", "points": 204},
+                {"position": 3, "team_name": "McLaren", "points": 159},
+            ]
+        },
+        error=None,
+    )
+
+    assert answer == "当前只获取到前 3 名车队积分榜数据，无法确认第 5 名。"
+    assert "Mercedes，积分 302" not in answer
 
 
 def test_response_formatter_resolves_driver_from_conversation_context() -> None:

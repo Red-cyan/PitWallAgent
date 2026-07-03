@@ -52,6 +52,19 @@ class AgentResponseFormatter:
         "entire",
         "whole",
     )
+    CHINESE_NUMBERS = {
+        "一": 1,
+        "二": 2,
+        "两": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "十": 10,
+    }
     DRIVER_ALIASES = {
         "维斯塔潘": "Max Verstappen",
         "max verstappen": "Max Verstappen",
@@ -173,6 +186,10 @@ class AgentResponseFormatter:
             if self._wants_full_standings(message):
                 return self._format_full_standings(standings)
 
+            top_n = self._extract_top_n(message)
+            if top_n is not None:
+                return self._format_top_standings(standings, top_n)
+
             subject_entry = self._find_subject_entry(message, standings)
             if subject_entry is not None:
                 if "driver_name" in subject_entry:
@@ -187,6 +204,9 @@ class AgentResponseFormatter:
 
             requested_position = self._extract_requested_position(message)
             entry = self._select_standing_entry(standings, requested_position)
+            if entry is None:
+                standing_type = "车手" if "driver_name" in standings[0] else "车队"
+                return f"当前只获取到前 {len(standings)} 名{standing_type}积分榜数据，无法确认第 {requested_position} 名。"
             actual_position = entry.get("position", requested_position)
 
             if "driver_name" in entry:
@@ -232,6 +252,20 @@ class AgentResponseFormatter:
         lowered = message.lower()
         has_standings_keyword = any(token in message for token in ("积分榜", "排名", "standings"))
         return has_standings_keyword and any(token in lowered or token in message for token in self.FULL_LIST_KEYWORDS)
+
+    def _extract_top_n(self, message: str) -> int | None:
+        normalized = message.lower()
+        digit_match = re.search(r"(?:前|top)\s*(\d+)\s*名?", normalized)
+        if digit_match:
+            return max(int(digit_match.group(1)), 1)
+
+        chinese_match = re.search(r"前\s*([一二两三四五六七八九十]+)\s*名?", message)
+        if chinese_match:
+            value = self._parse_chinese_number(chinese_match.group(1))
+            if value is not None:
+                return value
+
+        return None
 
     def _wants_full_schedule(self, message: str) -> bool:
         lowered = message.lower()
@@ -347,6 +381,24 @@ class AgentResponseFormatter:
         ]
         return "当前完整车队积分榜：\n" + "\n".join(lines)
 
+    def _format_top_standings(self, standings: list[dict[str, Any]], top_n: int) -> str:
+        if not standings:
+            return "当前没有可用的积分榜数据。"
+
+        entries = standings[:top_n]
+        if "driver_name" in standings[0]:
+            lines = [
+                f"{entry['position']}. {entry['driver_name']} | {entry['team_name']} | {entry['points']}分"
+                for entry in entries
+            ]
+            return f"当前车手积分榜前 {len(entries)} 名：\n" + "\n".join(lines)
+
+        lines = [
+            f"{entry['position']}. {entry['team_name']} | {entry['points']}分"
+            for entry in entries
+        ]
+        return f"当前车队积分榜前 {len(entries)} 名：\n" + "\n".join(lines)
+
     def _find_subject_entry(
         self,
         message: str,
@@ -412,7 +464,7 @@ class AgentResponseFormatter:
         self,
         standings: list[dict[str, Any]],
         requested_position: int,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         for entry in standings:
             if entry.get("position") == requested_position:
                 return entry
@@ -421,7 +473,7 @@ class AgentResponseFormatter:
         if 0 <= index < len(standings):
             return standings[index]
 
-        return standings[0]
+        return None
 
     def _extract_requested_position(self, message: str) -> int:
         lowered = message.lower()
@@ -438,3 +490,20 @@ class AgentResponseFormatter:
             return int(english_match.group(1))
 
         return 1
+
+    def _parse_chinese_number(self, value: str) -> int | None:
+        if value in self.CHINESE_NUMBERS:
+            return self.CHINESE_NUMBERS[value]
+
+        if value.startswith("十"):
+            suffix = value[1:]
+            return 10 + self.CHINESE_NUMBERS.get(suffix, 0)
+
+        if "十" in value:
+            prefix, suffix = value.split("十", 1)
+            tens = self.CHINESE_NUMBERS.get(prefix)
+            if tens is None:
+                return None
+            return tens * 10 + self.CHINESE_NUMBERS.get(suffix, 0)
+
+        return None

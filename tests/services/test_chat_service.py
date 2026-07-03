@@ -134,8 +134,13 @@ def test_chat_service_streams_session_and_status_before_agent_work() -> None:
     remaining_events = list(stream)
 
     remaining_event_names = [event["event"] for event in remaining_events]
-    assert remaining_event_names[0] == "message_delta"
+    assert remaining_event_names[0] == "status"
     assert remaining_event_names[-1] == "message_completed"
+    assert [event["data"]["message"] for event in remaining_events if event["event"] == "status"] == [
+        "routing",
+        "retrieving",
+        "generating",
+    ]
     assert "message_delta" in remaining_event_names
     assert agent_service.received_fallback_intent is None
 

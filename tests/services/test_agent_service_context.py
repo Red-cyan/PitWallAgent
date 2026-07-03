@@ -1,3 +1,4 @@
+from app.agents.intent_router import IntentRouter
 from app.services.agent_service import AgentService
 
 
@@ -89,3 +90,27 @@ def test_agent_service_keeps_context_for_follow_up_queries() -> None:
     )
 
     assert "User: 现在谁是车手积分榜第一名" in planner.messages[-1]
+
+
+def test_agent_service_does_not_mix_constructor_context_into_explicit_driver_rank_query() -> None:
+    planner = CapturingPlanner()
+    service = AgentService(
+        intent_router=IntentRouter(),
+        planner=planner,
+        tool_dispatcher=StubToolDispatcher(),
+        runtime=None,
+    )
+    service.runtime = None
+
+    service.handle_query(
+        "车手积分榜第4名是哪位",
+        fallback_intent="race",
+        conversation_context=(
+            "User: 车队积分榜前5名都是谁\n"
+            "Assistant: 当前车队积分榜前 5 名：\n"
+            "1. Mercedes | 302分\n"
+            "2. Ferrari | 204分"
+        ),
+    )
+
+    assert planner.messages[-1] == "车手积分榜第4名是哪位"

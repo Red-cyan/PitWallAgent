@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from app.agents.intent_router import IntentRouter
 from app.agents.tool_dispatcher import ToolDispatcher
+from app.config.settings import settings
 from app.core.logging import log_structured
 from app.services.llm.client import LLMClient
 
@@ -47,14 +49,32 @@ class LLMQueryPlanner:
 
     def plan(self, message: str, fallback_intent: str | None = None) -> dict[str, Any]:
         heuristic_intent = self.intent_router.route(message, fallback_intent=fallback_intent)
-        heuristic_plan = self.tool_dispatcher.build_plan(intent=heuristic_intent, message=message)
+        heuristic_plan = self._build_heuristic_plan(
+            intent=heuristic_intent,
+            message=message,
+        )
+        if heuristic_plan.get("tool_name") == self._TOOL_NAMES["news"]:
+            heuristic_intent = "news"
         heuristic_plan["intent"] = heuristic_intent
+
+        if not self._should_use_llm_planner(message, heuristic_intent):
+            log_structured(
+                self.logger,
+                "query_planner_completed",
+                mode="heuristic",
+                intent=heuristic_plan["intent"],
+                tool_name=heuristic_plan["tool_name"],
+                action=heuristic_plan["action"],
+            )
+            return heuristic_plan
 
         try:
             llm_client = self.llm_client or LLMClient()
             raw_response = llm_client.chat(
                 messages=self._build_messages(message, fallback_intent=fallback_intent),
                 temperature=0,
+                max_tokens=settings.llm_planner_max_tokens,
+                timeout=settings.llm_planner_timeout_seconds,
             )
             llm_plan = self._parse_and_normalize(raw_response, message)
             log_structured(
@@ -78,6 +98,76 @@ class LLMQueryPlanner:
             )
             return heuristic_plan
 
+    def _build_heuristic_plan(self, *, intent: str, message: str) -> dict[str, Any]:
+        article_plan = self._build_news_article_plan(message)
+        if article_plan is not None:
+            return article_plan
+
+        return self.tool_dispatcher.build_plan(intent=intent, message=message)
+
+    def _build_news_article_plan(self, message: str) -> dict[str, Any] | None:
+        lowered = message.lower()
+        if "news" not in lowered and "article" not in lowered and "新闻" not in message and "文章" not in message:
+            return None
+
+        article_match = re.search(r"(?:article|news|新闻|文章)\s*#?\s*(\d+)", lowered)
+        if article_match is None:
+            return None
+
+        article_id = int(article_match.group(1))
+        if any(token in lowered or token in message for token in ("rule", "rules", "regulation", "规则", "条例", "关联")):
+            action = "get_rules_analysis"
+        elif any(token in lowered or token in message for token in ("insight", "analysis", "analyze", "分析", "解读")):
+            action = "get_insights"
+        else:
+            action = "get_article"
+
+        return {
+            "tool_name": self._TOOL_NAMES["news"],
+            "action": action,
+            "params": {"article_id": article_id},
+        }
+
+    def _should_use_llm_planner(self, message: str, heuristic_intent: str) -> bool:
+        if not settings.llm_planner_enabled and self.llm_client is None:
+            return False
+
+        if heuristic_intent != "general":
+            return False
+
+        normalized = message.lower().strip()
+        if self._is_casual_general_message(normalized):
+            return False
+
+        looks_like_follow_up = getattr(self.intent_router, "looks_like_follow_up", None)
+        if callable(looks_like_follow_up) and looks_like_follow_up(normalized):
+            return False
+
+        return True
+
+    def _is_casual_general_message(self, normalized: str) -> bool:
+        casual_messages = {
+            "你好",
+            "您好",
+            "hello",
+            "hi",
+            "hey",
+            "你是谁",
+            "你能做什么",
+            "你可以做什么",
+        }
+        if normalized in casual_messages:
+            return True
+
+        casual_tokens = (
+            "谢谢",
+            "thanks",
+            "thank you",
+            "不对",
+            "不对不对",
+        )
+        return any(token in normalized for token in casual_tokens)
+
     def _build_messages(self, message: str, fallback_intent: str | None) -> list[dict[str, str]]:
         fallback_text = fallback_intent or "none"
         return [
@@ -95,7 +185,10 @@ class LLMQueryPlanner:
                     "general:answer. "
                     "Use general for greetings, open-ended F1 questions, and anything not clearly requiring a structured data tool. "
                     "Use race for standings, schedules, next/previous race, teams, drivers, championship leaders. "
-                    "Use regulation for FIA rules and flags. "
+                    "Use regulation for FIA/F1 rules, penalties, infringements, stewards, investigations, "
+                    "race control, flags, safety procedures, pit lane rules, parc ferme, technical legality, "
+                    "dangerous driving, unsafe release, speeding, track limits, and questions asking whether "
+                    "something is allowed or how it is punished. "
                     "Use strategy for pit stop or tactical analysis. "
                     "Use news only when the user explicitly asks for news, headlines, or recent updates. "
                     "Use news:get_article for a specific article by id, get_insights for article analysis, "

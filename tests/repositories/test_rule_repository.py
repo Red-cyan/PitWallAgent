@@ -56,3 +56,30 @@ def test_red_flag_question_in_chinese_without_rewrite_still_prefers_sporting_sec
 
     assert chunks
     assert "Section B" in chunks[0].document_title
+
+
+def test_chinese_pit_lane_speeding_question_expands_to_regulation_keywords() -> None:
+    repository = RuleRepository()
+
+    normalized = repository._normalize_question("维修区超速是什么")
+    keywords = repository._expand_keywords(normalized)
+    preferred_sections = repository._match_preferred_sections(normalized)
+
+    assert "pit" in keywords
+    assert "lane" in keywords
+    assert "speed" in keywords
+    assert "penalty" in keywords
+    assert preferred_sections == ["Section B"]
+
+
+def test_chinese_dangerous_driving_question_expands_to_regulation_keywords() -> None:
+    repository = RuleRepository()
+
+    normalized = repository._normalize_question("危险驾驶是什么")
+    keywords = repository._expand_keywords(normalized)
+    preferred_sections = repository._match_preferred_sections(normalized)
+
+    assert "dangerous" in keywords
+    assert "stewards" in keywords
+    assert "penalty" in keywords
+    assert preferred_sections == ["Section B"]
