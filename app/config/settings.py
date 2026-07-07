@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     session_backend: str = "memory"
     session_history_max_turns: int = 20
     session_ttl_seconds: int = 86400
+    memory_recent_turns: int = 4
+    memory_context_token_budget: int = 1200
+    memory_summary_token_budget: int = 260
+    memory_compaction_token_threshold: int = 1600
+    memory_long_term_enabled: bool = True
+    memory_long_term_backend: str = "memory"
+    memory_long_term_ttl_seconds: int = 2592000
+    memory_long_term_top_k: int = 3
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0

@@ -18,6 +18,9 @@ class ConversationSession:
     session_id: str
     history: list[ConversationTurn] = field(default_factory=list)
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    summary: str | None = None
+    summary_updated_at: datetime | None = None
+    compacted_turn_count: int = 0
 
 
 class SessionStore(Protocol):
@@ -155,6 +158,11 @@ class RedisSessionStore:
         payload = {
             "session_id": session.session_id,
             "updated_at": session.updated_at.isoformat(),
+            "summary": session.summary,
+            "summary_updated_at": session.summary_updated_at.isoformat()
+            if session.summary_updated_at
+            else None,
+            "compacted_turn_count": session.compacted_turn_count,
             "history": [turn.model_dump(mode="json") for turn in session.history],
         }
         return json.dumps(payload, ensure_ascii=False)
@@ -164,6 +172,11 @@ class RedisSessionStore:
         return ConversationSession(
             session_id=data["session_id"],
             updated_at=datetime.fromisoformat(data["updated_at"]).astimezone(UTC),
+            summary=data.get("summary"),
+            summary_updated_at=datetime.fromisoformat(data["summary_updated_at"]).astimezone(UTC)
+            if data.get("summary_updated_at")
+            else None,
+            compacted_turn_count=int(data.get("compacted_turn_count", 0)),
             history=[ConversationTurn.model_validate(turn) for turn in data.get("history", [])],
         )
 
@@ -263,11 +276,56 @@ class SessionService:
         session.history.append(turn)
         session.updated_at = turn.created_at
 
-        max_turns = settings.session_history_max_turns
-        if max_turns > 0 and len(session.history) > max_turns:
-            session.history = session.history[-max_turns:]
+        self._compact_history_if_needed(session)
 
         self.store.save(session)
 
     def _generate_session_id(self) -> str:
         return uuid4().hex
+
+    def _compact_history_if_needed(self, session: ConversationSession) -> None:
+        max_turns = settings.session_history_max_turns
+        if max_turns <= 0:
+            return
+
+        estimated_tokens = self._estimate_tokens(
+            "\n".join(turn.message for turn in session.history)
+        )
+        threshold = settings.memory_compaction_token_threshold
+        exceeds_turn_limit = len(session.history) > max_turns
+        exceeds_token_limit = threshold > 0 and estimated_tokens > threshold
+        if not exceeds_turn_limit and not exceeds_token_limit:
+            return
+
+        keep_turns = max_turns if exceeds_turn_limit else max(1, settings.memory_recent_turns)
+        old_turns = session.history[:-keep_turns]
+        if not old_turns:
+            return
+
+        session.summary = self._merge_summary(session.summary, old_turns)
+        session.summary_updated_at = session.updated_at
+        session.compacted_turn_count += len(old_turns)
+        session.history = session.history[-keep_turns:]
+
+    def _merge_summary(self, existing_summary: str | None, turns: list[ConversationTurn]) -> str:
+        lines: list[str] = []
+        if existing_summary:
+            lines.append(existing_summary.strip())
+
+        for turn in turns:
+            role = "User" if turn.role == "user" else "Assistant"
+            message = " ".join(turn.message.split())
+            lines.append(f"{role}: {message}")
+
+        summary = "\n".join(line for line in lines if line)
+        max_chars = max(settings.memory_summary_token_budget * 4, 200)
+        if len(summary) <= max_chars:
+            return summary
+        return summary[-max_chars:].lstrip()
+
+    def _estimate_tokens(self, text: str) -> int:
+        if not text:
+            return 0
+        ascii_chars = sum(1 for char in text if ord(char) < 128)
+        non_ascii_chars = len(text) - ascii_chars
+        return max(1, (ascii_chars // 4) + non_ascii_chars)

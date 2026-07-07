@@ -12,6 +12,7 @@ from app.schemas.chat import (
 )
 from app.services.agent_service import AgentService
 from app.services.context_builder import ContextBuilder
+from app.services.memory_service import MemoryContext, MemoryService
 from app.services.session_service import SessionService
 
 
@@ -23,17 +24,22 @@ class ChatService:
         agent_service: AgentService | None = None,
         session_service: SessionService | None = None,
         context_builder: ContextBuilder | None = None,
+        memory_service: MemoryService | None = None,
     ) -> None:
         self.logger = logging.getLogger("pitwall.chat")
         self.agent_service = agent_service or AgentService()
         self.session_service = session_service or SessionService()
         self.context_builder = context_builder or ContextBuilder()
+        self.memory_service = memory_service or MemoryService()
 
     def handle_chat(self, message: str, session_id: str | None = None) -> ChatResponse:
         session = self.session_service.get_or_create_session(session_id)
         history = self.session_service.get_history(session.session_id)
         fallback_intent = self.session_service.get_last_intent(session.session_id)
-        conversation_context = self.context_builder.build_context(history, message)
+        memory_context = self.memory_service.build_context(
+            session=session,
+            current_message=message,
+        )
 
         log_structured(
             self.logger,
@@ -47,9 +53,15 @@ class ChatService:
         response = self.agent_service.handle_query(
             message,
             fallback_intent=fallback_intent,
-            conversation_context=conversation_context,
+            conversation_context=memory_context.rendered,
         )
+        response.trace = self._with_memory_trace(response.trace, memory_context)
         self.session_service.append_agent_response(session.session_id, response)
+        self.memory_service.record_interaction(
+            session_id=session.session_id,
+            user_message=message,
+            assistant_message=response.final_answer,
+        )
 
         updated_history = self.session_service.get_history(session.session_id)
         summary = self._build_summary(session.session_id, updated_history)
@@ -88,9 +100,11 @@ class ChatService:
             "data": {"session_id": session.session_id, "message": "routing"},
         }
 
-        history = self.session_service.get_history(session.session_id)
         fallback_intent = self.session_service.get_last_intent(session.session_id)
-        conversation_context = self.context_builder.build_context(history, message)
+        memory_context = self.memory_service.build_context(
+            session=session,
+            current_message=message,
+        )
 
         self.session_service.append_user_message(session.session_id, message)
         yield {
@@ -101,8 +115,9 @@ class ChatService:
         response_payload = self.agent_service.handle_query(
             message,
             fallback_intent=fallback_intent,
-            conversation_context=conversation_context,
+            conversation_context=memory_context.rendered,
         )
+        response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
         elapsed_ms = round((time.perf_counter() - started_at) * 1000, 2)
         response_payload.trace = {
             **response_payload.trace,
@@ -112,6 +127,11 @@ class ChatService:
             },
         }
         self.session_service.append_agent_response(session.session_id, response_payload)
+        self.memory_service.record_interaction(
+            session_id=session.session_id,
+            user_message=message,
+            assistant_message=response_payload.final_answer,
+        )
 
         updated_history = self.session_service.get_history(session.session_id)
         response = ChatResponse(
@@ -222,3 +242,9 @@ class ChatService:
             return [""]
 
         return [text[index : index + chunk_size] for index in range(0, len(text), chunk_size)]
+
+    def _with_memory_trace(self, trace: dict, memory_context: MemoryContext) -> dict:
+        return {
+            **trace,
+            "memory": memory_context.trace(),
+        }

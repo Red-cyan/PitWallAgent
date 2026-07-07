@@ -123,9 +123,25 @@ class AgentService:
     def _build_effective_message(self, *, message: str, conversation_context: str | None) -> str:
         if not conversation_context:
             return message
-        if not self.intent_router.looks_like_follow_up(message):
-            return message
-        return f"{conversation_context}\nUser: {message}"
+        if self.intent_router.looks_like_follow_up(message):
+            return conversation_context
+
+        stable_memory_context = self._extract_long_term_memory_context(conversation_context)
+        if stable_memory_context:
+            return f"{stable_memory_context}\n\nCurrent user message:\nUser: {message}"
+
+        return message
+
+    def _extract_long_term_memory_context(self, conversation_context: str) -> str | None:
+        marker = "Long-term memory:"
+        start = conversation_context.find(marker)
+        if start == -1:
+            return None
+
+        next_section = conversation_context.find("\n\n", start)
+        if next_section == -1:
+            return conversation_context[start:].strip()
+        return conversation_context[start:next_section].strip()
 
     def _with_latency_trace(self, trace: dict, started_at: float) -> dict:
         return {

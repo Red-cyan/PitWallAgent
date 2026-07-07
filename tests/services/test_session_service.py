@@ -204,3 +204,37 @@ def test_redis_session_store_deletes_session_and_index() -> None:
     assert deleted is True
     assert store.get("session-a") is None
     assert client.sorted_sets[store.SESSION_INDEX_KEY] == {}
+
+
+def test_session_service_compacts_trimmed_history_into_summary(monkeypatch) -> None:
+    monkeypatch.setattr(session_service.settings, "session_history_max_turns", 2)
+    monkeypatch.setattr(session_service.settings, "memory_recent_turns", 2)
+    service = SessionService(store=InMemorySessionStore())
+
+    service.append_user_message("session-summary", "first message")
+    service.append_user_message("session-summary", "second message")
+    service.append_user_message("session-summary", "third message")
+    session = service.get_session("session-summary")
+
+    assert session is not None
+    assert len(session.history) == 2
+    assert session.summary is not None
+    assert "first message" in session.summary
+    assert session.compacted_turn_count == 1
+
+
+def test_redis_session_store_round_trip_keeps_compacted_summary() -> None:
+    client = FakeRedisClient()
+    store = RedisSessionStore(client=client, ttl_seconds=120)
+    session = session_service.ConversationSession(
+        session_id="session-summary",
+        summary="User asked about tyre wear.",
+        compacted_turn_count=4,
+    )
+
+    store.save(session)
+    loaded_session = store.get("session-summary")
+
+    assert loaded_session is not None
+    assert loaded_session.summary == "User asked about tyre wear."
+    assert loaded_session.compacted_turn_count == 4
