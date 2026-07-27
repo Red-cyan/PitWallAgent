@@ -42,7 +42,11 @@ class GeneralTool:
             return result
 
         try:
-            response = self.general_answer_service.answer(question)
+            on_token = kwargs.get("_on_token")
+            if on_token is None:
+                response = self.general_answer_service.answer(question)
+            else:
+                response = self.general_answer_service.answer(question, on_token=on_token)
             result = ToolResult(
                 tool_name=self.name,
                 success=True,

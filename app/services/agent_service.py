@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable
 
 from app.core.logging import log_structured
 from app.agents.intent_router import IntentRouter
@@ -37,6 +38,35 @@ class AgentService:
         fallback_intent: str | None = None,
         conversation_context: str | None = None,
     ) -> AgentQueryResponse:
+        return self._handle_query(
+            message,
+            fallback_intent=fallback_intent,
+            conversation_context=conversation_context,
+        )
+
+    def stream_query(
+        self,
+        message: str,
+        *,
+        on_token: Callable[[str], None],
+        fallback_intent: str | None = None,
+        conversation_context: str | None = None,
+    ) -> AgentQueryResponse:
+        return self._handle_query(
+            message,
+            fallback_intent=fallback_intent,
+            conversation_context=conversation_context,
+            on_token=on_token,
+        )
+
+    def _handle_query(
+        self,
+        message: str,
+        *,
+        fallback_intent: str | None = None,
+        conversation_context: str | None = None,
+        on_token: Callable[[str], None] | None = None,
+    ) -> AgentQueryResponse:
         started_at = time.perf_counter()
         effective_message = self._build_effective_message(
             message=message,
@@ -49,7 +79,17 @@ class AgentService:
             has_conversation_context=conversation_context is not None,
         )
         if self.runtime is not None:
-            response = self.runtime.run(effective_message, fallback_intent=fallback_intent)
+            if on_token is None:
+                response = self.runtime.run(
+                    effective_message,
+                    fallback_intent=fallback_intent,
+                )
+            else:
+                response = self.runtime.run(
+                    effective_message,
+                    fallback_intent=fallback_intent,
+                    on_token=on_token,
+                )
             response.trace = self._with_latency_trace(response.trace, started_at)
             log_structured(
                 self.logger,
@@ -63,7 +103,10 @@ class AgentService:
 
         tool_plan = self.planner.plan(effective_message, fallback_intent=fallback_intent)
         intent = tool_plan["intent"]
-        result = self.tool_dispatcher.execute_plan(tool_plan)
+        if on_token is None:
+            result = self.tool_dispatcher.execute_plan(tool_plan)
+        else:
+            result = self.tool_dispatcher.execute_plan(tool_plan, on_token=on_token)
         final_answer = self.response_formatter.build(
             message=effective_message,
             intent=intent,

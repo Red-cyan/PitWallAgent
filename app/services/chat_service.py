@@ -1,8 +1,13 @@
 import logging
+import queue
+import threading
 import time
 from collections.abc import Iterator
+from typing import Any
 
 from app.core.logging import log_structured
+from app.core.metrics import STREAM_DURATION, STREAM_REQUESTS, STREAM_TTFT
+from app.core.request_context import get_request_id
 from app.schemas.chat import (
     ChatHistoryResponse,
     ChatResponse,
@@ -14,6 +19,7 @@ from app.services.agent_service import AgentService
 from app.services.context_builder import ContextBuilder
 from app.services.memory_service import MemoryContext, MemoryService
 from app.services.session_service import SessionService
+from app.services.streaming import StreamCancelled
 
 
 class ChatService:
@@ -86,18 +92,22 @@ class ChatService:
     def stream_chat(self, message: str, session_id: str | None = None) -> Iterator[dict]:
         session = self.session_service.get_or_create_session(session_id)
         started_at = time.perf_counter()
+        request_id = get_request_id() or ""
+
+        def event_data(**data: Any) -> dict[str, Any]:
+            return {"session_id": session.session_id, "request_id": request_id, **data}
 
         yield {
             "event": "session_started",
-            "data": {"session_id": session.session_id},
+            "data": event_data(),
         }
         yield {
             "event": "status",
-            "data": {"session_id": session.session_id, "message": "thinking"},
+            "data": event_data(message="thinking", stage="thinking"),
         }
         yield {
             "event": "status",
-            "data": {"session_id": session.session_id, "message": "routing"},
+            "data": event_data(message="routing", stage="routing"),
         }
 
         fallback_intent = self.session_service.get_last_intent(session.session_id)
@@ -109,68 +119,124 @@ class ChatService:
         self.session_service.append_user_message(session.session_id, message)
         yield {
             "event": "status",
-            "data": {"session_id": session.session_id, "message": "retrieving"},
+            "data": event_data(message="retrieving", stage="retrieving"),
         }
-
-        response_payload = self.agent_service.handle_query(
-            message,
-            fallback_intent=fallback_intent,
-            conversation_context=memory_context.rendered,
-        )
-        response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
-        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 2)
-        response_payload.trace = {
-            **response_payload.trace,
-            "latency_ms_by_stage": {
-                **response_payload.trace.get("latency_ms_by_stage", {}),
-                "total_before_stream": elapsed_ms,
-            },
-        }
-        self.session_service.append_agent_response(session.session_id, response_payload)
-        self.memory_service.record_interaction(
-            session_id=session.session_id,
-            user_message=message,
-            assistant_message=response_payload.final_answer,
-        )
-
-        updated_history = self.session_service.get_history(session.session_id)
-        response = ChatResponse(
-            session_id=session.session_id,
-            response=response_payload,
-            history=updated_history,
-            session=self._build_summary(session.session_id, updated_history),
-        )
-        full_answer = response.response.final_answer
-
-        log_structured(
-            self.logger,
-            "chat_stream_started",
-            session_id=response.session_id,
-            output_length=len(full_answer),
-        )
         yield {
             "event": "status",
-            "data": {"session_id": response.session_id, "message": "generating"},
+            "data": event_data(message="generating", stage="generating"),
         }
 
-        for delta in self._chunk_text(full_answer):
-            yield {
-                "event": "message_delta",
-                "data": {"session_id": response.session_id, "delta": delta},
+        messages: queue.Queue[tuple[str, Any]] = queue.Queue()
+        cancelled = threading.Event()
+
+        def on_token(token: str) -> None:
+            if cancelled.is_set():
+                raise StreamCancelled()
+            messages.put(("token", token))
+
+        def run_agent() -> None:
+            try:
+                stream_query = getattr(self.agent_service, "stream_query", None)
+                if callable(stream_query):
+                    payload = stream_query(
+                        message,
+                        on_token=on_token,
+                        fallback_intent=fallback_intent,
+                        conversation_context=memory_context.rendered,
+                    )
+                else:
+                    payload = self.agent_service.handle_query(
+                        message,
+                        fallback_intent=fallback_intent,
+                        conversation_context=memory_context.rendered,
+                    )
+                messages.put(("completed", payload))
+            except StreamCancelled:
+                messages.put(("cancelled", None))
+            except Exception as exc:
+                messages.put(("error", exc))
+
+        worker = threading.Thread(target=run_agent, name="pitwall-chat-stream", daemon=True)
+        worker.start()
+        token_seen = False
+        completed = False
+        failed = False
+        response_payload = None
+        try:
+            while response_payload is None:
+                kind, payload = messages.get()
+                if kind == "token":
+                    if not token_seen:
+                        STREAM_TTFT.observe(time.perf_counter() - started_at)
+                    token_seen = True
+                    yield {
+                        "event": "message_delta",
+                        "data": event_data(delta=payload),
+                    }
+                elif kind == "completed":
+                    response_payload = payload
+                elif kind == "cancelled":
+                    return
+                elif kind == "error":
+                    raise payload
+
+            stream_mode = "token" if token_seen else "buffered"
+            if not token_seen:
+                for delta in self._chunk_text(response_payload.final_answer):
+                    yield {
+                        "event": "message_delta",
+                        "data": event_data(delta=delta),
+                    }
+
+            total_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
+            response_payload.trace = {
+                **response_payload.trace,
+                "request_id": request_id,
+                "stream_mode": stream_mode,
+                "latency_ms_by_stage": {
+                    **response_payload.trace.get("latency_ms_by_stage", {}),
+                    "stream_total": total_ms,
+                },
             }
-            time.sleep(0.02)
-
-        yield {
-            "event": "message_completed",
-            "data": response.model_dump(mode="json"),
-        }
-
-        log_structured(
-            self.logger,
-            "chat_stream_completed",
-            session_id=response.session_id,
-            output_length=len(full_answer),
-        )
+            self.session_service.append_agent_response(session.session_id, response_payload)
+            self.memory_service.record_interaction(
+                session_id=session.session_id,
+                user_message=message,
+                assistant_message=response_payload.final_answer,
+            )
+            updated_history = self.session_service.get_history(session.session_id)
+            response = ChatResponse(
+                session_id=session.session_id,
+                response=response_payload,
+                history=updated_history,
+                session=self._build_summary(session.session_id, updated_history),
+            )
+            STREAM_REQUESTS.labels("success", stream_mode).inc()
+            STREAM_DURATION.labels(stream_mode).observe(time.perf_counter() - started_at)
+            completed = True
+            yield {
+                "event": "message_completed",
+                "data": response.model_dump(mode="json"),
+            }
+            log_structured(
+                self.logger,
+                "chat_stream_completed",
+                session_id=response.session_id,
+                output_length=len(response_payload.final_answer),
+                stream_mode=stream_mode,
+            )
+        except GeneratorExit:
+            raise
+        except Exception:
+            failed = True
+            STREAM_REQUESTS.labels("error", "token" if token_seen else "unknown").inc()
+            raise
+        finally:
+            if not completed:
+                cancelled.set()
+            if not completed and not failed:
+                STREAM_REQUESTS.labels("cancelled", "token" if token_seen else "unknown").inc()
 
     def get_history(self, session_id: str) -> ChatHistoryResponse:
         session = self.session_service.get_or_create_session(session_id)
@@ -232,10 +298,18 @@ class ChatService:
         session = self.session_service.get_or_create_session(session_id)
         return ChatSessionSummary(
             session_id=session_id,
+            title=self._session_title(history),
             turn_count=len(history),
             last_intent=self.session_service.get_last_intent(session_id),
             updated_at=session.updated_at,
         )
+
+    def _session_title(self, history: list) -> str:
+        first_user_message = next(
+            (turn.message.strip() for turn in history if turn.role == "user" and turn.message.strip()),
+            "New conversation",
+        )
+        return first_user_message if len(first_user_message) <= 48 else f"{first_user_message[:47]}..."
 
     def _chunk_text(self, text: str, chunk_size: int = 24) -> list[str]:
         if not text:

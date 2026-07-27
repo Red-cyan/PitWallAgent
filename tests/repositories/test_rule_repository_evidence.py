@@ -71,3 +71,16 @@ def test_rule_repository_does_not_treat_section_match_as_evidence() -> None:
     )
 
     assert chunks == []
+
+
+def test_adjacent_clause_parts_are_appended_without_changing_hit_rank() -> None:
+    repository = RuleRepository(prefer_database=False)
+    first = RetrievedChunk(chunk_id="part-1", content="first", document_title="Section B",
+                           document_key="b", clause_id="B5.1", article="B5.1", part_ordinal=1)
+    second = RetrievedChunk(chunk_id="part-2", content="second", document_title="Section B",
+                            document_key="b", clause_id="B5.1", article="B5.1", part_ordinal=2)
+    repository._cached_chunks = [first, second]
+
+    expanded = repository.expand_clause_context([second])
+
+    assert [chunk.chunk_id for chunk in expanded] == ["part-2", "part-1"]

@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+from collections.abc import Callable
 
 from app.core.logging import log_structured
 from app.core.metrics import RAG_DURATION, RAG_RETRIEVALS
@@ -14,6 +15,7 @@ from app.schemas.rules import (
 )
 from app.services.knowledge_service import KnowledgeService
 from app.services.llm.client import LLMClient
+from app.services.streaming import StreamCancelled
 
 
 class RegulationQAService:
@@ -99,7 +101,12 @@ class RegulationQAService:
             },
         ]
 
-    def _generate_answer(self, question: str, chunks: list[RetrievedChunk]) -> str:
+    def _generate_answer(
+        self,
+        question: str,
+        chunks: list[RetrievedChunk],
+        on_token: Callable[[str], None] | None = None,
+    ) -> str:
         if not chunks:
             log_structured(
                 self.logger,
@@ -109,10 +116,19 @@ class RegulationQAService:
             )
             return self._build_fallback_answer(question, chunks)
 
+        emitted_tokens = False
         try:
             llm_client = self.llm_client or LLMClient()
             messages = self._build_messages(question, chunks)
-            answer = llm_client.chat(messages=messages, temperature=0).strip()
+            if on_token is None:
+                answer = llm_client.chat(messages=messages, temperature=0).strip()
+            else:
+                tokens: list[str] = []
+                for token in llm_client.stream_chat(messages=messages, temperature=0):
+                    on_token(token)
+                    emitted_tokens = True
+                    tokens.append(token)
+                answer = "".join(tokens).strip()
             log_structured(
                 self.logger,
                 "regulation_answer_generated",
@@ -120,7 +136,11 @@ class RegulationQAService:
                 retrieved_chunk_count=len(chunks),
             )
             return answer
+        except StreamCancelled:
+            raise
         except Exception as exc:
+            if emitted_tokens:
+                raise
             log_structured(
                 self.logger,
                 "regulation_answer_fallback_used",
@@ -256,7 +276,11 @@ class RegulationQAService:
                 break
         return topics
 
-    def ask(self, request: RuleAskRequest) -> RuleAskResponse:
+    def ask(
+        self,
+        request: RuleAskRequest,
+        on_token: Callable[[str], None] | None = None,
+    ) -> RuleAskResponse:
         query_type, section_code = self._classify_query(request.question)
         retrieval_started_at = time.perf_counter()
         try:
@@ -290,7 +314,7 @@ class RegulationQAService:
         elif retrieved_chunks and not has_strong_evidence:
             answer = self._build_partial_evidence_answer(request.question, retrieved_chunks)
         else:
-            answer = self._generate_answer(request.question, retrieved_chunks)
+            answer = self._generate_answer(request.question, retrieved_chunks, on_token=on_token)
 
         citations = self._build_citations(retrieved_chunks)
         if not retrieved_chunks:
@@ -314,8 +338,9 @@ class RegulationQAService:
             query_type=query_type,
         )
 
-    def debug_retrieval(self, request: RuleAskRequest) -> RetrievalDebugResponse:
-        response = self.knowledge_service.debug_regulation_retrieval(request.question)
+    def debug_retrieval(self, request: RuleAskRequest, top_k: int | None = None) -> RetrievalDebugResponse:
+        resolved_top_k = top_k if top_k is not None else getattr(request, "top_k", 5)
+        response = self.knowledge_service.debug_regulation_retrieval(request.question, resolved_top_k)
         log_structured(
             self.logger,
             "regulation_debug_retrieval_completed",

@@ -1,37 +1,21 @@
 "use client";
 
-import { Menu, Plus, RefreshCcw } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { BookOpenText, Menu, RotateCcw, Send, Square, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
+import { EvidencePanel } from "@/components/evidence-panel";
 import { MessageBubble } from "@/components/message-bubble";
 import { SessionList } from "@/components/session-list";
-import {
-  deleteSession,
-  getChatHistory,
-  listSessions,
-  sendChatMessage,
-  streamChatMessage,
-} from "@/services/api";
+import { WorkspaceNav } from "@/components/workspace-nav";
+import { deleteSession, getChatHistory, listSessions, streamChatMessage } from "@/services/api";
 import { AgentTrace, ChatResponse, ChatSessionSummary, Citation, ConversationTurn } from "@/types/chat";
 
-type StreamingAssistantState = {
-  text: string;
-  sessionId?: string;
-};
+type StreamingAssistantState = { text: string; sessionId?: string };
 
 function extractCitations(response: ChatResponse | null): Citation[] {
-  if (!response) {
-    return [];
-  }
-
-  const result = response.response.result as {
-    response?: { citations?: Citation[] };
-  };
+  if (!response) return [];
+  const result = response.response.result as { response?: { citations?: Citation[] } };
   return result.response?.citations ?? [];
-}
-
-function extractTrace(response: ChatResponse | null): AgentTrace | null {
-  return response?.response.trace ?? null;
 }
 
 export default function HomePage() {
@@ -42,275 +26,183 @@ export default function HomePage() {
   const [streamingAssistant, setStreamingAssistant] = useState<StreamingAssistantState | null>(null);
   const [completedResponse, setCompletedResponse] = useState<ChatResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState("等待输入。");
+  const [statusMessage, setStatusMessage] = useState("Ready");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    startTransition(() => {
-      refreshSessions();
-    });
-  }, []);
+  // Session bootstrap intentionally runs once; later refreshes preserve the active session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void refreshSessions(true); }, []);
+  useEffect(() => { messageEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [history, streamingAssistant]);
 
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history, streamingAssistant]);
-
-  async function refreshSessions() {
+  async function refreshSessions(selectFirst = false) {
     try {
       const data = await listSessions();
       setSessions(data.sessions);
-      if (!activeSessionId && data.sessions.length > 0) {
-        await loadSession(data.sessions[0].session_id);
-      }
+      if (selectFirst && !activeSessionId && data.sessions.length > 0) await loadSession(data.sessions[0].session_id);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "加载会话失败。");
+      setErrorMessage(error instanceof Error ? error.message : "Unable to load conversations.");
     }
   }
 
   async function loadSession(sessionId: string) {
     try {
-      setStatusMessage("正在加载会话历史...");
+      setStatusMessage("Loading history");
       const data = await getChatHistory(sessionId);
       setActiveSessionId(sessionId);
       setHistory(data.history);
       setCompletedResponse(null);
       setStreamingAssistant(null);
       setSidebarOpen(false);
-      setStatusMessage(`已载入 ${sessionId.slice(0, 12)}。`);
+      setStatusMessage("Ready");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "加载会话失败。");
+      setErrorMessage(error instanceof Error ? error.message : "Unable to load history.");
     }
   }
 
   function resetSession() {
+    abortRef.current?.abort();
     setActiveSessionId(null);
     setHistory([]);
     setCompletedResponse(null);
     setStreamingAssistant(null);
     setDraft("");
     setErrorMessage(null);
-    setStatusMessage("新会话已准备好。");
+    setStatusMessage("Ready");
     setSidebarOpen(false);
   }
 
   async function handleDeleteSession(sessionId: string) {
     try {
       await deleteSession(sessionId);
-      if (activeSessionId === sessionId) {
-        resetSession();
-      }
+      if (activeSessionId === sessionId) resetSession();
       await refreshSessions();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "删除会话失败。");
+      setErrorMessage(error instanceof Error ? error.message : "Unable to delete conversation.");
     }
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const message = draft.trim();
-    if (!message || isPending || streamingAssistant) {
-      return;
-    }
-
-    const userTurn: ConversationTurn = {
-      role: "user",
-      message,
-      created_at: new Date().toISOString(),
-    };
-
+  async function sendMessage(message: string) {
+    if (!message || streamingAssistant) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLastMessage(message);
     setDraft("");
     setErrorMessage(null);
     setCompletedResponse(null);
-    setHistory((previous) => [...previous, userTurn]);
+    setHistory((previous) => [...previous, { role: "user", message, created_at: new Date().toISOString() }]);
     setStreamingAssistant({ text: "" });
-    setStatusMessage("正在等待 PitWall 响应...");
+    setStatusMessage("Connecting");
 
     try {
-      await streamChatMessage(
-        {
-          message,
-          session_id: activeSessionId,
-        },
-        (eventPayload) => {
-          if (eventPayload.event === "session_started") {
-            setActiveSessionId(eventPayload.data.session_id);
-            setStreamingAssistant((previous) => ({
-              text: previous?.text ?? "",
-              sessionId: eventPayload.data.session_id,
-            }));
-          }
-
-          if (eventPayload.event === "status") {
-            setStatusMessage(eventPayload.data.message === "thinking" ? "PitWall 正在思考..." : eventPayload.data.message);
-            setStreamingAssistant((previous) => ({
-              text: previous?.text ?? "",
-              sessionId: eventPayload.data.session_id,
-            }));
-          }
-
-          if (eventPayload.event === "message_delta") {
-            setStreamingAssistant((previous) => ({
-              text: `${previous?.text ?? ""}${eventPayload.data.delta}`,
-              sessionId: eventPayload.data.session_id,
-            }));
-          }
-
-          if (eventPayload.event === "message_completed") {
-            setCompletedResponse(eventPayload.data);
-            setHistory(eventPayload.data.history);
-            setActiveSessionId(eventPayload.data.session_id);
-            setStreamingAssistant(null);
-            setStatusMessage("响应完成。");
-            startTransition(() => {
-              refreshSessions();
-            });
-          }
-
-          if (eventPayload.event === "error") {
-            throw new Error(eventPayload.data.message);
-          }
-        },
-      );
+      await streamChatMessage({ message, session_id: activeSessionId }, (payload) => {
+        if (payload.event === "session_started") {
+          setActiveSessionId(payload.data.session_id);
+          setStreamingAssistant((previous) => ({ text: previous?.text ?? "", sessionId: payload.data.session_id }));
+        } else if (payload.event === "status") {
+          setStatusMessage(payload.data.stage ?? payload.data.message);
+        } else if (payload.event === "message_delta") {
+          setStreamingAssistant((previous) => ({
+            text: `${previous?.text ?? ""}${payload.data.delta}`,
+            sessionId: payload.data.session_id,
+          }));
+        } else if (payload.event === "message_completed") {
+          setCompletedResponse(payload.data);
+          setHistory(payload.data.history);
+          setActiveSessionId(payload.data.session_id);
+          setStreamingAssistant(null);
+          setStatusMessage(payload.data.response.trace?.stream_mode === "token" ? "Token stream complete" : "Response complete");
+          void refreshSessions();
+        } else if (payload.event === "error") {
+          throw new Error(payload.data.message);
+        }
+      }, controller.signal);
     } catch (error) {
-      try {
-        const fallback = await sendChatMessage({
-          message,
-          session_id: activeSessionId,
-        });
-        setCompletedResponse(fallback);
-        setHistory(fallback.history);
-        setActiveSessionId(fallback.session_id);
-        setStreamingAssistant(null);
-        setStatusMessage("已回退到同步接口。");
-        startTransition(() => {
-          refreshSessions();
-        });
-      } catch (fallbackError) {
-        setStreamingAssistant(null);
-        setErrorMessage(
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : error instanceof Error
-              ? error.message
-              : "发送消息失败。",
-        );
-        setStatusMessage("请求失败。");
+      setStreamingAssistant(null);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setStatusMessage("Generation stopped");
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : "Request failed.");
+        setStatusMessage("Failed");
       }
+    } finally {
+      abortRef.current = null;
     }
   }
 
-  const assistantPreview =
-    streamingAssistant
-      ? {
-          role: "assistant" as const,
-          message: streamingAssistant.text,
-          created_at: new Date().toISOString(),
-        }
-      : null;
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void sendMessage(draft.trim());
+  }
+
+  function stopStreaming() {
+    abortRef.current?.abort();
+  }
+
+  const assistantPreview = streamingAssistant
+    ? { role: "assistant" as const, message: streamingAssistant.text, created_at: new Date().toISOString() }
+    : null;
+  const trace: AgentTrace | null = completedResponse?.response.trace ?? null;
 
   return (
-    <>
+    <div className="app-frame">
+      <WorkspaceNav />
       <div className="sheet-backdrop" data-open={sidebarOpen} onClick={() => setSidebarOpen(false)} />
-      <div className="pitwall-shell">
-        <aside className="pitwall-sidebar" data-open={sidebarOpen}>
-          <SessionList
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSelect={loadSession}
-            onDelete={handleDeleteSession}
-            onNewSession={resetSession}
-          />
+      <div className="chat-shell">
+        <aside className="session-sidebar" data-open={sidebarOpen}>
+          <button className="sidebar-close" type="button" title="Close" onClick={() => setSidebarOpen(false)}><X size={17} /></button>
+          <SessionList sessions={sessions} activeSessionId={activeSessionId} onSelect={loadSession} onDelete={handleDeleteSession} onNewSession={resetSession} />
         </aside>
-
-        <main className="pitwall-main">
-          <header className="pitwall-header">
-            <div>
-              <button
-                className="menu-button mobile-session-toggle"
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu size={18} />
-                会话
-              </button>
-              <h1 className="pitwall-title">PitWall Agent</h1>
-              <p className="pitwall-subtitle">
-                面向 Formula 1 的聊天前端，支持会话记忆、Markdown 输出、规则类 citation 和流式响应。
-              </p>
-            </div>
-            <div className="sidebar-actions">
-              <button className="ghost-button" type="button" onClick={resetSession}>
-                <Plus size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />
-                新会话
-              </button>
-              <button
-                className="ghost-button"
-                type="button"
-                disabled={isPending}
-                onClick={() => startTransition(() => refreshSessions())}
-              >
-                <RefreshCcw size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />
-                刷新
-              </button>
-            </div>
+        <main className="chat-workspace">
+          <header className="workspace-header">
+            <button className="icon-button mobile-only" type="button" title="Conversations" onClick={() => setSidebarOpen(true)}><Menu size={18} /></button>
+            <div><span>F1 operations assistant</span><h1>{activeSessionId ? sessions.find((s) => s.session_id === activeSessionId)?.title ?? "Conversation" : "New conversation"}</h1></div>
+            <div className="request-state"><i data-error={!!errorMessage} />{errorMessage ?? statusMessage}</div>
+            <button className="header-icon mobile-only" type="button" title="Evidence" onClick={() => setEvidenceOpen(true)}><BookOpenText size={17} /></button>
           </header>
-
-          <div className="pitwall-content">
-            <section className="pitwall-card chat-panel">
+          <div className="chat-grid">
+            <section className="conversation-column">
               <div className="chat-messages">
                 {history.length === 0 && !assistantPreview ? (
-                  <div className="empty-state">
-                    <div>
-                      <h3 style={{ marginTop: 0 }}>从这里开始</h3>
-                      <p>你可以直接问 PitWall：下一站比赛、积分榜、FIA 规则、或策略问题。</p>
-                    </div>
-                  </div>
+                  <div className="empty-chat"><strong>Ask the pit wall</strong><span>Race data, FIA clauses, news, or strategy.</span></div>
                 ) : null}
-
-                {history.map((turn, index) => {
-                  const isLastAssistant =
-                    turn.role === "assistant" && index === history.length - 1 && completedResponse;
-                  return (
-                    <MessageBubble
-                      key={`${turn.created_at}-${index}`}
-                      turn={turn}
-                      citations={isLastAssistant ? extractCitations(completedResponse) : []}
-                      trace={isLastAssistant ? extractTrace(completedResponse) : null}
-                    />
-                  );
-                })}
-
+                {history.map((turn, index) => <MessageBubble key={`${turn.created_at}-${index}`} turn={turn} />)}
                 {assistantPreview ? <MessageBubble turn={assistantPreview} pending /> : null}
                 <div ref={messageEndRef} />
               </div>
-            </section>
-
-            <section className="pitwall-card composer">
-              <form className="composer-form" onSubmit={handleSubmit}>
+              <form className="composer" onSubmit={handleSubmit}>
                 <textarea
-                  className="composer-input"
-                  placeholder="例如：What is parc ferme? / Who leads the championship? / Should Ferrari pit under safety car?"
+                  aria-label="Message"
+                  placeholder="Ask about parc ferme, standings, or race strategy..."
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
                 />
-                <div className="composer-actions">
-                  <div className="status-line">{errorMessage ?? statusMessage}</div>
-                  <button
-                    className="primary-button"
-                    type="submit"
-                    disabled={isPending || !!streamingAssistant || !draft.trim()}
-                  >
-                    {streamingAssistant ? "Streaming..." : "发送"}
-                  </button>
+                <div className="composer-footer">
+                  <span>Ctrl + Enter</span>
+                  <div className="composer-buttons">
+                    {errorMessage && lastMessage ? <button className="secondary-button" type="button" onClick={() => void sendMessage(lastMessage)}><RotateCcw size={15} />Retry</button> : null}
+                    {streamingAssistant ? (
+                      <button className="stop-button" type="button" onClick={stopStreaming}><Square size={14} />Stop</button>
+                    ) : (
+                      <button className="primary-button" type="submit" disabled={!draft.trim()}><Send size={15} />Send</button>
+                    )}
+                  </div>
                 </div>
               </form>
             </section>
+            <EvidencePanel trace={trace} citations={extractCitations(completedResponse)} openOnMobile={evidenceOpen} onClose={() => setEvidenceOpen(false)} />
           </div>
         </main>
       </div>
-    </>
+    </div>
   );
 }

@@ -47,7 +47,10 @@ def stream_chat(request: ChatRequest) -> StreamingResponse:
         except Exception as exc:
             yield _format_sse_event(
                 "error",
-                {"message": str(exc), "error_type": exc.__class__.__name__},
+                {
+                    "message": "Unable to complete the streamed response.",
+                    "error_type": exc.__class__.__name__,
+                },
             )
 
     return StreamingResponse(

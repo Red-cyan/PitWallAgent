@@ -44,7 +44,11 @@ class RegulationTool:
             request = RuleAskRequest(question=question)
 
             if action == "ask":
-                response = self.qa_service.ask(request)
+                on_token = kwargs.get("_on_token")
+                if on_token is None:
+                    response = self.qa_service.ask(request)
+                else:
+                    response = self.qa_service.ask(request, on_token=on_token)
                 result = ToolResult(
                     tool_name=self.name,
                     success=True,

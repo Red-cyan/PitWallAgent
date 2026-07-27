@@ -73,8 +73,7 @@ FIA PDF
 ```bash
 uv sync
 docker compose up -d
-uv run python scripts/init_pgvector_db.py
-uv run python scripts/import_regulation_chunks.py
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
@@ -89,9 +88,10 @@ npm run dev
 规则数据重建：
 
 ```bash
-uv run python scripts/build_regulation_chunks.py
-uv run python scripts/import_regulation_chunks.py
-uv run python scripts/embed_regulation_chunks.py
+uv run python scripts/build_regulation_chunks.py \
+  --corpus-version fia-2026-YYYYMMDD \
+  --emit-markdown \
+  --activate
 ```
 
 质量评估：
@@ -101,7 +101,7 @@ uv run python scripts/run_agent_eval.py
 uv run pytest
 uv run ruff check .
 uv run pyright
-cd frontend && npm run build
+cd frontend && npm run build && npm run test:e2e
 ```
 
 ## 演示问题

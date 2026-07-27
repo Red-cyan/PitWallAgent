@@ -1,10 +1,32 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.schemas.rules import Citation, RetrievalDebugResponse, RetrievedChunk, RuleAskResponse
+from app.schemas.rules import (
+    ActiveCorpusResponse,
+    Citation,
+    RetrievalDebugResponse,
+    RetrievedChunk,
+    RuleAskResponse,
+)
 
 
 class StubQAService:
+    def __init__(self) -> None:
+        self.debug_top_k: int | None = None
+        self.knowledge_service = self
+
+    def get_active_corpus(self) -> ActiveCorpusResponse:
+        return ActiveCorpusResponse(
+            corpus_version="test-corpus",
+            parser_version="clause-tree-v1",
+            embedding_model="BAAI/bge-m3",
+            status="active",
+            chunk_count=12,
+            embedding_count=12,
+            created_at="2026-07-27T00:00:00Z",
+            validation={"valid": True},
+        )
+
     def ask(self, request) -> RuleAskResponse:
         return RuleAskResponse(
             answer=f"stub answer for: {request.question}",
@@ -30,6 +52,7 @@ class StubQAService:
         )
 
     def debug_retrieval(self, request) -> RetrievalDebugResponse:
+        self.debug_top_k = request.top_k
         return RetrievalDebugResponse(
             question=request.question,
             normalized_question=f"{request.question} red flag",
@@ -78,7 +101,8 @@ def test_rules_ask_returns_grounded_response(monkeypatch) -> None:
 def test_rules_retrieval_debug_returns_debug_payload(monkeypatch) -> None:
     from app.api import rules
 
-    monkeypatch.setattr(rules, "qa_service", StubQAService())
+    service = StubQAService()
+    monkeypatch.setattr(rules, "qa_service", service)
     client = TestClient(app)
 
     response = client.post(
@@ -94,6 +118,20 @@ def test_rules_retrieval_debug_returns_debug_payload(monkeypatch) -> None:
     assert body["preferred_sections"] == ["Section B"]
     assert len(body["retrieved_chunks"]) == 1
     assert body["retrieved_chunks"][0]["score"] == 15.0
+    assert service.debug_top_k == 5
+
+
+def test_rules_active_corpus_returns_build_metadata(monkeypatch) -> None:
+    from app.api import rules
+
+    monkeypatch.setattr(rules, "qa_service", StubQAService())
+    client = TestClient(app)
+
+    response = client.get("/api/rules/corpus/active")
+
+    assert response.status_code == 200
+    assert response.json()["corpus_version"] == "test-corpus"
+    assert response.json()["embedding_count"] == 12
 
 
 def test_rules_ask_rejects_empty_question() -> None:

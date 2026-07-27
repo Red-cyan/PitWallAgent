@@ -1,0 +1,1637 @@
+{
+  "metrics": {
+    "mode": "vector",
+    "cases": 60,
+    "positive_cases": 57,
+    "recall_at_1": 0.42105263157894735,
+    "recall_at_5": 0.6666666666666666,
+    "section_recall_at_5": 0.9824561403508771,
+    "mrr": 0.504093567251462,
+    "clause_hit_rate": 0.6666666666666666,
+    "clause_recall_at_1": 0.42105263157894735,
+    "clause_recall_at_5": 0.6666666666666666,
+    "strong_evidence_rejection_rate": 1.0
+  },
+  "results": [
+    {
+      "name": "general-principles",
+      "matched_rank": 4,
+      "section_matched_rank": 4,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section D",
+        "Section A",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "C1",
+        "C1.2.1",
+        "D1",
+        "A1",
+        "A1.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1:article_overview:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d1:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a1:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a1.2.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "applicable-regulations",
+      "matched_rank": null,
+      "section_matched_rank": 5,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section D",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "C1.2.1",
+        "C1.3",
+        "C1",
+        "D1",
+        "A1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.3:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1:article_overview:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d1:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a1:article_overview:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "disciplinary-process",
+      "matched_rank": null,
+      "section_matched_rank": 2,
+      "retrieved_sections": [
+        "Section E",
+        "Section A",
+        "Section E",
+        "Section D",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "E9",
+        "A7.12.1",
+        "E9",
+        "D8.1.2",
+        "A6.4.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e9:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.12.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e9:article_overview:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d8.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.4.1:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "code-of-ethics",
+      "matched_rank": 3,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section C",
+        "Section A",
+        "Section E",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A6.2",
+        "C1.2.1",
+        "A1.2.1",
+        "E1.2.2",
+        "A4.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a4.2.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "governance-overview",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A9.4.7",
+        "A5.7",
+        "A1",
+        "A5.2.3",
+        "A8"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a9.4.7:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a5.7:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a5.2.3:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:appendix-a1:a8:clause:p07"
+      ],
+      "passed": false
+    },
+    {
+      "name": "unsafe-release",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.6.2",
+        "B1.6.2",
+        "B1.6.4",
+        "B1.6.3",
+        "B5.13.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.2:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.1:clause:p04"
+      ],
+      "passed": true
+    },
+    {
+      "name": "parc-ferme",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section F",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B3.5",
+        "B3.5.3",
+        "B1.5.4",
+        "F3.2.6",
+        "B9.5.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.5:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.5.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.5.4:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f3.2.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b9.5.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pit-lane-speed",
+      "matched_rank": 3,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.6.3",
+        "B5.10.3",
+        "B5.6.2",
+        "B1",
+        "B1.6.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.10.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1:article_overview:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.2:clause:p03"
+      ],
+      "passed": true
+    },
+    {
+      "name": "red-flag",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.14.2",
+        "B4.1.2",
+        "B5.15.4",
+        "B5.13.8",
+        "B5.7.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.14.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.15.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.8:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.7.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "yellow-flag",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.8.4",
+        "B1.8.4",
+        "B4.1.2",
+        "B5.14.2",
+        "B5.13.8"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.8.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.8.4:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.14.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.8:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "safety-car",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.13.1",
+        "B5.13",
+        "B5.13.6",
+        "B5.13.8",
+        "B5.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.8:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.2.1:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "virtual-safety-car",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.12",
+        "B5.12.1",
+        "B4.1.4",
+        "B5.13",
+        "B11.8.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.12:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.12.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b11.8.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "stewards-investigation",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "B1.9.2",
+        "B1.9.1",
+        "B1.9.4",
+        "B3.1.8",
+        "A7.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.1.8:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.2.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "dangerous-driving",
+      "matched_rank": 2,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.6.2",
+        "B1.9.5",
+        "B1.6.3",
+        "B1.9.6",
+        "B1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.2:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.5:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.6:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1:article_overview:p02"
+      ],
+      "passed": true
+    },
+    {
+      "name": "qualifying-procedure",
+      "matched_rank": null,
+      "section_matched_rank": 2,
+      "retrieved_sections": [
+        "Section C",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "C1.2.1",
+        "B2.4.2",
+        "B2.2.2",
+        "B2.4.3",
+        "B2.2.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.4.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.4.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.2.3:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "sprint-procedure",
+      "matched_rank": null,
+      "section_matched_rank": 2,
+      "retrieved_sections": [
+        "Section A",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "A8",
+        "B2.3.1",
+        "B2",
+        "B1.5.1",
+        "B2.1.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:appendix-a1:a8:clause:p08",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2:article_overview:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.5.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b2.1.3:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "track-limits",
+      "matched_rank": null,
+      "section_matched_rank": 2,
+      "retrieved_sections": [
+        "Section A",
+        "Section B",
+        "Section A",
+        "Section A",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "A7.9.2",
+        "B1.6.3",
+        "A7.9.3",
+        "A7.12.1",
+        "B1.9.6"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.9.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.9.3:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.12.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.6:clause:p03"
+      ],
+      "passed": false
+    },
+    {
+      "name": "impeding",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section A",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B4.1.1",
+        "B1.5.2",
+        "B1.9.2",
+        "A7.12.5",
+        "B1.9.5"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.5.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.12.5:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.5:clause:p02"
+      ],
+      "passed": false
+    },
+    {
+      "name": "plank-wear",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "C3.6.1",
+        "C3.6.2",
+        "C3.6.4",
+        "C15.6.6",
+        "B3.4.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c15.6.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.4.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "floor-geometry",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C3.5.6",
+        "C3.5.4",
+        "C3.5.9",
+        "C3.5.14",
+        "C3.5.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.6:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.9:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.14:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.3:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "bodywork",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section F"
+      ],
+      "retrieved_articles": [
+        "C3.4.2",
+        "C3.4",
+        "C3",
+        "C3.13",
+        "F4.1.5"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.4.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.13:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.1.5:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "skid-block",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C3.6.3",
+        "C3.6.1",
+        "C10.7.2",
+        "C3.8.1",
+        "C13.3.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.3:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.2:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.8.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13.3.1:clause:p02"
+      ],
+      "passed": false
+    },
+    {
+      "name": "vehicle-dimensions",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C3.16",
+        "C2.3.1",
+        "C3.16",
+        "C5",
+        "C2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.16:table:p03",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c2.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.16:table:p04",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5:article_overview:p03",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c2:article_overview:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "safety-structure",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C13.1.1",
+        "C13.5.1",
+        "C13",
+        "C13.6.4",
+        "C14.4.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13.1.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13.5.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13:article_overview:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c14.4.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "team-cost-cap",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D"
+      ],
+      "retrieved_articles": [
+        "D1.2.1",
+        "D6",
+        "D6",
+        "D4.2.3",
+        "D5"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d6:clause:p13",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d6:clause:p10",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d4.2.3:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d5:clause:p04"
+      ],
+      "passed": false
+    },
+    {
+      "name": "team-financial-reporting",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section D",
+        "Section C",
+        "Section D",
+        "Section D",
+        "Section D"
+      ],
+      "retrieved_articles": [
+        "D2",
+        "C17.4.9",
+        "D14.1.1",
+        "D7",
+        "D4"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c17.4.9:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:appendix-d2:d14.1.1:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d7:article_overview:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d4:article_overview:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "pu-cost-cap",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "retrieved_articles": [
+        "E1.2.1",
+        "E2.3.1",
+        "E1",
+        "E2",
+        "E2.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e2.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1:article_overview:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e2:article_overview:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e2.3:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "pu-financial-audit",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "retrieved_articles": [
+        "E6.3.1",
+        "E6",
+        "E6.5.8",
+        "E9.2.1",
+        "E1.2.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e6.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e6:article_overview:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e6.5.8:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e9.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2.3:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "wind-tunnel-testing",
+      "matched_rank": 4,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F"
+      ],
+      "retrieved_articles": [
+        "F4.5.5",
+        "F4.5.3",
+        "F4.3.1",
+        "F4.6.1",
+        "F4.5.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.5:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.3:clause:p02",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.1:table:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "operational-facilities",
+      "matched_rank": null,
+      "section_matched_rank": null,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section D",
+        "Section C",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B9.5.2",
+        "B9.4.1",
+        "D5.1.2",
+        "C17",
+        "B9"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b9.5.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b9.4.1:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:appendix-d2:d5.1.2:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c17:article_overview:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b9:article_overview:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "red-flag-zh",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.14.2",
+        "B4.1.2",
+        "B11.2.4",
+        "B5.7.2",
+        "B11.4.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.14.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b11.2.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.7.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b11.4.3:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pit-lane-speed-zh",
+      "matched_rank": 5,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.6.3",
+        "B1.9.6",
+        "B1",
+        "B1.9.6",
+        "B5.6.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.6:clause:p03",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1:article_overview:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.9.6:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "virtual-safety-car-zh",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.12",
+        "B5.12.1",
+        "B5.13",
+        "B1.8.4",
+        "B4.1.4"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.12:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.12.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.8.4:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b4.1.4:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "plank-wear-zh",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "C3.6.1",
+        "C10.7.2",
+        "C10.8.1",
+        "B1.6.1",
+        "B3.3.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.2:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.8.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.3.3:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "unsafe-release-paraphrase",
+      "matched_rank": 4,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.13.1",
+        "B5.5.5",
+        "B5.12.1",
+        "B1.6.2",
+        "B1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.13.1:clause:p04",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.5.5:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.12.1:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.6.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1:article_overview:p02"
+      ],
+      "passed": true
+    },
+    {
+      "name": "cost-cap-cross-section",
+      "matched_rank": 5,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section D",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "retrieved_articles": [
+        "E1.2.1",
+        "D1.2.1",
+        "E1",
+        "E1.2.3",
+        "E6.4.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1:article_overview:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2.3:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e6.4.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "floor-cross-section",
+      "matched_rank": null,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section F",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C3.5.14",
+        "C3.19.3",
+        "C3.3.2",
+        "F4.4.5",
+        "C1.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.5.14:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.19.3:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.3.2:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.4.5:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c1.2.1:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "stewards-paraphrase",
+      "matched_rank": null,
+      "section_matched_rank": 3,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section B",
+        "Section B",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A7.2.1",
+        "A6.1.1",
+        "B3.1.8",
+        "B3.1.4",
+        "A6.4.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a7.2.1:clause:p02",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.1.8:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b3.1.4:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.4.1:clause:p01"
+      ],
+      "passed": false
+    },
+    {
+      "name": "operational-paraphrase",
+      "matched_rank": 4,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F"
+      ],
+      "retrieved_articles": [
+        "F4.3.1",
+        "F4.5.3",
+        "F4.5.5",
+        "F4.2.2",
+        "F4.6.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.3:clause:p02",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.5:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.1:table:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "alien-rule",
+      "matched_rank": null,
+      "section_matched_rank": null,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C3.6.4",
+        "C13.4.7",
+        "C2.1.2",
+        "C8.8.2",
+        "C2.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c3.6.4:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c13.4.7:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c2.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c8.8.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c2.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "teleportation-rule",
+      "matched_rank": null,
+      "section_matched_rank": null,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section E",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C5.2.22",
+        "C5.20.11",
+        "C8.4.2",
+        "E1.2",
+        "C5"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.2.22:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.20.11:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c8.4.2:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e1.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5:article_overview:p03"
+      ],
+      "passed": true
+    },
+    {
+      "name": "moon-race-rule",
+      "matched_rank": null,
+      "section_matched_rank": null,
+      "retrieved_sections": [
+        "Section F",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "F4.4.7",
+        "C12.3.1",
+        "C15.4",
+        "C12.2.2",
+        "C5.6.4"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.4.7:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c12.3.1:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c15.4:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c12.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.6.4:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "race-points-table",
+      "matched_rank": 3,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "A2.2.1",
+        "A2",
+        "A2.2.2",
+        "B2.5.2",
+        "B2.5.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:appendix-b5:b2.5.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:appendix-b1:b2.5.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "championship-points",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A2.2.1",
+        "A2.2.2",
+        "A2",
+        "A2.1.4",
+        "A2.2.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.1.4:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.2:table:p02"
+      ],
+      "passed": true
+    },
+    {
+      "name": "investigation-no-appeal",
+      "matched_rank": 2,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A6.1.2",
+        "A6.1.7",
+        "A8.2.1",
+        "A6.1.1",
+        "A6"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.7:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a8.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.1:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6:article_overview:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "investigation-confidentiality",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "A6.1.8",
+        "A6.1.2",
+        "A8",
+        "A8.1.2",
+        "A8.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.8:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a6.1.2:clause:p02",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a8:article_overview:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a8.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a8.2.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "formation-lap-overtaking",
+      "matched_rank": 2,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.10.6",
+        "B5.6.4",
+        "B5.9.4",
+        "B5.15.3",
+        "B5.9.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.10.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.9.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.15.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.9.1:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "safety-car-formation-overtaking",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.10.6",
+        "B5.6.4",
+        "B5.9.4",
+        "B5.15.3",
+        "B5.10.7"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.10.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.9.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.15.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.10.7:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "competition-delegates",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B1.2.1",
+        "B1.2",
+        "B1.2.3",
+        "B1.3.1",
+        "B1.3.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.2.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.2:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.2.3:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.3.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "tyre-allocation-table",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B6.2.4",
+        "B6.3.1",
+        "B6.3.4",
+        "B6.2.4",
+        "B6.2.3"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.2.4:table:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.3.4:table:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.2.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.2.3:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "fuel-flow-meter",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C5.9.3",
+        "C5.9.4",
+        "C5.2.6",
+        "C5.22.3",
+        "C6.6.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.9.3:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.9.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.2.6:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.22.3:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c6.6.2:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "tyre-pressure-sensor",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section B",
+        "Section B",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C10.7.4",
+        "B6.6.6",
+        "B11.4.11",
+        "C5.13.12",
+        "C5.13.13"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.6.6:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b11.4.11:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.13.12:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5.13.13:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "wheel-dimensions-table",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C10.7.2",
+        "C10.7.2",
+        "C10.7.5",
+        "C2.3.1",
+        "C10.7.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.2:table:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.5:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c2.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.2:clause:p02"
+      ],
+      "passed": true
+    },
+    {
+      "name": "fuel-properties-table",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "C16.2",
+        "C16",
+        "C16.1.6",
+        "C16.1.2",
+        "B1.5.9"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c16.2:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c16:article_overview:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c16.1.6:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c16.1.2:clause:p02",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b1.5.9:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "team-excluded-costs",
+      "matched_rank": 2,
+      "section_matched_rank": 2,
+      "retrieved_sections": [
+        "Section E",
+        "Section D",
+        "Section D",
+        "Section E",
+        "Section D"
+      ],
+      "retrieved_articles": [
+        "E3",
+        "D5",
+        "D5.1.2",
+        "E3",
+        "D5"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e3:clause:p01",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d5:clause:p02",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d5.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e3:clause:p02",
+        "fia-2026-f1-regulations-section-d-financial-f1-teams-iss-07-2026-06-25:fia-2026-20260625:main:d5:clause:p04"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pu-performance-index-table",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "retrieved_articles": [
+        "E4",
+        "E4",
+        "E4",
+        "E4",
+        "E4"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e4:table:p02",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e4:table:p01",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e4:clause:p15",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e4:clause:p14",
+        "fia-2026-f1-regulations-section-e-financial-pu-manufacturers-iss-06-2026-06-25:fia-2026-20260625:main:e4:clause:p08"
+      ],
+      "passed": true
+    },
+    {
+      "name": "wind-tunnel-occupancy",
+      "matched_rank": 3,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F"
+      ],
+      "retrieved_articles": [
+        "F4.3.1",
+        "F4.2.4",
+        "F4.2.2",
+        "F4.5.5",
+        "F4.6.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.3.1:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.2.4:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.2.2:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.5.5:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.1:table:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "atr-coefficient-table",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section A"
+      ],
+      "retrieved_articles": [
+        "F4.6.5",
+        "F4.6.3",
+        "F4.6.1",
+        "F4.1.2",
+        "A2.2.2"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.5:table:p03",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.3:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.6.1:clause:p01",
+        "fia-2026-f1-regulations-section-f-operational-iss-09-2026-06-25:fia-2026-20260625:appendix-f2:f4.1.2:clause:p01",
+        "fia-2026-f1-regulations-section-a-general-provisions-iss-03-2026-06-25:fia-2026-20260625:main:a2.2.2:table:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "exact-clause-b5-6-4",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section C",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "retrieved_articles": [
+        "B5.6.4",
+        "C6.4.5",
+        "B6",
+        "B6.4",
+        "B5.6"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c6.4.5:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6:article_overview:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b6.4:clause:p01",
+        "fia-2026-f1-regulations-section-b-sporting-iss-07-2026-06-25-4:fia-2026-20260625:main:b5.6:clause:p01"
+      ],
+      "passed": true
+    },
+    {
+      "name": "exact-clause-c10-7-4",
+      "matched_rank": 1,
+      "section_matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "retrieved_articles": [
+        "C10.7.4",
+        "C10",
+        "C10.8.4",
+        "C5",
+        "C10.2.1"
+      ],
+      "retrieved_chunk_ids": [
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.7.4:clause:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10:article_overview:p01",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.8.4:clause:p02",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c5:article_overview:p03",
+        "fia-2026-f1-regulations-section-c-technical-iss-19-2026-06-25:fia-2026-20260625:main:c10.2.1:clause:p01"
+      ],
+      "passed": true
+    }
+  ]
+}

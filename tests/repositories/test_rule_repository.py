@@ -145,3 +145,54 @@ def test_debug_retrieval_exposes_candidate_stages() -> None:
     assert debug.hybrid_candidates
     assert debug.retrieved_chunks
     assert debug.retrieved_chunks[0].score_components
+
+
+def test_vector_search_promotes_an_exact_clause_identifier(monkeypatch) -> None:
+    repository = RuleRepository(
+        prefer_database=False,
+        chunks_data=[
+            {
+                "chunk_id": "exact-c10-7-4",
+                "content": "Exact clause content.",
+                "document_title": "FIA Regulations Section C",
+                "section": "Section C",
+                "article": "C10.7.4",
+                "clause_id": "C10.7.4",
+            }
+        ],
+    )
+    monkeypatch.setattr(repository, "_search_by_vector_queries", lambda questions, top_k: [])
+
+    results = repository.search("What does C10.7.4 require?", mode="vector", top_k=5)
+
+    assert results[0].clause_id == "C10.7.4"
+    assert results[0].score_components["exact_clause"] == 1.0
+
+
+def test_keyword_search_preserves_corpus_order_for_equal_scores() -> None:
+    repository = RuleRepository(
+        prefer_database=False,
+        chunks_data=[
+            {
+                "chunk_id": "zeta",
+                "content": "shared token",
+                "document_title": "FIA Regulations Section B",
+                "section": "Section B",
+            },
+            {
+                "chunk_id": "alpha",
+                "content": "shared token",
+                "document_title": "FIA Regulations Section B",
+                "section": "Section B",
+            },
+        ],
+    )
+
+    results = repository._search_by_keywords(
+        phrases=[],
+        keywords=["shared"],
+        preferred_sections=[],
+        top_k=5,
+    )
+
+    assert [chunk.chunk_id for chunk in results] == ["zeta", "alpha"]

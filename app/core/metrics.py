@@ -1,4 +1,4 @@
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 
 HTTP_REQUESTS = Counter(
@@ -40,6 +40,28 @@ RAG_DURATION = Histogram(
     "pitwall_rag_retrieval_duration_seconds",
     "Regulation retrieval duration in seconds.",
     ("query_type",),
+)
+STREAM_REQUESTS = Counter(
+    "pitwall_stream_requests_total",
+    "Streaming chat requests by completion outcome and stream mode.",
+    ("outcome", "mode"),
+)
+STREAM_TTFT = Histogram(
+    "pitwall_stream_time_to_first_token_seconds",
+    "Time from chat request start to the first provider token.",
+)
+STREAM_DURATION = Histogram(
+    "pitwall_stream_duration_seconds",
+    "Total streaming chat request duration.",
+    ("mode",),
+)
+ACTIVE_CORPUS_CHUNKS = Gauge(
+    "pitwall_active_corpus_chunks",
+    "Chunks available in the active regulation corpus.",
+)
+ACTIVE_CORPUS_EMBEDDINGS = Gauge(
+    "pitwall_active_corpus_embeddings",
+    "Embedded chunks available in the active regulation corpus.",
 )
 UPSTREAM_REQUESTS = Counter(
     "pitwall_upstream_requests_total",

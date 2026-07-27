@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from app.core.logging import log_structured
 from app.services.llm.client import LLMClient
+from app.services.streaming import StreamCancelled
 
 
 class GeneralAnswerService:
@@ -13,7 +15,11 @@ class GeneralAnswerService:
         self.logger = logging.getLogger("pitwall.general")
         self.llm_client = llm_client
 
-    def answer(self, question: str) -> dict[str, object]:
+    def answer(
+        self,
+        question: str,
+        on_token: Callable[[str], None] | None = None,
+    ) -> dict[str, object]:
         normalized_question = question.strip()
         log_structured(
             self.logger,
@@ -38,12 +44,24 @@ class GeneralAnswerService:
                 "source_mode": "general_guardrail",
             }
 
+        emitted_tokens = False
         try:
             llm_client = self.llm_client or LLMClient()
-            answer = llm_client.chat(
-                messages=self._build_messages(normalized_question),
-                temperature=0.3,
-            ).strip()
+            if on_token is None:
+                answer = llm_client.chat(
+                    messages=self._build_messages(normalized_question),
+                    temperature=0.3,
+                ).strip()
+            else:
+                tokens: list[str] = []
+                for token in llm_client.stream_chat(
+                    messages=self._build_messages(normalized_question),
+                    temperature=0.3,
+                ):
+                    on_token(token)
+                    emitted_tokens = True
+                    tokens.append(token)
+                answer = "".join(tokens).strip()
             if not answer:
                 raise ValueError("Empty LLM answer.")
 
@@ -61,7 +79,11 @@ class GeneralAnswerService:
                 "evidence_count": 0,
                 "source_mode": "general_llm",
             }
+        except StreamCancelled:
+            raise
         except Exception as exc:
+            if emitted_tokens:
+                raise
             answer = self._build_fallback_answer(normalized_question)
             log_structured(
                 self.logger,

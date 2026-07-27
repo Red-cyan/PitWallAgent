@@ -19,3 +19,7 @@ class RegulationIngestionSummary(BaseModel):
         default_factory=list,
         description="Per-document ingestion results.",
     )
+    corpus_version: str | None = None
+    manifest_path: str | None = None
+    validation_passed: bool = True
+    activated: bool = False

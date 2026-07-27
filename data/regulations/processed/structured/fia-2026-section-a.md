@@ -1,0 +1,1752 @@
+# FIA 2026 F1 Regulations - Section A [General Provisions] - Iss 03 - 2026-06-25
+
+
+
+## A1 GENERAL PRINCIPLES
+
+
+
+### A1 GENERAL PRINCIPLES
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Overview
+
+
+
+### A1.1.1 The FIA is responsible for the sporting organisation and regulation of the FIA Formula One World
+
+
+
+Championship (the “Championship”), comprising the FIA Formula One Grand Prix competitions that are included on the International Sporting Calendar (each, a “Competition”), with two World Championship titles, one for Drivers and one for Constructors.
+
+
+
+### A1.1.2 The Championship is the exclusive property of the FIA. The FIA has granted the Commercial Rights
+
+
+
+Holder the exclusive right to exploit the commercial rights in the Championship.
+
+
+
+### A1.1.3 This Section A (General Regulatory Provisions) and its appendices include provisions that are of
+
+
+
+general application to the Championship and that apply to all other sections of the FIA F1 Regulations unless stated otherwise.
+
+
+
+### A1.2 Applicable regulations
+
+
+
+
+
+### A1.2.1 The Championship, each of its Competitions, and all F1 Activities are governed by the FIA in
+
+
+
+accordance with the FIA rules and regulations, which include the FIA Statutes, the FIA International Sporting Code and its appendices (“ISC”), the FIA F1 Regulations (see Article A1.2.2), the FIA Code of Ethics, the FIA Judicial and Disciplinary Rules, and any other rules, policies, and procedures issued (and amended) by the FIA from time to time (“FIA Rules and Regulations”). The FIA may also issue FIA F1 Documents (see Article A1.2.3) which may contain binding or non-binding guidance, clarifications, and feedback from time to time (see Articles A1.2.3 and A9.5).
+
+
+
+### A1.2.2
+
+
+
+The “FIA F1 Regulations” comprise the following: - - - - - appendices; and -
+
+
+
+### A1.2.3 FIA F1 Documents
+
+
+
+a. The FIA may issue additional documents from time to time (“FIA F1 Documents”) which may contain binding guidance (to the extent expressly provided for in the underlying FIA F1 Regulation(s)) or non-binding guidance. Such documents will be prefixed by “FIA-F1-Doc”, followed by the document number, version, and title, and stating whether it is binding (including the FIA F1 Regulation article reference(s) pursuant to which the binding document is being issued) or non-binding. The FIA will make such FIA F1 Documents available to F1 Teams and PU Manufacturers on the FIA Portal. F1 Teams and PU Manufacturers are responsible for sharing those documents with their respective Personnel (and, if applicable, their respective suppliers), subject to any confidentiality restrictions set out in the FIA F1 Documents. The FIA may provide copies of FIA F1 Documents to the Stewards, any other designated recipients of such documents by such means as the FIA considers appropriate (ordinarily by email), subject to any confidentiality restrictions.
+
+b. The content of such documents will ordinarily be confidential and available only to the recipients designated by the FIA, who may share, where necessary, such content with their professional advisors, their suppliers, members of their Legal Group, or disclose any such documents as required by Applicable Laws. The FIA may (at its sole discretion) publish any such documents on its website or circulate them to the media, omitting any Confidential Information.
+
+c. FIA F1 Documents designated as binding shall be limited to FIA-issued documents:
+
+i. designated as Determinations in accordance with the underlying provision(s) in the Financial Regulations; ii. providing, in a timely manner, technical specifications for the correct installation of a particular component or device in the F1 Car as prescribed by, and in accordance with, the underlying provision(s) in the Technical Regulations; iii. setting out mandatory information or documentation required for compliance with the FIA F1 Regulations that must be provided by the F1 Teams and/or PU Manufacturers to the FIA, and/or defining the format of such information or documentation; and iv. defining any urgent action(s) that the FIA considers necessary to protect the safety of participants in, and of spectators and other attendees at, the Championship.
+
+d. FIA F1 Documents designated as non-binding shall be advisory only and shall not constitute part of the FIA F1 Regulations. Such documents may provide guidance, clarification, opinions, or feedback on the application and enforcement of the FIA F1 Regulations and will generally set out the FIA’s position on what is required to comply with the FIA F1 Regulations but will not include additional compliance obligations or requirements for Teams or PUMs which extend beyond the scope of the applicable Regulations. Non-binding FIA F1 Documents may, for example, include FIA-issued documents:
+
+i. designated as Technical Directives or Sporting Directives; ii. providing interpretation, instruction, clarification, information, and/or additional detail regarding specific provisions of the FIA F1 Regulations; iii. providing details of inspections, checks, or measurements that may be carried out by the FIA to verify the compliance of F1 Cars with the FIA F1 Regulations; iv. requesting actions by F1 Teams and/or PU Manufacturers that assist the FIA in improving the FIA F1 Regulations, such as, for example, the carrying out of a test to evaluate a certain component or device or to carry out a specific measurement or calculation; and/or
+
+v. providing operational instructions or information.
+
+
+
+### A1.2.4 Applicable Laws
+
+
+
+Nothing in the FIA F1 Regulations is intended to compromise or affect the application of Applicable Laws. The FIA F1 Regulations do not contain any advice or guidance in relation to Applicable Laws its behalf or on behalf of any entity in its Legal Group. Without limiting the generality of the foregoing, the F1 Team and/or PU Manufacturer is bound by (and strictly liable for) any Declaration signed on its behalf or on behalf of its Ultimate Controlling Party pursuant to the requirements of Section D and E.
+
+
+
+### A1.4.2 There shall be no individual liability under the FIA F1 Regulations unless specifically stated. Where
+
+
+
+the FIA F1 Regulations place specific obligations on individuals, those individuals may be personally liable for any breach of such obligations. This applies in addition to the strict liability of the relevant F1 Team, PU Manufacturer, or other entity, as applicable.
+
+
+
+### A1.4.3 Notwithstanding the provisions of Articles A1.4.2, and for the avoidance of doubt, no Financial
+
+
+
+Penalty will be imposed to an individual, unless this individual is: a. a Driver; or b. a Key Individual of an F1 Team or PU Manufacturer, for breaches that relate to their personal conduct, in relation to the provisions of this Section A, and of the ISC. In all other cases, where a Financial Penalty is applicable for the specific actions of an individual, such penalty will be imposed on the F1 Team, PU Manufacturer or other organisation of which the individual is part of.
+
+
+
+### A1.4.4 It is the personal responsibility of each Covered Person to be knowledgeable of and comply with
+
+
+
+the FIA Rules and Regulations at all times. Ignorance of the FIA Rules and Regulations shall not be a defence to any breach.
+
+
+
+## A2 FIA FORMULA ONE WORLD CHAMPIONSHIP
+
+
+
+### A2 FIA FORMULA ONE WORLD CHAMPIONSHIP
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Format of the Championship
+
+
+
+### A2.1.1 The FIA will publish the list of Competitions included in the Championship in the International
+
+
+
+Sporting Calendar prior to 1 January each year which will each have the status of a restricted International Competition.
+
+
+
+### A2.1.2 The maximum number of Competitions in the Championship is 24 and the minimum number is
+
+
+
+eight.
+
+
+
+### A2.1.3
+
+
+
+No more than 24 F1 Cars may participate in the Championship, with two F1 Cars entered by each F1 Team.
+
+
+
+### A2.1.4
+
+
+
+World Championship Titles:
+
+a. The Drivers’ Championship title will be awarded to the F1 Driver who has scored the highest number of points, calculated in accordance with Article A2.2, taking into consideration all results obtained during the Competitions that have actually taken place.
+
+b. The Constructors’ Championship title will be awarded to the F1 Team that has scored the highest number of points, calculated in accordance with Article A2.2, taking into consideration the results from both F1 Cars obtained during the Competitions that have actually taken place. If an F1 Team using a Power Unit that it does not manufacture wins the Constructors’ Championship title, the Constructors’ Championship title will be awarded to the F1 Team.
+
+c. If two or more F1 Drivers or F1 Teams finish the Championship with the same number of points, the higher place in the Championship (in either case) shall be awarded to:
+
+i. The holder of the greatest number of first places in a race. ii. If the number of first places is the same, the holder of the greatest number of second places in a race. iii. If the number of second places is the same, the holder of the greatest number of third places in a race and so on until a winner emerges. iv. If this procedure fails to produce a result, the same criteria as above will apply to the qualifying results of the F1 Drivers during the season.
+
+
+
+### A2.2 Championship points system
+
+
+
+
+
+### A2.2.1 Points awarded for a Race
+
+
+
+Points for both the Drivers’ Championship and Constructors’ Championship titles will be awarded at each Competition based on the final race classification, and depending on the number of laps completed by the leader between the start signal and the end-of-session signal of the Race. In all cases, no points will be awarded unless a minimum of two complete and consecutive laps have been completed by the leader without a Safety Car or Virtual Safety Car procedure.
+
+a. If the leader has completed two laps but less than 25% of the Scheduled Race Distance, points will be awarded in accordance with column 1 of the table below.
+
+b. If the leader has completed 25% but less than 50% of the Scheduled Race Distance, points will be awarded in accordance with column 2 of the table below.
+
+c. If the leader has completed 50% but less than 75% of the Scheduled Race Distance, points will be awarded in accordance with column 3 of the table below.
+
+d. If the leader has completed 75% or more of the Scheduled Race Distance, points will be awarded in accordance with column 4 of the table below. Position Points Col. 1 Col. 2 Col. 3 Col. 4 ≥ 2L ≥25% ≥50% ≥75% 1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th
+
+
+
+### A2.2.2 Points awarded for a Sprint
+
+
+
+Points for both the Drivers’ and Constructors’ Championship titles will be awarded at each Alternative Format Competition based on the final Sprint classification and depending on the number of laps completed by the leader between the start signal and the end-of-session signal of the Sprint. In all cases, no points will be awarded unless a minimum of two complete and consecutive laps have been completed by the leader without a Safety Car or Virtual Safety Car procedure.
+
+a. If the leader has completed two laps but less than 50% of the Scheduled Sprint Distance, no points will be awarded.
+
+b. If the leader has completed 50% or more of the Scheduled Sprint Distance, points will be awarded in accordance with column 1 of the table below. Points Position Col. 1 ≥ 50% 1st 2nd 3rd 4th 5th 6th 7th 8th Dead heat Prizes and points awarded for F1 Cars that are tied for the same position will be added together and shared equally.
+
+
+
+| Position |  | Points |  |  |  |  |  |  |  |  |  |  |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|  |  | Col. 1 |  |  | Col. 2 |  |  | Col. 3 |  |  | Col. 4 |  |
+|  |  | ≥ 2L |  |  | ≥25% |  |  | ≥50% |  |  | ≥75% |  |
+| 1st |  |  |  |  |  |  |  |  |  |  |  |  |
+| 2nd |  |  |  |  |  |  |  |  |  |  |  |  |
+| 3rd |  |  |  |  |  |  |  |  |  |  |  |  |
+| 4th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 5th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 6th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 7th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 8th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 9th |  |  |  |  |  |  |  |  |  |  |  |  |
+| 10th |  |  |  |  |  |  |  |  |  |  |  |  |
+
+
+
+| Position |  | Points |  |
+| --- | --- | --- | --- |
+|  |  | Col. 1 |  |
+|  |  | ≥ 50% |  |
+| 1st |  |  |  |
+| 2nd |  |  |  |
+| 3rd |  |  |  |
+| 4th |  |  |  |
+| 5th |  |  |  |
+| 6th |  |  |  |
+| 7th |  |  |  |
+
+
+
+### A2.3 F1 Car livery
+
+
+
+
+
+### A2.3.1
+
+
+
+The provisions of the ISC relating to F1 Car livery shall not apply to the Championship.
+
+
+
+### A2.3.2
+
+
+
+Both F1 Cars entered by an F1 Team must be presented in substantially the same livery at every Competition in a Championship. Any material change to the livery during a Championship may only be made with the agreement of the FIA and the Commercial Rights Holder. The procedure for requesting the agreement of the FIA and the Commercial Rights Holder is set out in FIA-F1-DOC- 098.
+
+
+
+### A2.3.3 Advertising on F1 Cars
+
+
+
+a. Advertising that is political or religious in nature or that is prejudicial to the interests of the FIA is strictly prohibited.
+
+b. The F1 Team must ensure that any advertising on the F1 Car livery complies with Applicable Laws.
+
+
+
+### A2.3.4 Requirements for F1 Car livery
+
+
+
+a. Each F1 Car must bear the FIA logo, in either blue or white, with a height of at least 100mm. This logo must be positioned on the top of the nose or on either side of the nose and be visible from the side of the car.
+
+b. The name or the emblem of the make of the F1 Car must appear on the front of the nose of the F1 Car and in either case it must be at least 25mm in its largest dimension.
+
+c. The name of the F1 Driver must appear on the external bodywork of the F1 Car and be clearly legible.
+
+d. In order to ensure that the F1 Cars of each F1 Team may be easily distinguished from one another while they are on the track, the on-board cameras located above the principal roll structure of the one car must remain as it is supplied to the F1 Team and the on-board camera of the other car must be predominantly fluorescent yellow.
+
+e. Livery may not protrude beyond the bodywork of the F1 Car and must be substantially similar on both sides of the F1 Car.
+
+
+
+### A2.4 Competition Numbers
+
+
+
+
+
+### A2.4.1 Subject to Article A2.4.3, all F1 Drivers are assigned a permanent Competition Number on a first
+
+
+
+come, first served basis. F1 Drivers must use that Competition Number during every Competition they participate in a given Championship. Any new F1 Drivers, either at the start of or during a Championship, will also be allocated a permanent Competition Number in the same way. Drivers may request a change in their Competition Number in writing to the FIA, provided such request happens before the publication of the Championship entry list, and is intended to take effect only in the following Championship. The reigning World Champion Driver may use the number one. The Competition Number that was previously allocated to that F1 Driver will be reserved for them in the subsequent Championship if they do not retain the title of World Champion Driver.
+
+
+
+### A2.4.3 An F1 Driver permanently forfeits their Competition Number, either by confirming this decision in
+
+
+
+writing to the FIA, or if they do not participate in a Competition for two consecutive Championships. Such Competition Number shall be available in respect of the next Championship season.
+
+
+
+### A2.4.4
+
+
+
+All Other Racing Drivers shall use the Competition Numbers issued to the F1 Team by the FIA for such drivers.
+
+
+
+### A2.4.5
+
+
+
+Competition Numbers shall be 1 to 99 (inclusive), with the exception of 17.
+
+
+
+### A2.4.6
+
+
+
+Each F1 Car must carry the Competition Number of its driver as published by the FIA at the beginning of the Championship or the Competition Number that has been allocated to their replacement. The Competition Number must be clearly visible from the front of the F1 Car, and must have a minimum height of 160mm and a minimum stroke thickness of 25mm.
+
+
+
+### A2.5 Postponement or cancellation of a Competition
+
+
+
+
+
+### A2.5.1
+
+
+
+A Competition may be postponed or cancelled in accordance with the ISC.
+
+
+
+### A2.5.2
+
+
+
+A Competition may also be postponed or cancelled if fewer than 12 F1 Cars are available for it.
+
+
+
+### A2.6 FIA Prize Giving Ceremony and Gala Dinner
+
+
+
+
+
+### A2.6.1 The F1 Drivers finishing first, second, and third in the Drivers’ Championship, a representative of
+
+
+
+the F1 Team finishing first in the Constructors’ Championship, and a running or static version (as specified by the FIA) of the winning car (and any personnel needed to operate it) must be present for the duration of the annual FIA Prize Giving Ceremony and Gala Dinner, each at the F1 Team’s cost. Failure to comply with any one of these requirements shall result in a fine of up to €250,000 (for each failure to comply), except in case of Force Majeure, payable by the relevant F1 Team to the FIA in accordance with the ISC.
+
+
+
+### A2.6.2 The Constructors Championship Trophy and Drivers’ Championship Trophy will be presented by the
+
+
+
+FIA to the World Champion Constructor and World Champion Driver at the FIA Prize Giving Ceremony and Gala Dinner. Those FIA Trophies are subject to the requirements of Appendix A8. Other trophies and awards may also be presented as determined by the FIA.
+
+
+
+## A3 ENTRIES, LICENCES AND REGISTRATION
+
+
+
+### A3 ENTRIES, LICENCES AND REGISTRATION
+
+
+
+Advisory Committee: RGAC, unless otherwise stated Governance: F1 Commission / WMSC, unless otherwise stated F1 Team entry applications
+
+
+
+### A3.1.1 Existing F1 Teams and New Entrant Teams must submit applications (including an Entry Form and
+
+
+
+other related documentation required by the FIA) prior to each edition of the Championship.
+
+
+
+### A3.1.2
+
+
+
+Applications by F1 Teams to compete in the Championship of Year N may be submitted to the FIA during the period 21 October to 1 November inclusive of Year N-1. Such applications must include the following: (i) an Entry Form as set out in Appendix A4A; (ii) the registration form for key Personnel of F1 Teams set out in Appendix A4B; (iii) the F1 Team Super Licence application form; and (iv) an undertaking to pay the Entry Fee to the FIA by no later than 15 December of Year N-1. Applications by F1 Teams at other times will be considered by the FIA only on payment by the F1 Team to the FIA of a late entry fee to be specified by the FIA. The FIA will notify the applicant team of the outcome of the application within 30 days of the FIA’s receipt of such application. If any of the information submitted with the entry application (including in the forms at Appendices A4 or A5) changes after the initial submission, the F1 Team must inform the FIA and update any submitted forms promptly (in any event, before the start of the next Competition, if applicable).
+
+
+
+### A3.1.3
+
+
+
+Applications by F1 Teams shall include:
+
+a. confirmation that the applicant has read the FIA Rules and Regulations and agrees on its own behalf and on behalf of everyone associated with its participation in the Championship to comply with them;
+
+b. the name of the F1 Team (which must include the name of the chassis);
+
+c. the make of the Power Unit (an F1 Team may change the make of Power Unit at any time during the Championship but must promptly notify the FIA of any such change before the next Competition where it is first used);
+
+d. the make of the F1 Car (if the F1 Team fits a Power Unit that it does not manufacture, the F1 Car name must be the combination of the F1 Team’s name and the Power Unit Manufacturer’s name, subject to any changes made for branding purposes, with the former always preceding the latter);
+
+e. the names of the F1 Drivers (an F1 Driver may be nominated subsequent to the entry application upon payment of a fee specified by the FIA); and
+
+f. an undertaking by the applicant to participate in every Competition with both F1 Cars, by making its F1 Cars available for scrutineering at the commencement of each Competition and using all reasonable endeavours to procure that its F1 Cars complete each Competition in active competition with other F1 Teams in order to achieve the highest position possible in the Championship to the best of its sporting ability within the constraints of the FIA Rules and Regulations, subject only to the limited exceptions agreed pursuant to the governance framework of the FIA F1 Regulations(e.g. Force Majeure). Applications by F1 Teams must be duly completed in accordance with the above requirements and accompanied by timely payment of the Entry Fee. Any application that does not meet these requirements will not be accepted by the FIA. The FIA will publish the list of F1 Cars and F1 Drivers accepted together with their Competition Numbers on or before 20 December of Year N-1. Successful applicants are automatically entered in all Competitions of the Championship. An F1 Team may not participate in the Championship or any Competition unless its entry application has been accepted by the FIA.
+
+
+
+### A3.2 Power Unit Manufacturer entry applications
+
+
+
+Governance: PU Manufacturers’ Governance Agreement / WMSC Any PU Manufacturer registered in accordance with the procedures set out in Article 1 of Appendix A7 to supply Power Units for use by one or more F1 Teams in the 2026 to 2030 Championships must submit to the FIA a Power Unit homologation dossier before 1 March of the first year in which it intends to supply such power unit for use during the Championship period indicated, in accordance with the requirements of Appendix C5. The homologation granted will be valid until the end of the 2030 Championship, unless there is a substantive change to the PU Regulations necessitating a new homologation dossier to be submitted. The homologation dossier may be updated from time to time in accordance with the process defined in the Appendix C5 of Section C.
+
+
+
+### A3.3 Licences
+
+
+
+
+
+### A3.3.1
+
+
+
+F1 Drivers:
+
+a. F1 Drivers must hold a valid Super Licence and International Licence, and F1 Team free practice drivers must hold a valid Free Practice Only Super Licence and International Licence, in accordance with the requirements of the ISC and Appendix L.
+
+b. When a penalty other than a reprimand or fine, is imposed under the ISC or Article B1.10.4, the Stewards may impose penalty points on an F1 Driver’s Super Licence. If an F1 Driver accrues 12 penalty points on their Super Licence, they will be suspended for the next Competition, following which 12 points will be removed from their Super Licence. Such penalty points will remain on the F1 Driver’s Super Licence for a period of 12 months after which they will be respectively removed on the 12-month anniversary of their imposition.
+
+
+
+### A3.3.2
+
+
+
+F1 Teams must hold a valid Super Licence as a condition of entry in the Championship. Such Super Licences must be renewed annually by submitting the relevant form to the FIA by the same deadline as the Entry Form (see Article A3.1.2).
+
+
+
+### A3.3.3 Organisers and the following Officials must each hold a valid Super Licence: Stewards, race
+
+
+
+directors, clerks of the course, medical delegates, deputy medical delegates, technical delegates, media delegates, timekeepers, Safety Car drivers, masters of ceremonies, and any other Officials specified by the FIA. Such Super Licences must be renewed annually.
+
+
+
+### A3.4 Certificate of registration for key Personnel of F1 Teams and PU Manufacturers
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / PU Manufacturers’ Governance Agreement / WMSC In accordance with ISC Articles 2.6.4 and 2.6.5, F1 Teams and PU Manufacturers must register with the FIA the Personnel listed in those provisions and any other Personnel required to be registered by Appendix A4B and Appendix A5. New Entrant Teams In order to maintain requisite standards in the Championship, a New Entrant Team whose application has been accepted must comply with the following Articles or Sections of the FIA F1 Regulations prior to first participation in the Championship in Year N, as follows:
+
+a.
+
+b.
+
+c.
+
+d. F3.1 (Shutdown Periods), and F4 (Aerodynamic Testing Restrictions): for the complete Year N- 1; and
+
+e. any other provisions in the FIA F1 Regulations that are expressly stated to apply to New Entrant Teams. Compliance with the provisions in force in each relevant Year before Year N will be required. For example, if the first year of entry (Year N) is 2026, compliance with relevant provisions of the 2025 edition of the FIA F1 Regulations will be required. As a condition of admission to the Championship, the prospective New Entrant Team must demonstrate compliance with the above provisions. In the event the confirmation of the New Entrant Team occurs at a time after the start of the above periods, the above provisions may be superseded by a specific agreement between the FIA and the New Entrant Team, which shall prevail in determining the compliance of the New Entrant Team with this Article.
+
+
+
+### A3.5.2
+
+
+
+New Entrant Teams must comply with the Fit and Proper Persons Test (see Article A4.1) set out as an Appendix to the ISC.
+
+
+
+### A3.6 New Entrant PU Manufacturers
+
+
+
+Governance: PU Manufacturers’ Governance Agreement / WMSC
+
+
+
+### A3.6.1
+
+
+
+Any entity that wishes to supply Power Units to one or more F1 Teams (including an F1 Team that is the same legal entity as the supplier or that is affiliated to the supplier) for use in one or more editions of the Championship taking place in seasons 2026 to 2030 must complete the PU Manufacturer registration form, enter into the PU Manufacturer Non Assert Agreement (as defined in Appendix C3 of the Technical Regulations), and agree the applicable governance processes.
+
+
+
+### A3.6.2
+
+
+
+The deadline for a PU Manufacturer wishing to supply Power Units starting from Year N in this period to complete the PU Manufacturer registration form will be 30 June of Year N-4.
+
+
+
+### A3.6.3
+
+
+
+Subject to the paragraph below, the FIA will accept the registration of a PU Manufacturer only if it has met the criteria set out by the FIA in the registration documents and FIA F1 Regulations. The FIA may accept the registration of a PU Manufacturer who has failed to comply with the deadline set out in Article A3.6.2 provided that the FIA is satisfied that the PU Manufacturer can demonstrate compliance with the requirements of Article A3.6 and also that the failure to comply with the deadline has not led to that PU Manufacturer obtaining any competitive or financial advantage over any other PU Manufacturer. Notwithstanding any confirmation of registration provided by the FIA, the registration of a PU Manufacturer will only be complete (and so will only become valid and effective) upon the applicant’s payment to the FIA of the applicable administrative fee, its entry into the PU Manufacturer Non-Assert Agreement, and its agreement to the applicable governance processes.
+
+
+
+### A3.6.5 In order to maintain requisite standards in the Championship, a New Entrant PU Manufacturer
+
+
+
+whose registration has been accepted must comply with the following Articles or Sections of the FIA F1 Regulations prior to first participation in the Championship in Year N, as follows:
+
+a.
+
+b.
+
+c.
+
+i. Articles F3.2 (Shutdown Periods), F5.1 (Power Units Test Benches), F5.2 (Power Unit Test Benches Operational Restrictions), and F5.3.2 (Power Unit Test Bench activities affecting PU Manufacturers and F1 Teams): for the complete Years N-4, N-3, N-2, and N-1; ii. Article F5.3.3 (Additional PUTB testing opportunities for Customer F1 Teams): for the complete Year N-1; and
+
+e. any other provisions in the FIA F1 Regulations that are expressly stated to apply to New Entrant PU Manufacturers. Compliance with the provisions in force in each relevant Year before Year N will be required. For example, if the first year of entry (Year N) is 2028, compliance with relevant provisions of the 2025 edition of the FIA F1 Regulations will be required. As a condition of registration for the Championship, the prospective New Entrant PU Manufacturer must demonstrate compliance with the above provisions.
+
+
+
+### A3.6.6 New Entrant PU Manufacturers must comply with the Fit and Proper Persons Test (see Article A4.1)
+
+
+
+set out as an Appendix to the ISC.
+
+
+
+## A4 INTEGRITY REQUIREMENTS
+
+
+
+### A4 INTEGRITY REQUIREMENTS
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Fit and Proper Persons Test
+
+
+
+### A4.1.1
+
+
+
+The Fit and Proper Persons Test (“FPP Test”) is set out in Appendix F to the ISC and forms part of the terms and conditions of participation in the Championship. The objective of the FPP Test is to protect the image, reputation, and integrity of the Championship.
+
+
+
+### A4.1.2 The FPP Test applies to any natural person (“FP Relevant Person”) within each F1 Team, New
+
+
+
+Entrant Team, PU Manufacturer, New Entrant PU Manufacturer (each a “Covered Entity”) who wishes to become or remain a Fit and Proper Person (“FP Person”). For purposes of this provision and Appendix F of the International Sporting Code, FP Relevant Person shall comprise:
+
+a. any natural person holding (directly or indirectly) thirty per cent (30%) or more of the outstanding shares of the F1 Team, New Entrant Team, PU Manufacturer, or New Entrant PU Manufacturer;
+
+b. subject to Article 4.1.4 of this Section A, any CEO (or equivalent position) or Team Principal (or equivalent position), or any natural person who Controls or otherwise determines the management of an F1 Team, New Entrant Team, PU Manufacturer, or New Entrant PU Manufacturer.
+
+
+
+### A4.1.3
+
+
+
+FPP Test will be conducted from the date of publication of Appendix F only for: a. new FP Relevant Person (individuals who have not previously been involved with a Covered Entity, or who left a Covered Entity and later decide to return to the same or different Covered entity); and b. for any existing FP Person whose circumstances change such that any of the disqualifying conditions set out in Appendix F to the ISC may apply to them.
+
+
+
+### A4.1.4
+
+
+
+For any FP Relevant Person who satisfies the criteria set out in Articles 4.1.2(a) and 4.1.3(b) of this FPP Test, if the FIA determines that not doing so would be contrary to the FIA’s sense of justice.
+
+
+
+### A4.1.5
+
+
+
+Covered Entities shall not be required to pass the FPP Test but shall comply with certain obligations to facilitate FP Relevant Persons satisfying the requirements of the FPP Test and maintaining their status as an FP Person, as outlined in Appendix F of the ISC.
+
+
+
+### A4.2 Anti-doping
+
+
+
+
+
+### A4.2.1 The FIA has adhered to the World Anti-Doping Code since 2010. The World Anti-Doping Code has
+
+
+
+been incorporated into the FIA Anti-Doping Regulations, in accordance with the FIA’s responsibilities under the World Anti-Doping Code, and in furtherance of the FIA’s continuing efforts to eradicate doping in sport. The FIA Anti-Doping Regulations seek to protect the health of drivers and to seek to maintain the integrity of motorsport through respect for rules and competitors, fair competition, a level playing field, and the value of clean sport. The Persons listed in the introduction section entitled “Scope of these Anti-Doping Regulations” in the FIA Anti-Doping Regulations, set out at Appendix A of the ISC, agree to be bound by and to comply with the FIA Anti-Doping Regulations as a condition of their participation in the Championship. Prevention of Competition manipulation The FIA Manipulation of Competition Regulations seek to maintain the integrity of motorsport and protect against any efforts to improperly impact the results of any motorsport competitions.
+
+
+
+### A4.3.2 The Persons defined as “Competition Stakeholders” in the FIA Manipulation of Competition
+
+
+
+Regulations, set out at Appendix M of the ISC, agree to be bound by and to comply with the FIA Manipulation of Competition Regulations as a condition of their participation in the Championship.
+
+
+
+### A4.4 Safeguarding
+
+
+
+
+
+### A4.4.1 The safety and wellbeing of all participants is of paramount importance. The FIA recognises the
+
+
+
+fundamental right of every individual to compete, work, and thrive in an environment free from abuse and harassment. The FIA Safeguarding Policy and Regulations aims to promote the wellbeing and safety of all individuals involved in motorsport activities, especially children and vulnerable adults, fostering an environment in which everyone can engage with confidence and peace of mind.
+
+
+
+### A4.4.2 The Persons defined as “Covered Persons” in the FIA Safeguarding Policy and Regulations, set out
+
+
+
+at Appendix S of the ISC, agree to be bound by and to comply with the FIA Safeguarding Policy and Regulations as a condition of their participation in the Championship.
+
+
+
+### A4.5 Anti-alcohol
+
+
+
+
+
+### A4.5.1 The FIA is dedicated to improving safety in motorsport, notably by prohibiting substances that affect
+
+
+
+human behaviour and judgment and may impair driving ability, such as alcohol.
+
+
+
+### A4.5.2
+
+
+
+Each F1 Driver, Other Racing Driver, and Official agrees to be bound by and to comply with the FIA Anti-Alcohol Regulations set out at Appendix C of the ISC, as a condition of their participation in the Championship.
+
+
+
+## A5 GENERAL ROLES AND RESPONSIBILITIES OF KEY STAKEHOLDERS
+
+
+
+### A5 GENERAL ROLES AND RESPONSIBILITIES OF KEY STAKEHOLDERS
+
+
+
+Advisory Committee: RGAC, unless otherwise stated Governance: F1 Commission / WMSC, unless otherwise stated General obligations applicable to all
+
+
+
+### A5.1.1 All Covered Persons must comply with the following general obligations, and each F1 Team and PU
+
+
+
+Manufacturer must procure that their respective Personnel and the other members of their respective Legal Groups (and their respective Personnel) do the same:
+
+a. comply with the FIA Rules and Regulations at all times, and provisions within the remit of their roles and responsibilities;
+
+b. comply by the specified deadline with any applicable written request for information/access or Demand from the FIA pursuant to Article A6.3 and Appendix A3;
+
+c. submit any information or documentation required by any FIA-issued document by the deadline specified in such document;
+
+d. cooperate fully and in a timely manner with the FIA in the exercise of its regulatory functions, including with any investigation conducted by or on behalf of the FIA;
+
+e. not delay, impede, or frustrate the exercise by the FIA of its regulatory functions, including any investigation conducted by or on behalf of the FIA, or any attempt to do so;
+
+f. not threaten or seek to intimidate any person with the intent of discouraging such person from the Good Faith reporting of information that relates to an alleged breach of the FIA Rules and Regulations, and not retaliate against any person or Witness who has provided (or may provide) evidence or information in Good Faith in relation to an alleged breach of the FIA Rules and Regulations to the FIA, the Stewards, any FIA Court or Judging Panel, any person conducting an investigation for the FIA, law enforcement, regulatory or professional disciplinary body, or other competent body;
+
+g. not sign a Declaration or submit any information to the FIA that they are aware, or ought to reasonably be aware, is untrue or fraudulent;
+
+h. not submit any Reporting Documentation to the FIA that is inaccurate, incomplete, misleading, or otherwise not compliant with the FIA F1 Regulations;
+
+i. comply with the terms of any applicable Decision, ABA, or settlement;
+
+j. comply with the terms of any provisional suspension or sanction(s) imposed on them pursuant to the FIA Rules and Regulations; k. perform all applicable obligations under the FIA F1 Regulations, acting at all times with honesty and integrity, and in a spirit of transparency and cooperation;
+
+l. not do anything (by act or omission) that brings the FIA or the Championship into disrepute; and m. comply with any other obligations applicable to them under other Sections of the FIA F1 Regulations or in the FIA Rules and Regulations, including ISC Article 12.2. Subject to Articles 3.1 and 3.3 of Appendix A3, nothing in this Article A5.1 shall constitute a waiver of legal rights by the F1 Team or PU Manufacturer (including in relation to Legal Professional Privilege). FIA
+
+
+
+### A5.2.1 The FIA is responsible for developing, administering and enforcing the FIA Rules and Regulations
+
+
+
+(including the FIA F1 Regulations) and exercising the powers and carrying out the functions set out in them.
+
+
+
+### A5.2.2 The FIA shall be responsible for monitoring compliance with the FIA F1 Regulations on an ongoing
+
+
+
+basis, investigate instances of suspected non-compliance, and take appropriate enforcement action in respect of any breaches of the FIA F1 Regulations.
+
+
+
+### A5.2.3
+
+
+
+Unless specified otherwise or unless the context requires otherwise: a. The Prosecuting Body or (in respect of matters relating to the Financial Regulations) the Cost Cap Administration have authority to conduct investigations on behalf of the FIA, and therefore references to the “FIA” in Article A6 and Appendix A3 in the context of investigations shall be construed accordingly. However, the right to request information/access under Article A6.3.1a may also be exercised by the FIA Single Seater Department or FIA Legal or their designees. b. References to the “FIA” in Section A that apply in the context of the Financial Regulations shall be read as meaning the Cost Cap Administration. c. Otherwise, references to the “FIA” in the FIA F1 Regulations refer to the FIA Single Seater Department (including any FIA employees operating under its direct instruction with the competency and responsibility to deal with a particular matter regarding the implementation of the FIA F1 Regulations). d. For the avoidance of doubt, unless specifically stated, references to the “FIA” shall not include the Stewards, any FIA Court or Judging Panel.
+
+
+
+### A5.2.4 The FIA may engage an Independent Audit Firm, Stewards, external control bodies, experts,
+
+
+
+external legal advisors, or other specialists or service providers to assist it in carrying out its functions. These persons may receive remuneration from the FIA for their services and are bound by an obligation of confidentiality.
+
+
+
+### A5.3 Promoters and Organisers
+
+
+
+
+
+### A5.3.1 Promoter
+
+
+
+The Commercial Rights Holder will appoint a Promoter for each Competition. The Promoter is responsible for promoting the Competition and has control over only financial and commercial matters relating to the Competition, excluding any matters relating to the Financial Regulations. The Promoter shall not in any circumstances intervene during the Competition in respect of any safety, sporting, technical, or organisational matters. The Promoter must comply with all requirements set out in the FIA Rules and Regulations. The Promoter of a Competition must procure that all Competitors, their personnel and drivers are covered by third party insurance in accordance with the FIA requirements. The following conditions apply: a. The Promoter must send the FIA details of the risks covered by the insurance policy no later than ninety days before the Competition.
+
+b. The insurance policy must comply with the national laws in force as well as the FIA requirements. Sight of the policy must be available to the Competitors on demand. c. Third party insurance arranged by the Promoter shall be in addition and without prejudice to any personal insurance policy held by a Competitor or any other participant in the Competition. d. Drivers taking part in the Competition are not third parties with respect to one another.
+
+
+
+### A5.3.2 Organiser
+
+
+
+The Promoter of a Competition shall propose the Organiser for that Competition by submitting a request to the relevant ASN (or its representative) to nominate that Organiser to the FIA. The FIA has ultimate approval over any Organiser. The Organiser must be the ASN of the country or territory where the Competition will take place or its nominee, being either: (a) a club under the auspices of the ASN; or (b) any other sporting body that is capable of competently carrying out the sporting administration and regulatory duties customarily performed by an Organiser in accordance with the ISC. The Organiser will have general responsibility for the organisation of the Competition under the authority of the ASN and FIA, and must comply with all requirements set out in the FIA Rules and Regulations.
+
+
+
+### A5.3.3 Restrictions on Promoters and Organisers
+
+
+
+a. To ensure that no F1 Team gains a competitive advantage, subject to paragraph b below, no F1 Team, or association of F1 Teams may:
+
+i. organise or promote directly or indirectly a Competition; ii. be the Organiser or the Promoter directly or indirectly of a Competition; or iii. be associated with an ASN or club affiliated to such ASN (except any association that is prescribed by the FIA Rules and Regulations and that reflects an F1 Team’s proper membership of an ASN) for the organisation of a Competition,
+
+b. Nothing in this provision shall prevent (i) an independently managed affiliate of an F1 Team from being a Promoter or Circuit Operator, or (ii) an F1 Team, any holding company or subsidiary of an F1 Team, or any subsidiary of any holding company of an F1 Team from being the sponsor of a Competition or Circuit.
+
+
+
+### A5.4 ASNs
+
+
+
+ASNs are members of the FIA responsible for exercising Sporting Power across one national territory. The roles and responsibilities of ASNs are outlined in the FIA Statutes and ISC. In respect of the Championship and within their respective territories, ASNs have authority for (among other things) the issuance of International Licences, the homologation of Circuits, and payment of the Calendar Fee. Circuit Operators Circuit Operators are responsible for the Circuit where a Competition takes place. Circuit Operators must comply with the terms and conditions of the Circuit licence issued by the FIA and any requirements set out in ISC Appendix O.
+
+
+
+### A5.6 Officials
+
+
+
+Officials have the duties and powers set out in the ISC and Appendix V thereto.
+
+
+
+### A5.7 F1 Teams and PU Manufacturers
+
+
+
+Governance: F1 Commission / PU Manufacturers’ Governance Agreement / WMSC
+
+
+
+### A5.7.1
+
+
+
+It is the duty of each F1 Team or PU Manufacturer to satisfy the FIA, the Stewards, and relevant FIA Courts that they comply with all aspects of the applicable FIA F1 Regulations at all times.
+
+
+
+### A5.7.2
+
+
+
+Each F1 Team and each PU Manufacturer must ensure that their respective Personnel:
+
+a. are informed that the F1 Team or PU Manufacturer and their Personnel are subject to the FIA Rules and Regulations, and made aware of the FIA Rules and Regulations, including all of the requirements that they impose on the F1 Team or PU Manufacturer and/or on their Personnel;
+
+b. are informed and appropriately trained with respect to the ways in which their areas of responsibility may impact the F1 Team’s or PU Manufacturer’s compliance with the FIA F1 Regulations;
+
+c. informed of the FIA ethics and compliance hotline available on the FIA website and provide assurances to all Personnel that the reporting of any breaches of the FIA Rules and Regulations via the FIA ethics and compliance hotline or through any other FIA process shall not constitute a breach of any contractual clauses between the Personnel and the F1 Team or PU Manufacturer with regard to Confidential Information, and ensure protection clauses appropriate policies are in effect for such Personnel;
+
+d. are informed that they must not use any personal or private devices for work-related activities in a way that could involve or expose confidential information. If however, it is agreed between the F1 Team or PU Manufacturer with the relevant Personnel that personal or private devices may be used for work-related activities, the the F1 Team, PU Manufacturer and the relevant Personnel acknowledge that such devices will not be excluded from the remit of a potential Demand (Appendix 3).
+
+e. when starting employment with the F1 team or PU Manufacturer, are informed that possession of any materials, data or information belonging to a previous employer (meaning F1 Team and PU Manufacturer) is forbidden, must not be retained, must be returned to that previous employer, and must not be used under any circumstances in their new role.
+
+
+
+### A5.7.3 Movement of personnel – F1 Teams
+
+
+
+Governance: F1 Commission / WMSC
+
+a. Each F1 Team must implement reasonable measures to prevent the disclosure of Confidential Information to other F1 Teams. No F1 Team may use the movement of personnel (whether employee, worker, consultant, contractor, secondee, agent, office holder, or any other type of permanent or temporary personnel, including those engaged by any sub-contractor) to another F1 Team, either directly or via an external entity, for the purpose of circumventing the requirement to prevent the disclosure of Confidential Information to any other F1 Team. For the purposes of this Article, personnel involved in the following activities are considered to have knowledge of confidential information, and hence are covered by the provisions of this Article A5.7.3:
+
+i. The design, research and development or systems of the F1 Car; ii. The development of simulation methodology; iii. Personnel involved in race operations or strategy. The above list is not exhaustive, and the FIA retains the right to expand the list of Personnel which it retains relevant for the purposes of this Article. In order that the FIA may be satisfied that any movement of personnel is not designed to circumvent the requirement to prevent the disclosure of Confidential Information to any other F1 Team, each F1 Team must inform the FIA of all relevant personnel movements using the form provided by the FIA at Appendix A6.
+
+b. Where an F1 Team inherits any member(s) of personnel pursuant to the Employment Regulations and such individual(s) had access to Confidential Information relating to another F1 Team at the former employer, that F1 Team shall take such steps as are reasonably necessary, and to the maximum extent permitted by law, to prevent the disclosure of such Confidential Information, including (without limitation) requiring such individual(s) to provide an undertaking in favour of the FIA and such other F1 Team (with copies of such undertakings to be provided to the FIA on request) that they have not retained copies of any Confidential Information and will not otherwise disclose the Confidential Information to their new F1 Team. For the purposes of this Article, “Employment Regulations” means any applicable law, statute, statutory instrument, ordinance, or regulation that covers the safeguarding of employees’ rights on the transfer of undertakings, businesses, or services (or parts of undertakings, businesses, or services), including, by way of a non-exhaustive example, the UK Transfer of Undertakings (Protection of Employment) Regulations 2006.
+
+c. Where: (i) two F1 Teams (team A and team B) share some level of cooperation (e.g., they are under the same ownership or share parts or testing facilities); and (ii) a member of personnel (as defined in paragraph a above, but excluding any F1 Driver or Other Racing Driver) leaves team A to work for team B, team A should impose an appropriate Garden Leave period on such member of personnel, such period to be not less than three months or the maximum period permitted in accordance with applicable law (if less than three months), and team B must include (if so permitted in accordance with applicable law) contractual clauses in agreements with such personnel requiring them to provide an undertaking to the FIA and team A that they have not retained copies of any of team A’s Confidential Information and will not otherwise disclose team A’s Confidential Information to team B. The same requirements shall apply: (i) vice versa (i.e., if a member of personnel moves from team B to team A); and (ii) in reverse if the member of personnel subsequently returns to team A.
+
+d. Where: (i) two F1 Teams (team A and team B) share some level of cooperation (e.g., they are under the same ownership or share parts or testing facilities); and (ii) a member of personnel (as defined in paragraph a above) is temporarily seconded from team A to work for team B (whether on a particular project or otherwise), team A must place such member of personnel on Restricted Duties for a period of not less than three months or the maximum period permitted in accordance with applicable law (if less than three months), and the secondment documentation entered into between team A, team B and the member of personnel (the “Secondment Documentation”) must include a contractual obligation for the member of personnel to provide an undertaking to the FIA and team B that they have returned any copies of team A’s Confidential Information to team A for the period of the secondment and that they will not otherwise disclose team A’s Confidential Information to team B. The Secondment Documentation must also include an obligation on team A or team B to place the member of personnel on Restricted Duties at the end of the secondment for a period of not less than three months or the maximum period permitted in accordance with applicable law (if less than three months) before the member of personnel returns to perform their contracted role for team A. The same requirements shall apply vice versa (i.e., if a member of personnel is temporarily seconded from team B to team A). For the purpose of this Article, “Restricted Duties” means subject to any requirements or restrictions under local law, either: (a) a period of unpaid leave where the member of personnel is not required to attend for work or perform any duties relating to their employment with the F1 Team; or (b) reassigning the member of personnel to alternative duties within the F1 Team’s organisation that will not expose the member of personnel to, or give them access to, that team’s Confidential Information.
+
+e. If any personnel fail to comply with the requirements set out in this Article A5.7.3, they shall (if they are Covered Persons) be personally liable for the breach and subject to consequences as set out in Article A7.12, and the team A or B that failed to prevent the breach (regardless of whether or not they are Covered Persons) shall also be held strictly liable for the breach by their personnel.
+
+
+
+### A5.7.4 Movement of personnel – PU Manufacturers
+
+
+
+Governance: PU Manufacturers’ Governance Agreement / WMSC
+
+a. Each PU Manufacturer must implement reasonable measures to prevent the disclosure of intellectual property and/or Confidential Information to existing or prospective fuel/oil suppliers or to another PU Manufacturer. No PU Manufacturer may use the movement of personnel (whether employee, worker, consultant, contractor, secondee, agent, office holder, or any other type of permanent or temporary personnel, including those engaged by any sub- contractor) with an existing or prospective fuel/oil supplier or another PU Manufacturer, either directly or via an external entity, for the purpose of obtaining an intellectual property transfer and/or circumventing requirement to prevent the disclosure of Confidential Information to any existing or prospective fuel/oil supplier or to another PU Manufacturer. For the purposes of this Article, personnel involved in the following activities are considered to have knowledge of confidential information, and hence are covered by the provisions of this Article A5.7.4:
+
+i. The design, research and development or systems of the Power Unit; ii. The development of simulation methodology.
+
+
+
+## A6 INVESTIGATIONS, RIGHT OF INQUIRY, AND NOTIFICATION OF BREACHES
+
+
+
+### A6 INVESTIGATIONS, RIGHT OF INQUIRY, AND NOTIFICATION OF BREACHES
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Investigations
+
+
+
+### A6.1.1 General
+
+
+
+a. Subject to paragraph b, the FIA may open and conduct investigations under the FIA F1 Regulations in accordance with this Article A6 and the FIA Judicial and Disciplinary Rules.
+
+b. The Stewards may open and conduct investigations in accordance with their powers set out in the ISC. Such investigations and any Decisions arising from them are excluded from the scope of this Article A6.
+
+c. The FIA may open and conduct investigations in respect of anti-doping matters in accordance with Appendix A to the ISC. Such investigations and any Decisions arising from them are excluded from the scope of this Article A6.
+
+d. Nothing in this Article A6 shall limit the powers of the Prosecuting Body to conduct a disciplinary inquiry in accordance with Article 4 of the FIA Judicial and Disciplinary Rules.
+
+
+
+### A6.1.2 Opening an investigation
+
+
+
+a. The FIA may at any time, subject to the limitation period defined in Article A7.9, open and conduct an investigation into any actual, potential, or suspected non-compliance with the FIA F1 Regulations.
+
+b. Without limiting the generality of the above, the FIA may open an investigation if an F1 Team or PU Manufacturer (for purposes of this Article, the “Complainant”) submits a report to the FIA alleging that another F1 Team or PU Manufacturer has committed a breach (or potential breach) of the FIA F1 Regulations. For the report to be considered by the FIA, the report submitted by the Complainant must:
+
+i. be submitted in Good Faith and promptly after the Complainant becomes aware of the suspected non-compliance; ii. identify the non-complying F1 Team or PU Manufacturer and clearly summarise any alleged non-compliance; iii. clearly specify the relevant provision(s) of the FIA F1 Regulations that have not been complied with; iv. include sufficient valid evidence or strong indications for each reported instance of non- compliance; iv. be signed by the Chief Executive Officer or Team Principal of the Complainant, as well as its director for the area of competence of the alleged breach; vi. be accompanied by a non-refundable administrative fee of €10,000 and a deposit of €40,000. The deposit will be returned to the Complainant only in circumstances where the complaint results in the FIA alleging a breach of the FIA F1 Regulations against an F1 Team or PU Manufacturer or where no investigation is opened.
+
+c. The Complainant must keep their report to the FIA confidential. Notification of opening of investigation
+
+a. The FIA shall notify the subject of the investigation in writing.
+
+b. If a report is filed by a Complainant, the FIA will also:
+
+i. notify the Complainant in writing regarding any decision by the FIA to open an investigation or not to open an investigation; and ii. provide a copy of the written report submitted by the Complainant or a summary thereof (omitting any Confidential Information of the Complainant) to subject of the investigation unless the FIA considers that doing so might prejudice the investigation.
+
+
+
+### A6.1.4 Conduct of the investigation
+
+
+
+For the purposes of the investigation, the FIA may require any person likely to provide information to attend one or more interviews and may request information/access or issue Demands in accordance with Article A6.3 and Appendix A3. The FIA may also exercise any other investigatory powers set out in the ISC or FIA Judicial and Disciplinary Rules. The FIA may be assisted in its investigation in accordance with Article A5.2.4. The FIA shall use all reasonable endeavours to complete investigations promptly and to minimise any potential disruption to the F1 Team or PU Manufacturer.
+
+
+
+### A6.1.5 Outcome of the investigation
+
+
+
+Upon completion of an investigation, any decision by the FIA as to whether or not to take further action will be at its sole discretion, taking into consideration the substance of the information collected during the investigation and the merits of each case
+
+
+
+### A6.1.6 Notification of outcome of investigation
+
+
+
+a. The FIA shall notify the subject of the investigation in writing of the outcome of the investigation and, if further action is to be taken, give the subject an opportunity to provide a response (this notice will serve as the Initial Notice). If the FIA concludes, after considering any response, that there has been a breach of the FIA F1 Regulations, the FIA will issue a Final Notice and refer the matter to the relevant FIA Court for hearing and determination or (in appropriate cases) seek to enter into a settlement agreement in accordance with the FIA Judicial and Disciplinary Rules or an ABA in accordance with the Financial Regulations.
+
+b. If a report is filed by a Complainant, the FIA will also inform the Complainant of the outcome of the investigation (i.e., no further action, settlement/ABA, or referral to the relevant FIA Court) but the Complainant shall not be entitled to receive a copy of the Final Notice.
+
+
+
+### A6.1.7 No right of appeal
+
+
+
+There shall be no right of appeal against a decision by the FIA to open (or not to open) an investigation, or against the outcome of an investigation.
+
+
+
+### A6.1.8 Confidentiality
+
+
+
+a. The FIA and all persons taking part in an investigation are bound by an obligation of confidentiality in relation to Persons not concerned with the investigation. Nevertheless, subject to Article A8.2.2, the FIA may at any time make public its decision to conduct an investigation under the FIA F1 Regulations and the outcome thereof in accordance with Article A8, provided at all times that it maintains the confidentiality of any Confidential Information provided to it in connection with such investigation.
+
+b. F1 Teams and PU Manufacturers shall not by any means prevent any of their Personnel (current or former) or other persons from disclosing to the FIA any Confidential Information that might be relevant to their compliance with the FIA Rules and Regulations.
+
+
+
+### A6.2 FIA Ethics and Compliance Hotline
+
+
+
+The FIA ethics and compliance hotline available on the FIA website enables individual whistleblowers to raise confidentially any issues or concerns about alleged breaches of the FIA Rules and Regulations. The FIA will consider any information submitted through the hotline and determine whether or not to open an investigation in accordance with Article A6 and the FIA Judicial and Disciplinary Rules.
+
+
+
+### A6.3 FIA requests for information/access and Demands
+
+
+
+
+
+### A6.3.1 In order to assist it in performing its regulatory functions as contemplated by these FIA F1
+
+
+
+Regulations:
+
+a. the FIA may at any time make a written request (i) to an F1 Team, PU Manufacturer, Key Individual F1 Team Member, or Key Individual PU Member for information, documentation, or clarification; and/or (ii) to an F1 Team or PU Manufacturer to be granted access to premises and/or individuals; and
+
+b. the FIA may, in the context of an investigation, where it has reasonable grounds to believe that there might be data stored or accessible on, or transmitted or received using, Electronic Device(s) that might evidence or lead to the discovery of evidence of non-compliance with the FIA F1 Regulations, make a written request to an F1 Team or PU Manufacturer (specifying a summary of the basis for the request) to be provided with, and granted access to, Electronic Devices of the F1 Team or PU Manufacturer (and/or of its respective Personnel and/or of the other members of their Legal Group and/or of their respective Personnel) for the purpose of copying and/or downloading data from such Electronic Devices (“Demand”). Further details on Demand procedures are set out in Appendix A3.
+
+
+
+### A6.3.2
+
+
+
+Failure to comply with a request from the FIA pursuant to Article A6.3.1 will constitute a breach of this Section A (or, for purposes of the Financial Regulations, a Procedural Breach) by the F1 Team or PU Manufacturer (which are strictly liable for its Personnel and the members of its Legal Group and their respective Personnel), save where Applicable Laws may prevent the F1 Team or PU Manufacturer from compliance.
+
+
+
+### A6.4 Notification of apparent or alleged breaches
+
+
+
+
+
+### A6.4.1
+
+
+
+No formal notice will be given to the concerned F1 Team or other Covered Person in respect of the referral of a matter to the Stewards at an Event (other than a summons if a hearing is to be held in accordance with the ISC). The FIA will give an F1 Team or other Covered Person notice of its intention to refer an apparent or alleged breach to an Out-of-Competition Stewards Panel. The procedures applicable to proceedings before the Stewards are set out in the ISC. Subject to Article A6.4.1, prior to charging any Covered Person with a breach of the FIA F1 Regulations, the FIA will (a) satisfy itself that any apparent breach(es) fall(s) within the limitation period specified in Article 7.9; and (b) issue an Initial Notice detailing any apparent breach(es) of the FIA F1 Regulations, giving the Covered Person in issue an opportunity to respond. If, after considering the response to the Initial Notice and subsequent correspondence (if any), the FIA concludes that the Covered Person in issue has breached one or more provisions of the FIA F1 Regulations, the FIA will issue a Final Notice charging them with such breach(es) and either seeking to enter an ABA or settlement agreement where appropriate or escalating the matter to the relevant FIA Court for hearing and determination.
+
+
+
+## A7 ADJUDICATION OF BREACHES AND SANCTIONS
+
+
+
+### A7 ADJUDICATION OF BREACHES AND SANCTIONS
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Case resolution without a hearing
+
+
+
+### A7.1.1 Settlement
+
+
+
+The Prosecuting Body may enter into a settlement agreement to terminate the procedure in accordance with the FIA Judicial and Disciplinary Rules. There shall be no right of appeal in respect of any decision by the Prosecuting Body as to whether or not to offer or enter into a settlement agreement.
+
+
+
+### A7.1.2 Accepted Breach Agreement – Financial Regulations
+
+
+
+The Cost Cap Administration may at any time during proceedings for an alleged breach of the Financial Regulations enter into an Accepted Breach Agreement (“ABA”) with the F1 Team, PU Manufacturer, or Declaration Signatory concerned to resolve the matter without a hearing, provided that the requirements and procedure set out in the Financial Regulations are met and followed. There shall be no right of appeal in respect of any decision by the Cost Cap Administration as to whether or not to offer or enter into an ABA.
+
+
+
+### A7.2 Adjudication – first instance
+
+
+
+
+
+### A7.2.1 Stewards
+
+
+
+a. The powers and procedures of the Stewards are set out in the ISC.
+
+b. In accordance with ISC Article 11.9, the Stewards appointed for an Event:
+
+i. have supreme authority for the enforcement of the ISC, of other applicable regulations of the FIA, of national regulations and Supplementary Regulations and of Official Programmes within the framework of the Event for which they are appointed. They may therefore settle any matter that might arise during an Event, subject to the scope of their appointment (i.e., Stewards may be appointed for specific Competitions within an Event) and subject to the right of appeal provided for in the ISC. However, they may:
+
+(A) delegate their authority to a panel of Stewards of one of the subsequent Events in the same Championship season in cases where a decision must be taken after an Event for any reason;
+
+(B) delegate their authority to the Out-of-Competition Stewards Panel in cases where a decision must be taken after an Event for any reason and the matter is time- sensitive such that it would not be appropriate to delay resolution until the next Event (e.g. where the matter needs to be resolved during the shutdown period or between Championships); where the alleged breach does not have an immediate and direct impact on the Event; or where the alleged breach relates to or has an impact on more than one Event; and
+
+(C) (upon the joint report of two international Stewards designated by the FIA) recommend that the Prosecuting Body bring a matter before the International Tribunal in accordance with ISC Article 12.3.5. ii. may also rule on any alleged breach of the applicable regulations that occurred outside the framework of any Event, provided that the Event for which they are appointed immediately follows the discovery of this alleged breach and the alleged breach has an immediate and direct impact on the Event.
+
+c. In accordance with ISC Article 11.9, the Stewards appointed to the Out-of-Competition Stewards Panel have authority to rule on any alleged breach of the applicable sporting, technical, and/or operational regulations referred to it by the FIA or the Stewards appointed for an Event in accordance with ISC Articles 11.5.5 and 11.9.1.a.ii.
+
+
+
+### A7.2.2 International Tribunal
+
+
+
+In accordance with Article 26.1 of the FIA Statutes and Article 5 of the FIA Judicial and Disciplinary Rules, subject to the powers of the Stewards, the International Tribunal is competent in all disciplinary matters in the first instance, except for matters concerning the FIA Anti-Doping Regulations and the Financial Regulations. The International Tribunal is also competent to determine (i) disputes arising out of or in connection with any agreement, tender, invitation, or other initiatives of the FIA provided that the jurisdiction of the International Tribunal is expressly stated therein, and (ii) any objection or disagreement regarding a Demand or material withheld under Article 3.2 of Appendix A3. The powers and procedures of the International Tribunal are set out in the FIA Judicial and Disciplinary Rules and International Tribunal Practice Directions.
+
+
+
+### A7.2.3 Cost Cap Adjudication Panel
+
+
+
+In accordance with Article 31 of the FIA Statutes, the Cost Cap Adjudication Panel is competent in the first instance in all disciplinary matters relating to the Financial Regulations. The Cost Cap Adjudication Panel is also competent to determine any objection or disagreement regarding a Demand or material withheld under Article 3.2 of Appendix A3 in the context of proceedings concerning the Financial Regulations. The powers and procedures of the Cost Cap Adjudication Panel are set out in the FIA Judicial and Disciplinary Rules.
+
+
+
+### A7.2.4 Anti-Doping Disciplinary Committee
+
+
+
+In accordance with Article 30.2 of the FIA Statutes and ISC Article 11.9.6a, all matters relating to the FIA Anti-Doping Regulations fall within the exclusive competence of the FIA Anti-Doping Disciplinary Committee. The powers and procedures of the Anti-Doping Disciplinary Committee are set out in the FIA Anti-Doping Regulations.
+
+
+
+### A7.3 Adjudication – appeal
+
+
+
+
+
+### A7.3.1 International Court of Appeal
+
+
+
+In accordance with Article 27 of the FIA Statutes and Article 9.1 of the FIA Judicial and Disciplinary Rules, the International Court of Appeal hears four types of appeal case: (1) appeals concerning decisions of the Stewards (except that certain decisions may not be appealed, as specified in the ISC or FIA F1 Regulations); (2) appeals concerning decisions taken by the International Tribunal; (3) appeals concerning decisions taken by the Cost Cap Adjudication Panel; and (4) appeals concerning the interpretation or application of the FIA Statutes. The powers and procedures of the International Court of Appeal are set out in the FIA Judicial and Disciplinary Rules and the Practice Directions of the International Court of Appeal. outcome of the appeal unless the International Court of Appeal orders otherwise or unless the decision is immediately binding in accordance with ISC Article 12.3.3. Certain decisions are not subject to appeal in accordance with ISC Article 12.3.4 and as specified in the FIA F1 Regulations. In addition, procedural and interim decisions are not subject to appeal.
+
+
+
+### A7.6 Protests
+
+
+
+Protests shall be made and determined in accordance with the ISC and Sporting Regulations and accompanied by a deposit of €20,000 (in accordance with ISC Article 13.4.2) and any additional deposit that may be required pursuant to ISC Article 13.4.3. Deposits may be returned in accordance with ISC Article 13.4.2.
+
+
+
+### A7.7 Right of Review
+
+
+
+Petitions for Review shall be made in accordance with the ISC and Sporting Regulations and accompanied by a deposit of €20,000 (in accordance with ISC Article 14.4.3). Deposits may be returned in accordance with ISC Article 14.4.3.
+
+
+
+### A7.8 FIA representation in proceedings
+
+
+
+Where a case is referred to the International Tribunal or Cost Cap Adjudication Panel, or appealed to the International Court of Appeal or CAS, FIA Legal shall take over conduct of the matter on behalf of the FIA, assisted as necessary by the FIA Single Seater Department, the Cost Cap Administration, and/or relevant FIA external advisors.
+
+
+
+### A7.9 Limitation period
+
+
+
+
+
+### A7.9.1
+
+
+
+The statutory limitation period for prosecuting offences or infringements is five years.
+
+
+
+### A7.9.2
+
+
+
+This limitation period shall run: - from the date the offence or infringement occurred except for what refers to the Financial Regulations (F1 Teams) where the limitation period run within five year of the later of the Full Year Reporting Deadline for the Full Year Reporting Period in which the breach is alleged to have occurred (and if the breach continued over a period of time, it will be deemed to have occurred, for these purposes, on the last day of that period of time); and the date on which the Cost Cap Administration learned of the acts or omissions on which the allegation of breach is based, where the Cost Cap Administration establishes that the F1 Team and/or the Individual F1 Team Member in question concealed those acts or omissions; - in the case of successive or repeated offences or infringements, from the date of the last act of offence or infringement; - in the case of a continuous offence or infringement, from the date it ceased. Specific types of breaches may also be deemed to have occurred on a specific date where so specified in the relevant FIA regulations.
+
+
+
+### A7.9.3 However, where the offence or infringement has been concealed from the FIA the limitation period
+
+
+
+shall run from the date on which the relevant facts became known to the FIA. The limitation period is interrupted by any notice of prosecution or investigation carried out under Chapter 2 of the FIA Judicial and Disciplinary Rules. The limitation period rules set out above do not apply to anti-doping rule violations, which are subject to the provisions of Appendix A. Burden and standard of proof The FIA shall have the burden of establishing that a breach of the FIA F1 Regulations has occurred. The standard of proof shall be whether the FIA has established a breach of the FIA F1 Regulations to the comfortable satisfaction of the Judging Panel, bearing in mind the seriousness of the allegation that is made. This standard of proof in all cases is greater than a mere balance of probability but less than proof beyond a reasonable doubt.
+
+
+
+### A7.10.2
+
+
+
+Where the FIA F1 Regulations place the burden of proof upon the Covered Person alleged to have committed a breach to establish specified facts or circumstances, the standard of proof shall be by a balance of probability, i.e., they must satisfy the Judging Panel that the claim or fact asserted is more likely than not to be true.
+
+
+
+### A7.10.3 Unless specified otherwise, liability for compliance with the FIA F1 Regulations is strict, i.e. the FIA
+
+
+
+is not required to prove that the relevant party committed the alleged breach intentionally, recklessly, negligently, or knowingly.
+
+
+
+### A7.11 Evidence
+
+
+
+
+
+### A7.11.1
+
+
+
+No formal rules as to admissibility of evidence shall apply to the investigation or adjudication of any breach of the FIA F1 Regulations. Facts may be established by any reliable means, such as (for example) admissions, credible testimony of third persons, reliable documentary or audiovisual evidence, conclusions drawn from the analysis of data, or reliable metadata.
+
+
+
+### A7.11.2
+
+
+
+A person is bound by and may not dispute facts determined by a court or tribunal of competent jurisdiction in a decision in proceedings to which they were a party that is not the subject of a pending appeal.
+
+
+
+### A7.11.3
+
+
+
+Where a party or a Witness, without reasonable excuse:
+
+a. refuses or fails to produce any document or other information within their knowledge, possession, custody, or control, or that is otherwise easily obtainable from a third party (e.g. by simple written request) in response to a formal (valid) request by the FIA or the appropriate Judging Panel;
+
+b. refuses or fails to appear at a hearing to answer questions; or
+
+c. appears at a hearing but refuses or fails to respond to any question put to them by or with the permission of the Judging Panel, the FIA or the relevant Judging Panel may infer that the document or other information or answer(s) (as applicable) would be adverse to the interests of that party.
+
+
+
+### A7.12 Sanctions
+
+
+
+
+
+### A7.12.1
+
+
+
+Subject to Articles A7.12.2 and A7.12.3, the general sanctions set out in the ISC and FIA Judicial and Disciplinary Rules apply to all Covered Persons (subject to the individual liability under Article 1.4.2), unless the FIA F1 Regulations stipulate that one or more specific sanction(s) shall apply to a certain type of breach. Where a Covered Person admits or is found to have breached any of their obligations under the Financial Regulations, the sanctions set out in the Financial Regulations shall apply. In addition to the general sanctions applicable pursuant to Article A7.12.1, the following additional sanctions may be applied in the context of the Championship where a Covered Person admits or is found to have breached any of their obligations under the FIA F1 Regulations:
+
+a. enhanced monitoring procedures in respect of the F1 Team or PU Manufacturer;
+
+b. withholding and/or cancellation of FIA registrations and/or licences for a specified period of time;
+
+c. removal of the right to access Reserved Areas (as defined in the ISC) at Competitions forming part of any FIA World Championship for a specified period of time; and/or
+
+d. suspension for a specified period of time from taking part or exercising any role, directly or indirectly and in any capacity whatsoever, in (i) any Competition organised or regulated by the FIA or the ASNs (as defined in the ISC), or placed under their authority, (ii) any preparatory testing and training organised or regulated by the FIA or the ASNs (or placed under their authority) or organised by their members or licence-holders, and/or (iii) any F1 Activities.
+
+
+
+### A7.12.4 Suspended sanctions
+
+
+
+The application of any sanction may be suspended, in whole or in part, for a specified period, subject to compliance by the Covered Person in issue with specified conditions.
+
+
+
+### A7.12.5 Provisional suspensions
+
+
+
+Provisional suspensions may be imposed on any Covered Persons in accordance with the FIA Judicial and Disciplinary Rules. Failure by the Person in issue to comply with the terms of any provisional suspension or sanction(s) imposed on them will constitute a further breach of the FIA F1 Regulations, and such failure will constitute an aggravating factor for sanctioning purposes.
+
+
+
+### A7.12.6 Sanctioning guidelines
+
+
+
+The FIA may publish sanctioning guidelines from time to time to inform Covered Persons of the usual ranges of sanction that might be imposed for different categories of breaches, and to provide the Stewards and FIA Courts with assistance in the imposition of consistent and proportionate sanctions. However, the Stewards and FIA Courts must always exercise judgement and discretion and consider appropriate mitigating and aggravating factors in determining appropriate sanctions in every case, and therefore may impose sanctions outside the guideline ranges.
+
+
+
+### A7.12.7 Aggravating or mitigating factors
+
+
+
+In determining the sanctions appropriate for a particular case, any aggravating or mitigating factors shall be taken into account. Examples of aggravating factors include:
+
+a. failure to cooperate;
+
+b. any element of bad faith, dishonesty, wilful concealment, or fraud;
+
+c. prior breaches of the FIA F1 Regulations and/or multiple breaches of the FIA F1 Regulations within a short period of time (or for purposes of the Financial Regulations, in the Reporting Period in question); and/or
+
+d. severity of the breach (or for purposes of the Financial Regulations, the quantum of the breach of the Cost Cap). Examples of mitigating factors include:
+
+a. voluntary disclosure of a breach to the FIA;
+
+b. track record of compliance with the FIA F1 Regulations;
+
+c. Force Majeure; and/or
+
+d. full and unfettered cooperation with the FIA and any persons assisting it.
+
+
+
+### A7.12.8 Payment of a Financial Penalty
+
+
+
+a. Payment of all Financial Penalties under the FIA F1 Regulations shall be made in accordance with ISC Article 12.8, unless provided otherwise in the FIA F1 Regulations or decided otherwise by the relevant Judging Panel. Payments will be suspended in the event of an appeal, until its outcome is determined.
+
+b. Subject to paragraph a, any delay in the payment of fines under the FIA F1 Regulations automatically divests the Covered Person concerned of the right to participate in the Championship until that payment has been made. Late payments shall accrue an interest of 2% above the US Federal Reserve System federal funds rate on the relevant due date.
+
+
+
+### A7.13 Costs
+
+
+
+Unless specified otherwise in the FIA F1 Regulations, the costs of the investigation, proceedings, and legal costs will be determined by the Judging Panel in accordance with the FIA Judicial and Disciplinary Rules.
+
+
+
+### A7.14 Immunity
+
+
+
+
+
+### A7.14.1
+
+
+
+The FIA may grant partial or total immunity to any person who discloses facts that are likely to constitute or to lead to the discovery of a breach of the FIA F1 Regulations, and/or who provides evidence allowing such facts to be prosecuted and sanctioned. The degree of immunity granted to such person by the FIA will depend in particular on: (i) whether or not the FIA already had the information, (ii) the nature and extent of the person’s cooperation, and (iii) the importance of the case, (iv) the nature and extent of the breach and the conduct of the accused party, and (v) past conduct of that person.
+
+
+
+### A7.14.2
+
+
+
+Any grant of immunity, whether partial or total, must (i) be set out in writing; (ii) be signed by the FIA and by the person benefiting from the immunity; (iii) specify the nature and extent of the immunity granted; and (iv) set out the sanctions that the FIA will not impose against the person benefiting from the immunity.
+
+
+
+### A7.14.3 Any immunity granted by the FIA, whether partial or total, is subject to the following cumulative
+
+
+
+conditions (the “Immunity Conditions”), which will be deemed incorporated into the document granting immunity, whether or not expressly set out therein:
+
+a. cooperating with the FIA, telling the whole truth, refraining from destroying, falsifying, or concealing useful information or evidence, and acting in Good Faith at all times; and
+
+b. providing the FIA with genuine and complete cooperation throughout the entire investigation and related proceedings, including providing testimony in accordance with any request and in any form required by the FIA, and promptly replying to any questions of the FIA or relevant Judging Panel.
+
+
+
+### A7.14.4 Where the Judging Panel considers that good reason exists, the person benefiting from immunity
+
+
+
+may be permitted by the Judging Panel to testify in a manner that safeguards their anonymity.
+
+
+
+### A7.14.5 Provided that the person benefiting from the immunity complies with the Immunity Conditions, the
+
+
+
+immunity granted by the FIA is irrevocable. In the event that the person benefiting from the immunity does not comply with the Immunity Conditions, the FIA may ask the Judging Panel to revoke the immunity. The Judging Panel will issue a written decision, setting out whether or not it will revoke immunity, with reasons. That decision is not subject to appeal by any party in accordance with the JDR.
+
+
+
+### A7.14.6 Any proceedings concerning the potential grant or revocation of immunity may be attended only by
+
+
+
+the person concerned and their representatives, the FIA and its representatives, and the Judging Panel, unless ordered otherwise by the Judging Panel.
+
+
+
+## A8 CONFIDENTIALITY, PUBLIC REPORTING, AND DATA PRIVACY
+
+
+
+### A8 CONFIDENTIALITY, PUBLIC REPORTING, AND DATA PRIVACY
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Confidentiality
+
+
+
+### A8.1.1 Any information (including personal information) received by the FIA, the Stewards, and/or any FIA
+
+
+
+Court pursuant to the FIA F1 Regulations may be shared between those bodies as necessary in the exercise of their regulatory functions under the FIA F1 Regulations. The FIA may also share such information with any of the external Persons listed in Article A5.2.4, provided that such Persons provide satisfactory assurance to the FIA that they will have appropriate procedures in place to maintain the confidentiality of such information and share it only on a need-to-know basis. The FIA may also share such information with other competent authorities where such information might evidence infringements of other applicable laws or regulations or where the FIA is required to so by applicable law.
+
+
+
+### A8.1.2
+
+
+
+The FIA, the Stewards, and the FIA Courts will have appropriate procedures in place to maintain the confidentiality of any Confidential Information provided to them in the exercise of their respective regulatory functions.
+
+
+
+### A8.2 Public reporting
+
+
+
+
+
+### A8.2.1
+
+
+
+Subject to Articles A8.2.2 and A8.2.3, the FIA may at any time publicly report the following (omitting any Confidential Information) in respect of matters concerning the FIA F1 Regulations, having provided the relevant individuals advance notice of such publication:
+
+a. whether an investigation has been opened against any Covered Person (subject to point i below) and/or the notified outcome of such investigation;
+
+b. whether any Covered Person has been notified of an alleged breach of the FIA F1 Regulations;
+
+c. the referral of a case to the Stewards or a first instance FIA Court (including the reason(s) for the referral) and the date of any hearing;
+
+d. the final decision of the Stewards or a first instance FIA Court (or a summary thereof), including operative and reasoned decisions;
+
+e. whether or not an appeal has been filed against the decision of the Stewards or first instance FIA Court and the date of any appeal hearing;
+
+f. the final decision of the International Court of Appeal (or a summary thereof), including operative and reasoned decisions;
+
+g. whether any Covered Person has entered into, an ABA or settlement agreement, and a summary of the terms of any ABA or settlement agreement entered into with any Covered Person, detailing the breach(es) and any sanctions imposed; and
+
+h. which F1 Teams or PU Manufacturers have or have not complied with the Financial Regulations.
+
+i. the names of involved personnel, strictly limiting such references to Key Individual F1 Team Members, Key Individual F1 PU Members and Drivers. In respect of matters concerning any alleged breach of the Financial Regulations by a Covered Person who is a natural person (not an F1 Team, PU Manufacturer, or other entity), public reporting under Article A8.2.1 shall occur only once the final appeal decision is issued, or any appeal rights have expired, or once an ABA or settlement agreement has been entered into. No other public reporting shall occur in respect of such cases involving natural persons, subject to Article A8.2.8.
+
+
+
+### A8.2.3 Article A8.2.1 does not affect any publication permitted or mandated by the ISC. For example, the
+
+
+
+general public reporting in respect of anti-doping matters is governed by the FIA Anti-Doping Regulations (ISC Appendix A).
+
+
+
+### A8.2.4 Hearings before the International Tribunal and International Court of Appeal are open to the media
+
+
+
+and to the public, unless the President of the Hearing decides otherwise, except in matters concerning alleged breaches of the Financial Regulations. All other hearings shall be closed to the media and to the public.
+
+
+
+### A8.2.5 Any public disclosure must at all times maintain the confidentiality of any Confidential Information
+
+
+
+of the parties concerned.
+
+
+
+### A8.2.6
+
+
+
+Any Person referred to in a public disclosure by the FIA has no right of legal action against the FIA, or against any person publishing the decision, for any loss or damage suffered as a result of such publication provided such public disclosure is factually correct or reasonably concluded based on the available evidence at the time of the hearing.
+
+
+
+### A8.2.7 F1 Teams and/or PU Manufacturers and any other Covered Person charged with a breach may
+
+
+
+publicly comment on information that is publicly reported by the FIA but may not disclose any other information relating to the FIA F1 Regulations or their enforcement (including any case or investigation) that is not otherwise already in the public domain through no fault or negligence of the F1 Team, PU Manufacturer, or other Covered Person charged with a breach.
+
+
+
+### A8.2.8
+
+
+
+The FIA may respond to public comments attributed to an F1 Team or a PU Manufacturer (including based on comments made by their respective Personnel, representatives, or Legal Group entities) or to any other Covered Person charged with a breach (or their representatives).
+
+
+
+### A8.2.9
+
+
+
+Any breach of confidentiality that is attributed to an F1 Team or a PU Manufacturer (including based on comments made by their respective Personnel, representatives, or Legal Groups) or other Covered Person charged with a breach (or their representatives) shall constitute a breach of this
+
+
+
+### A8.3 Data privacy
+
+
+
+The FIA, as data controller, will process personal information for the purpose of exercising the regulatory functions under the FIA F1 Regulations. The details on how the FIA will process personal data, manage data subject rights, and how such rights may be exercised can be found at www.fia.com/motorsport-privacy-notice. Each F1 Team and PU Manufacturer shall make this information, including the FIA Motorsport Privacy Notice, available to all of its Personnel and the members of its Legal Group (and to procure that those members make it available to their respective Personnel).
+
+
+
+## A9 EFFECTIVE PERIOD, AMENDMENTS, INTERPRETATION, AND MISCELLANEOUS
+
+
+
+### A9 EFFECTIVE PERIOD, AMENDMENTS, INTERPRETATION, AND MISCELLANEOUS
+
+
+
+Advisory Committee: RGAC Governance: F1 Commission / WMSC Effective period of the FIA F1 Regulations
+
+
+
+### A9.1.1 Subject to Articles A9.1.2, A3.5, and A3.6, and unless stated otherwise, the FIA F1 Regulations
+
+
+
+come into force on 1 January 2026 and apply to the entire calendar year (Year N) referred to in the title of these FIA F1 Regulations and to the Championship taking place within that calendar year.
+
+
+
+### A9.1.2
+
+
+
+To attain compliance with the FIA F1 Regulations in Year N, an F1 Team or PU Manufacturer may be required to comply with provisions of the FIA F1 Regulations in the period before or after the calendar year in question. Compliance requirements outside the year in question include, for example:
+
+a. cases where such requirements are specifically defined in the FIA F1 Regulations;
+
+b. the timely submission of an application or Entry Form or Declaration;
+
+c. the timely payment of any fees to the FIA;
+
+d. the completion of technical checks in the year following the calendar year in question (Year N+1);
+
+e. the submission of Reporting Documentation in the year following the calendar year in question (Year N+1); and
+
+f. the requirement to comply with specific sections of the FIA F1 Regulations for a certain period before the first entry into the Championship or the first homologation of a Power Unit as specified in the relevant Sections of the FIA F1 Regulations (including Articles A3.5.2 and A3.6.5).
+
+
+
+### A9.2 Effective period of FIA F1 Documents
+
+
+
+
+
+### A9.2.1
+
+
+
+The FIA will specify the effective date of an FIA F1 Document in that document. Where applicable, and reasonable the FIA may also stipulate a date for the end of the validity of an FIA F1 Document. The FIA F1 Documents will not have retroactive effect.
+
+
+
+### A9.2.2
+
+
+
+The FIA may, acting reasonably, update or withdraw an FIA F1 Document from time to time and will provide information to all F1 Teams and PU Manufacturers of the complete list of FIA F1 Documents that remain valid at any point in time.
+
+
+
+### A9.2.3
+
+
+
+The FIA may circulate an FIA F1 Document in draft form to seek feedback from the F1 Teams or PU Manufacturers before its formal issuing. Such feedback may be used by the FIA to update the draft FIA F1 Document before its issuance.
+
+
+
+### A9.3 Amendments
+
+
+
+
+
+### A9.3.1 Amendments to the FIA F1 Regulations must be approved by the WMSC in accordance with ISC
+
+
+
+Article 18 and (subject to Article A9.3.2) must satisfy any additional approval requirements under the applicable governance processes (including advisory committees and F1 Commission). The FIA will publish any amendments on its website. The FIA may make the following amendments with the approval of the WMSC but without requiring any governance process approvals (whether advisory committees or F1 Commission):
+
+a. any amendments made for reasons of safety; b the deletion of any Articles that become redundant or irrelevant because of their reference to specific dates that have elapsed;
+
+c. the updating of any year-specific date references; and d. the correction of any typographical or other minor errors which do not impact the interpretation or effect of the relevant provision.
+
+
+
+### A9.3.3
+
+
+
+Subject to this Article A9.3, the FIA F1 Regulations for each calendar year will be assumed to be identical to those of the previous calendar year.
+
+
+
+### A9.4 Interpretation
+
+
+
+
+
+### A9.4.1
+
+
+
+The definitive version of the FIA F1 Regulations and FIA F1 Documents shall be the English version which will be used should any dispute arise as to their interpretation.
+
+
+
+### A9.4.2 The FIA F1 Regulations and FIA F1 Documents must be interpreted as an independent and
+
+
+
+autonomous text and not by reference to existing law or statutes in any particular jurisdiction. Subject to the foregoing, they shall be governed by and construed in accordance with French law. Nothing in the FIA F1 Regulations or FIA F1 Documents is intended to compromise or affect the application of applicable laws.
+
+
+
+### A9.4.3
+
+
+
+The FIA F1 Regulations and FIA F1 Documents will be interpreted and applied by the FIA, and where applicable, the Stewards and FIA Courts, in a consistent manner that treats all F1 Teams, PU Manufacturers, and other Covered Persons equally and furthers the Objectives.
+
+
+
+### A9.4.4 The Stewards, first instance FIA Courts, and ultimately the International Court of Appeal have final
+
+
+
+authority in determining the proper interpretation and application of these FIA F1 Regulations.
+
+
+
+### A9.4.5
+
+
+
+Unless specified otherwise:
+
+a. defined words and phrases in the FIA F1 Regulations (denoted by initial capital letters) have the meaning set out in Appendix A1 and apply to all Sections of the FIA F1 Regulations.
+
+b. headings are for ease of reference only and do not form part of the FIA F1 Regulations;
+
+c. a reference to “may” means in the sole and absolute discretion of such person or body (as the context so requires);
+
+d. any words following the terms ‘including’, ‘include’, ‘in particular’, ‘such as’, ‘for example’, or any similar expression, are illustrative only and do not limit the sense of the words preceding those terms;
+
+e. the pronoun “they/their” is used for individuals and includes all genders;
+
+f. words in the singular include the plural, and words in the plural include the singular, with this interpretive rule not applying to any provision that specifies technical characteristics, measurements, component quantities, or numerical limits;
+
+g. Articles and Appendices beginning with an alphabetical letter (e.g. Article A1.1; Appendix A1) refer to articles and appendices in the different sections of the FIA F1 Regulations (the example provided refers to articles and appendices in Section A of the FIA F1 Regulations);
+
+h. any reference to a provision in the FIA F1 Regulations includes any modifications or successor provisions made or issued by the FIA from time to time;
+
+i. a reference to ‘writing’, ‘write’, or ‘written’ includes email;
+
+j. a reference to a ‘day’ means any day of the week and is not limited to working days;
+
+k. an expression of time refers to Central European Standard Time;
+
+l. any time limits will begin on the day after the day on which the notice triggering the time limit is received. Official holidays and non-working days (in any location) are included in the calculation of time limits except that if the last day of the time limit is an official holiday or a non-working day in the location from where the document is sent, the time limit shall expire at the end of the first subsequent working day in that location. The time limit will be deemed respected if the notice or other communication is sent before midnight Central European Standard Time on the day on which the time limit expires; and m. a reference to a ‘person’ (with no initial capital letter) means a natural person.
+
+
+
+### A9.4.6
+
+
+
+If a court or other competent authority finds any part of the FIA F1 Regulations to be illegal, invalid, or unenforceable, that part will be deemed not to form part of the FIA F1 Regulations, and the legality, validity, and enforceability of the remainder of the FIA F1 Regulations will not be affected.
+
+
+
+### A9.4.7
+
+
+
+In case of any conflict between the provisions of this Section A and Section E, the provisions of between the provisions of this Section A and any other Section of the FIA F1 Regulations, the provisions of Section A shall prevail. In such instances, the FIA will seek to resolve such conflict at the earliest opportunity through the governance process.
+
+
+
+### A9.4.8 The FIA F1 Regulations include some comments in coloured text for guidance purposes, as
+
+
+
+explained below. This text does not have any regulatory effect and its addition or removal from the FIA F1 Regulations will not require the approval of the WMSC or be subject to any other approval as part of any applicable governance process.
+
+a. Any text displayed in red (e.g. [abcde]) indicates the appropriate Advisory Committee and governance process for the discussion and/or approval of amendments to that part of the FIA F1 Regulations. A summary of the Advisory Committees and their respective remits is set out at Appendix A2.
+
+b. Any text displayed in orange (e.g. [FIA-F1-DOCxxx]) provides references to FIA F1 Documents (see Article A1.2.3) that may be relevant to a specific Article of the FIA F1 Regulations. Such references do not confirm the validity of a given FIA F1 Document nor does the absence of such a reference mean that a given FIA F1 Document is not applicable.
+
+c. Any text displayed in green (e.g. [abcde]) provides context for the provision or intended regulatory developments. Requests for clarification and FIA feedback An F1 Team or PU Manufacturer may submit a written request to the FIA to clarify the operation or interpretation of the FIA F1 Regulations. Such correspondence must include:
+
+a. a full description of the interpretation it intends to adopt, with drawings, schematics, and/or calculations as appropriate;
+
+b. its opinion concerning the immediate and long-term implications of the proposed interpretation on other parts of the FIA F1 Regulations and on the Championship; and
+
+c. the precise way in which it considers the proposed interpretation will impact its technical, sporting, financial, or operational performance.
+
+
+
+### A9.5.2 Before responding, the FIA may request additional information, reports, designs, and/or
+
+
+
+calculations to ensure that the intent of the above requirements is achieved.
+
+
+
+### A9.5.3
+
+
+
+The FIA will respond in writing to any such request and provide a full explanation about the reasons why it considers a particular interpretation should be adopted.
+
+
+
+### A9.5.4 The FIA may, for purposes of fairness and transparency, elect to circulate any clarification provided
+
+
+
+to an F1 Team or PU Manufacturer in the form of an FIA F1 Document, or to discuss it in the relevant Advisory Committee, omitting any Confidential Information.
+
+
+
+### A9.5.5
+
+
+
+The FIA may also (of its own motion) issue feedback to an F1 Team or PU Manufacturer in order to assist it in complying with the FIA F1 Regulations.
+
+
+
+### A9.5.6 Any clarifications or feedback provided by the FIA shall be advisory only and shall not constitute
+
+
+
+part of the FIA F1 Regulations.
+
+
+
+### A9.6 Language of communication with the FIA
+
+
+
+All correspondence, documentation, and information submitted to the FIA shall be in English. The FIA may require an F1 Team or PU Manufacturer or other Covered Person to provide (at their own expense) a certified translation into English of any document relied upon in connection with their compliance with the FIA F1 Regulations.
+
+
+
+### A9.7 Reliance on FIA communications
+
+
+
+Any communication from the FIA that is not in writing, either by letter or email, cannot be relied upon by F1 Teams, PU Manufacturers, or other Covered Persons as representing the definitive position of the FIA.
+
+
+
+### A9.8 Transitional provisions
+
+
+
+
+
+### A9.8.1
+
+
+
+Any period prior to Year N shall be governed by the substantive rules in effect at the time of that period. However, procedural rules shall apply retroactively unless specified otherwise.
+
+
+
+### A9.8.2
+
+
+
+Any case or investigation that is pending as of 1 January of Year N and any charge for breach of the FIA F1 Regulations brought after that date based on a breach that occurred prior to that date shall be governed by the substantive rules in effect at the time the alleged breach occurred, and not by the substantive rules set out in these FIA F1 Regulations, unless the Stewards or FIA Court hearing the case determines that the principle of “lex mitior” appropriately applies under the circumstances of the case. The statute of limitations set out in Article A7.9 is a procedural rule, not a substantive rule, and should be applied retroactively (provided, however, that Article A7.9 shall only be applied retroactively if the statute of limitations period has not already expired at 1 January of Year N).
+
+
+
+## A8 .
+
+
+
+### A8 .
+
+
+
+“Final Notice” means the notice issued by the FIA to a Covered Person notifying them of an alleged breach of one or more provisions of the FIA F1 Regulations (excluding proceedings before the Stewards). “Financial Penalty” means a fine in an amount to be determined on a case-by-case basis. “Financial Regulations” means the FIA Formula One Financial Regulations for F1 Teams and/or PU Manufacturers set out in Sections D and E of the FIA F1 Regulations, as amended from time to time. “Force Majeure” means any circumstances beyond the reasonable control of a relevant affected party affecting its compliance with the FIA F1 Regulations, including terrorist action or the threat thereof, civil commotion, disruption due to general or local elections, invasion, war, threat of or preparation for war, fire, explosion, storm, flood, earthquake, or any other natural physical disaster, epidemic, pandemic, or outbreak, and any legislation, regulation, or ruling of any government, court, or other such competent authority. “FPP Relevant Person” has the meaning given to that term in Article A4.1.2. “FPP Test” means the Fit and Proper Persons Test referenced in Article A4.1.1 and detailed further in an Appendix to the ISC. “Full Year Reporting Deadline” has the meaning given to that term in the relevant Financial Regulations. “Full Year Reporting Documentation” has the meaning given to that term in the relevant Financial Regulations. “Full Year Financial Regulations Reporting Period” means a 12-month financial reporting period commencing on 1 January and ending on 31 December in any given year. “Garden Leave” means a period during which a member of personnel who is in the process of changing employer is isolated from any Confidential Information or any F1 Activity. Garden Leave may involve the member of personnel being asked to carry out unrelated work within the previous employer’s Legal group. “Good Faith” means with due diligence and in a spirit of honesty, sincerity, and integrity. “Immunity Conditions” has the meaning set out in Article A7.14.3. “Independent Audit Firm” means an independent audit firm acting in compliance with the International Code of Ethics for Professional Accountants (including International Independence Standards) that has been approved by the Cost Cap Administration. “Initial Notice” means the initial notice issued by the FIA to a Covered Person notifying them of an apparent breach of one or more provisions of the FIA F1 Regulations (excluding proceedings before the Stewards). “Interim Financial Regulations Reporting Period” means a four-month financial reporting period commencing on 1 January and ending on 30 April in any given year. “International Court of Appeal (ICA)” means the FIA Court established pursuant to the FIA Statutes and further described in Article A7.3.1. “International Licence” has the meaning given to that term in the ISC. “International Sporting Calendar” means the calendar of official motorsport events and competitions recognised and published by the FIA. “International Tribunal” means the FIA Court established pursuant to the FIA Statutes and further described in Article A7.2.2. “ISC” means the FIA International Sporting Code and its appendices, as amended from time to time. “Judge” means judges elected by the FIA General Assembly in accordance with the FIA Statutes to sit on an FIA Court. “Judging Panel” means a panel of Judges appointed from an FIA Court to hear a particular case. “Key Individual F1 Team Member” means each person who is required to be registered as key Personnel of the F1 Team pursuant to Appendix A5 and ISC Article 2.6.4 and each Declaration Signatory of the F1 Team. “Key Individual PU Member” means each person who is required to be registered as key Personnel of the PU Manufacturer pursuant to Appendix A5 and ISC Article 2.6.5 and each Declaration Signatory of the PU Manufacturer. “Legal Group” has the meaning given to that term in the relevant Financial Regulations. This term includes ‘Legal Group Structure’ as defined in Section E (Financial Regulations – PU Manufacturers). “Legal Professional Privilege” covers communications between a lawyer and a client for the sole or dominant purpose of giving or receiving of legal advice. It also covers communications between lawyers or their clients and any third party for the sole or dominant purpose of obtaining advice or information in connection with any existing or reasonably contemplated litigation (including any proceedings before the FIA Courts). Legal Professional Privilege applies to both external and in-house lawyers. As to any document that contains non-legal advice in any part(s), such part(s) are disclosable and Legal Professional Privilege shall not apply to such part(s). This definition of Legal Professional Privilege shall supersede any contrary or conflicting rules on legal professional privilege or professional secrecy (or similar) under applicable law. “Listed Team Components” has the meaning set out in the Technical Regulations (which, for purposes of the Financial Regulations, refer to those in force during the applicable Reporting Period). “Login Information” means the username, password, and/or any other information or means required to access and download the data stored or accessible on, or transmitted or received using, Electronic Devices. “New Entrant PU Manufacturer” [Governance: PU Manufacturers’ Governance Agreement / WMSC] means a PU Manufacturer that has been admitted to the Championship but has not yet participated in the Championship. “New Entrant Team” means an F1 Team that has been admitted to the Championship but has not yet participated in the Championship. “Objectives” has the meaning set out in Article A1.3. “Official” means any of the persons listed in ISC Article 11 or ISC Appendix V. “Official Programme” has the meaning given to that term in the ISC. “Operational Regulations” means the FIA Formula One Operational Regulations set out in Section F of the FIA F1 Regulations, as amended from time to time. “Organiser” means the organiser of a Competition being the ASN and/or its nominee or a body whose competence is approved by the FIA, which has entered into an organisation agreement with the FIA and ASN in the form prescribed by the FIA. “Other Racing Driver” means any person engaged by a Reporting Group Entity whose primary role is as a driver engaged in the racing and/or Testing of automobiles for or on behalf of the F1 Team, but who is not an F1 Driver. This term includes amongst others an F1 Team’s free practice drivers and reserve drivers. For purposes of the Financial Regulations, this is assessed in respect of the Financial Regulations Reporting Period in question. “Out-of-Competition Stewards Panel” has the meaning given to that term in the ISC. “Parc Fermé” means the designated secure area at a Competition where F1 Cars must be kept after qualifying and during certain other periods of the Competition, and where F1 Teams are prevented from working on their F1 Cars other than adjustments permitted by the FIA. “Person” means a natural person or an organisation or other entity, body, or committee. For the avoidance of doubt, the term Person does not include the FIA. “Personnel” means any person engaged in the undertaking of F1 Activities on behalf of the F1 Team or PU Manufacturer in question and/or on behalf of any other member of the Legal Group of the F1 Team or PU Manufacturer, which for the avoidance of doubt includes (without limitation) Key Individual F1 Team Members and Key Individual PU Members. “Power Unit (PU)” [Governance: PU Manufacturers’ Governance Agreement / WMSC] means the internal combustion engine and turbocharger (complete with its ancillaries, the energy recovery system, and all actuation systems and PU control electronics necessary to make them function at all times). “Power Unit Manufacturer (or PU Manufacturer)” [Governance: PU Manufacturers’ Governance Agreement / WMSC] means a legal entity that successfully completes the FIA registration process to be eligible to homologate Power Units for supply to F1 Teams. “Procedural Breach” has the meaning set out in the relevant Financial Regulations. “Protest” has the meaning given to that term in Article 13 of the ISC. “Promoter” means a Person who has been appointed by the Commercial Rights Holder to promote a Competition. “Prosecuting Body” has the meaning given to that term in Article 3 of the FIA Judicial and Disciplinary Rules. “Race Control” means the area, typically located in the main pit building, designated for the purpose of supervision of the circuit and direction of circuit activity, containing all the relevant facilities necessary to perform these tasks. Such area being where the Race Director and Clerk of Course shall be located during all sessions. “Reporting Documentation” has the meaning given to that term in the relevant Financial Regulations. “Reporting Group Entity” has the meaning given to that term in the relevant Financial Regulations. “Financial Regulations Reporting Period” has the meaning given to that term in the relevant Financial Regulations. “Reserved Areas” means areas where a Competition is taking place, including the track, the Circuit, the paddock, the Parc Fermé, the service parks or zones, the holding parks, the Pit Lane, the Signalling Area, the zones that are barred to the public, Race Control, the control zones, the zones that are reserved for the media, and the refuelling zones. “Reserve Drivers”: tbc “Restricted Duties” has the meaning given to that term in Article A5.7.3.d. “Right of Review” means the power of the Stewards to re-examine their prior decision following a petition for review filed in accordance with ISC Article 14. “Safety Car” means a physical safety car that is brought onto the track to limit the speed of the F1 Cars. “Scheduled Race Distance” means the Race distance expressed as a number of laps, as specified on the Competition visa issued by the FIA for the Event. “Scheduled Sprint Distance” means the Sprint distance expressed as a number of laps, as specified on the Competition visa issued by the FIA for the Event. “Secondment Documentation” has the meaning given to that term in Article A5.7.3.d. “Session(s)” means free practice, qualifying, and race sessions at a Competition. [to discuss whether to include Sprints and Sprint Qualifying] “Single Supplier” means a supplier that has been exclusively chosen by the FIA to provide a specific product, component, or service to all F1 Teams in the Championship. “Sporting Directive” means an FIA F1 Document issued by the FIA to clarify the Sporting Regulations or provide specific guidance in relation to an Event. “Sporting Power” has the meaning given to that term in the FIA Statutes. “Sporting Regulations” means the FIA Formula One Sporting Regulations set out in Section B of the FIA F1 Regulations, as amended from time to time. “Sprint” means an FIA Formula One sprint, including sprint qualifying events, as described further in the Sporting Regulations. “Standard Operating Procedure” means the standard operating procedure published by the FIA which sets out guidance regarding the manner in which the FIA will exercise its right under the FIA F1 Regulations to make a Demand to an F1 Team or PU Manufacturer to be provided with, and granted access to, Electronic Devices of the F1 Team or PU Manufacturer (and/or of their respective Personnel, and/or of the other members of their respective Legal Groups and/or the respective Personnel of those Legal Group entities) for the purposes of copying and/or downloading data from such Electronic Devices. “Stewards” means the Officials with the authority and powers set out in the ISC. “Super Licence” means a licence drawn up and issued by the FIA to those Persons required to have such licence for participation in the Championship in accordance with Article A3.3. “Supplementary Regulations” has the meaning given to that term in the ISC. “Technical Directive” means an FIA F1 Document issued by the FIA to clarify the Technical Regulations. “Technical Regulations” means the FIA Formula One Technical Regulations set out in Section C of the FIA F1 Regulations, as amended from time to time. “Test(ing)” means all on track and off-track testing, including any virtual testing and simulation of either a car (including F1 Cars), chassis, or chassis system or components (including for the avoidance of doubt Testing of Current Cars). “Ultimate Controlling Party” means, in respect of an F1 Team, PU Manufacturer, or other entity, the entity or individual that has ultimate Control, directly or indirectly, of that F1 Team, PU Manufacturer, or other entity. “Virtual Safety Car (VSC)” means a safety measure used to slow down all F1 Cars on the track without using a physical Safety Car. “Witness” means a fact witness and/or an expert witness. “World Champion Constructor” means the F1 Team that most recently won the Constructors’ Championship. “World Champion Driver” means the F1 Driver who most recently won the Drivers’ Championship. “World Motorsport Council (WMSC)” means the World Motorsport Council as constituted under the FIA Statutes. “Year N” means the calendar year in the title of the FIA F1 Regulations, and references to Year N-2, N-1, N+1, etc. apply to previous or subsequent calendar years.

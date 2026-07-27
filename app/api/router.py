@@ -11,8 +11,8 @@ from app.api.rules import router as rules_router
 from app.api.strategy import router as strategy_router
 from app.config.settings import settings
 from app.db.engine import SessionLocal
-from app.db.models import NewsArticleRecord, RegulationChunkRecord
-from app.core.metrics import render_metrics
+from app.db.models import NewsArticleRecord, RegulationChunkRecord, RegulationCorpusRecord
+from app.core.metrics import ACTIVE_CORPUS_CHUNKS, ACTIVE_CORPUS_EMBEDDINGS, render_metrics
 
 router = APIRouter()
 
@@ -87,8 +87,22 @@ def _check_redis() -> dict:
 def _check_rag_data() -> dict:
     try:
         with SessionLocal() as session:
-            chunk_count = session.scalar(select(func.count(RegulationChunkRecord.id))) or 0
-        return {"status": "ok", "chunk_count": chunk_count, "vector_backend": "pgvector"}
+            chunk_count, embedding_count = session.execute(
+                select(
+                    func.count(RegulationChunkRecord.id),
+                    func.count(RegulationChunkRecord.embedding),
+                )
+                .join(RegulationCorpusRecord, RegulationCorpusRecord.corpus_version == RegulationChunkRecord.corpus_version)
+                .where(RegulationCorpusRecord.active.is_(True))
+            ).one()
+        ACTIVE_CORPUS_CHUNKS.set(chunk_count)
+        ACTIVE_CORPUS_EMBEDDINGS.set(embedding_count)
+        return {
+            "status": "ok",
+            "chunk_count": chunk_count,
+            "embedding_count": embedding_count,
+            "vector_backend": "pgvector",
+        }
     except SQLAlchemyError as exc:
         return {"status": "degraded", "chunk_count": None, "vector_backend": "pgvector", "error": exc.__class__.__name__}
 

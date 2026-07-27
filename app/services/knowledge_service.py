@@ -1,8 +1,9 @@
 from pathlib import Path
+from typing import Any
 
 from app.repositories.rule_repository import RuleRepository
 from app.schemas.rag import RegulationIngestionSummary
-from app.schemas.rules import RetrievalDebugResponse, RetrievedChunk
+from app.schemas.rules import ActiveCorpusResponse, RetrievalDebugResponse, RetrievedChunk
 from app.services.regulation_ingestion_service import RegulationIngestionService
 
 
@@ -27,6 +28,9 @@ class KnowledgeService:
         except TypeError:
             return self.rule_repository.debug_retrieval(question)
 
+    def get_active_corpus(self) -> ActiveCorpusResponse | None:
+        return self.rule_repository.get_active_corpus()
+
     def ingest_regulations(
         self,
         raw_dir: str | Path = "data/regulations/raw",
@@ -35,11 +39,26 @@ class KnowledgeService:
         persist_json: bool = True,
         persist_db: bool = True,
         include_embeddings: bool = True,
+        corpus_version: str | None = None,
+        validate_only: bool = False,
+        emit_markdown: bool = False,
+        activate: bool = False,
     ) -> RegulationIngestionSummary:
+        kwargs: dict[str, Any] = {
+            "raw_dir": raw_dir,
+            "output_path": output_path,
+            "persist_json": persist_json,
+            "persist_db": persist_db,
+            "include_embeddings": include_embeddings,
+        }
+        if corpus_version is not None:
+            kwargs["corpus_version"] = corpus_version
+        if validate_only:
+            kwargs["validate_only"] = True
+        if emit_markdown:
+            kwargs["emit_markdown"] = True
+        if activate:
+            kwargs["activate"] = True
         return self.ingestion_service.ingest_corpus(
-            raw_dir=raw_dir,
-            output_path=output_path,
-            persist_json=persist_json,
-            persist_db=persist_db,
-            include_embeddings=include_embeddings,
+            **kwargs,
         )

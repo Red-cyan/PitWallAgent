@@ -1,179 +1,252 @@
+from __future__ import annotations
+
+import hashlib
 import re
 from pathlib import Path
 
 from app.schemas.chunk import RegulationChunk
-from app.schemas.pdf import PdfPage
+from app.schemas.pdf import PdfPage, PdfTable
+from app.schemas.regulation_document import RegulationDocument
+from app.services.regulation_parser import RegulationStructureParser
 
 
 class RegulationChunker:
     SECTION_PATTERN = re.compile(r"(Section\s+[A-F])", re.IGNORECASE)
-    ARTICLE_PATTERN = re.compile(
-        r"^(ARTICLE\s+\d+[A-Z]?(?:\.\d+)*|[A-F]\d+(?:\.\d+)*)\b",
-        re.IGNORECASE,
-    )
+    ARTICLE_PATTERN = re.compile(r"^(ARTICLE\s+\d+[A-Z]?(?:\.\d+)*|[A-F]\d+(?:\.\d+)*)\b", re.I)
 
-    def chunk_pages(self, pages: list[PdfPage], max_chars: int = 1000) -> list[RegulationChunk]:
-        return self.chunk_document(
-            document_title="Unknown document",
-            pages=pages,
-            max_chars=max_chars,
-        )
+    def __init__(self, parser: RegulationStructureParser | None = None) -> None:
+        self.parser = parser or RegulationStructureParser()
+
+    def chunk_pages(self, pages: list[PdfPage], max_chars: int = 1600) -> list[RegulationChunk]:
+        return self.chunk_document("Unknown document", pages, max_chars=max_chars)
 
     def chunk_document(
         self,
         document_title: str,
         pages: list[PdfPage],
-        max_chars: int = 1000,
+        max_chars: int = 1600,
         source_path: str | Path | None = None,
+        corpus_version: str = "legacy",
+    ) -> list[RegulationChunk]:
+        try:
+            document = self.parser.parse(document_title, pages, source_path)
+        except ValueError:
+            return self._legacy_chunks(document_title, pages, max_chars, source_path, corpus_version)
+        chunks = self.chunk_structure(document, corpus_version=corpus_version, max_chars=max_chars)
+        return chunks or self._legacy_chunks(document_title, pages, max_chars, source_path, corpus_version)
+
+    def chunk_structure(
+        self,
+        document: RegulationDocument,
+        *,
+        corpus_version: str,
+        max_chars: int = 1600,
     ) -> list[RegulationChunk]:
         chunks: list[RegulationChunk] = []
-        section_code = self._extract_section_code(document_title)
-        normalized_source_path = str(source_path) if source_path is not None else None
-
-        for page in pages:
-            text = page.text.strip()
-            if not text or self._should_skip_page(text):
-                continue
-
-            chunks.extend(
-                self._chunk_page(
-                    document_title=document_title,
-                    section_code=section_code,
-                    page=page,
-                    max_chars=max_chars,
-                    source_path=normalized_source_path,
-                )
-            )
-
+        chunk_index = 1
+        occurrence_counts: dict[tuple[str | None, str], int] = {}
+        for article in document.articles:
+            index_lines = [
+                f"- {clause.clause_id}{': ' + clause.title if clause.title else ''}"
+                for clause in article.clauses
+                if clause.clause_id != article.article_id
+            ]
+            for clause in article.clauses:
+                occurrence_key = (clause.scope, clause.clause_id)
+                occurrence_counts[occurrence_key] = occurrence_counts.get(occurrence_key, 0) + 1
+                occurrence_ordinal = occurrence_counts[occurrence_key]
+                units = [
+                    " ".join(part for part in (clause.clause_id, clause.title) if part),
+                    *clause.paragraphs,
+                    *clause.list_items,
+                ]
+                parts = self._split_units([unit for unit in units if unit], max_chars)
+                for part_ordinal, content in enumerate(parts, start=1):
+                    chunks.append(
+                        self._build_chunk(
+                            document, article.article_id, article.title, clause.clause_id,
+                            "clause", content, clause.page_start, clause.page_end,
+                            part_ordinal, chunk_index, corpus_version, clause.scope, occurrence_ordinal,
+                        )
+                    )
+                    chunk_index += 1
+                table_part_ordinal = 1
+                for table in clause.tables:
+                    for content in self._table_parts(table, max_chars):
+                        chunks.append(
+                            self._build_chunk(
+                                document, article.article_id, article.title, clause.clause_id,
+                                "table", content, table.page_number, table.page_number,
+                                table_part_ordinal, chunk_index, corpus_version, clause.scope, occurrence_ordinal,
+                            )
+                        )
+                        table_part_ordinal += 1
+                        chunk_index += 1
+            if index_lines:
+                overview_units = [f"{article.article_id}{' ' + article.title if article.title else ''}", *index_lines]
+                for part_ordinal, content in enumerate(self._split_units(overview_units, max_chars), start=1):
+                    chunks.append(
+                        self._build_chunk(
+                            document, article.article_id, article.title, article.article_id,
+                            "article_overview", content, article.page_start, article.page_end,
+                            part_ordinal, chunk_index, corpus_version, article.scope,
+                        )
+                    )
+                    chunk_index += 1
         return chunks
 
-    def _chunk_page(
+    def _build_chunk(
         self,
-        document_title: str,
-        section_code: str | None,
-        page: PdfPage,
-        max_chars: int,
-        source_path: str | None,
-    ) -> list[RegulationChunk]:
-        lines = [line.strip() for line in page.text.splitlines() if line.strip()]
-        if not lines:
-            return []
+        document: RegulationDocument,
+        article_id: str,
+        article_title: str | None,
+        clause_id: str,
+        chunk_type: str,
+        content: str,
+        page_start: int,
+        page_end: int,
+        part_ordinal: int,
+        chunk_index: int,
+        corpus_version: str,
+        scope: str | None = None,
+        occurrence_ordinal: int = 1,
+    ) -> RegulationChunk:
+        article_heading = " ".join((article_id, article_title)) if article_title else None
+        heading_path = [document.section_code, scope, article_heading, clause_id]
+        heading_path = list(dict.fromkeys(part for part in heading_path if part))
+        id_part = re.sub(r"[^a-z0-9.]+", "-", clause_id.lower()).strip("-")
+        title_slug = re.sub(r"[^a-z0-9]+", "-", document.document_title.lower()).strip("-")
+        scope_id = re.sub(r"[^a-z0-9]+", "-", scope.lower()).strip("-") if scope else "main"
+        occurrence_id = f":o{occurrence_ordinal:02d}" if occurrence_ordinal > 1 else ""
+        chunk_id = f"{title_slug}:{corpus_version}:{scope_id}:{id_part}{occurrence_id}:{chunk_type}:p{part_ordinal:02d}"
+        breadcrumb = " > ".join(heading_path)
+        return RegulationChunk(
+            chunk_id=chunk_id,
+            corpus_version=corpus_version,
+            document_key=document.document_key,
+            document_title=document.document_title,
+            section_code=document.section_code,
+            article=clause_id,
+            article_title=article_title,
+            clause_id=clause_id,
+            chunk_type=chunk_type,
+            content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            embedding_text=f"{breadcrumb}\n\n{content}",
+            page_number=page_start,
+            page_start=page_start,
+            page_end=page_end,
+            heading_path=heading_path,
+            chunk_index=chunk_index,
+            part_ordinal=part_ordinal,
+            content=content,
+            source_path=document.source_path,
+        )
 
-        page_chunks: list[RegulationChunk] = []
-        current_article: str | None = None
-        current_lines: list[str] = []
-        current_length = 0
-        chunk_index = 1
-
-        def flush() -> None:
-            nonlocal current_lines, current_length, chunk_index
-            content = "\n".join(current_lines).strip()
-            if not content:
-                return
-            page_chunks.append(
-                RegulationChunk(
-                    chunk_id=self._build_chunk_id(document_title, page.page_number, chunk_index),
-                    document_title=document_title,
-                    section_code=section_code,
-                    article=current_article,
-                    page_number=page.page_number,
-                    page_start=page.page_number,
-                    page_end=page.page_number,
-                    heading_path=[part for part in (section_code, current_article) if part],
-                    chunk_index=chunk_index,
-                    content=content,
-                    source_path=source_path,
-                )
-            )
-            current_lines = []
-            current_length = 0
-            chunk_index += 1
-
-        for line in lines:
-            article = self._extract_article_from_line(line)
-            if article and current_lines:
-                flush()
-            if article:
-                current_article = article
-
-            if len(line) > max_chars:
-                if current_lines:
-                    flush()
-                for part in self._split_text(line, max_chars=max_chars):
-                    current_lines = [part]
-                    current_length = len(part)
-                    flush()
+    def _split_units(self, units: list[str], max_chars: int) -> list[str]:
+        expanded: list[str] = []
+        for unit in units:
+            if len(unit) <= max_chars:
+                expanded.append(unit)
                 continue
-
-            projected_length = current_length + len(line) + (1 if current_lines else 0)
-            if projected_length > max_chars and current_lines:
-                flush()
-
-            current_lines.append(line)
-            current_length += len(line) + 1
-
-        flush()
-        return page_chunks
-
-    def _should_skip_page(self, text: str) -> bool:
-        upper_text = text.upper()
-
-        if "CONTENTS:" in upper_text:
-            return True
-
-        if "CONVENTION:" in upper_text:
-            return True
-
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        if not lines:
-            return True
-
-        index_like_count = sum(1 for line in lines if self._looks_like_index_entry(line))
-        sentence_like_count = sum(1 for line in lines if line.endswith(".") and len(line) > 60)
-
-        return index_like_count >= 10 and sentence_like_count <= 2
-
-    def _looks_like_index_entry(self, line: str) -> bool:
-        tokens = line.split()
-        if not tokens:
-            return False
-
-        first_token = tokens[0]
-        if line.startswith("ARTICLE ") or line.startswith("APPENDIX "):
-            return line[-1].isdigit()
-
-        return first_token.startswith("A") and any(char.isdigit() for char in first_token) and line[-1].isdigit()
-
-    def _split_text(self, text: str, max_chars: int) -> list[str]:
-        if len(text) <= max_chars:
-            return [text]
+            expanded.extend(self._split_long_unit(unit, max_chars))
 
         parts: list[str] = []
-        start = 0
-        text_length = len(text)
+        current: list[str] = []
+        for unit in expanded:
+            projected = len("\n\n".join([*current, unit]))
+            if current and projected > max_chars:
+                parts.append("\n\n".join(current))
+                current = []
+            current.append(unit)
+        if current:
+            parts.append("\n\n".join(current))
+        return parts
 
-        while start < text_length:
-            end = min(start + max_chars, text_length)
-            if end < text_length:
-                split_at = text.rfind(" ", start, end)
-                if split_at > start:
-                    end = split_at
+    def _split_long_unit(self, unit: str, max_chars: int) -> list[str]:
+        semantic_units = re.split(
+            r"(?<=[.!?;:])\s+|(?=[\"“][A-Z][^\"”]{0,100}[\"”]\s+means\b)",
+            unit,
+        )
+        result: list[str] = []
+        for semantic_unit in (part.strip() for part in semantic_units if part.strip()):
+            while len(semantic_unit) > max_chars:
+                candidates = [semantic_unit.rfind(mark, 0, max_chars + 1) for mark in ("; ", ": ", ", ", " ")]
+                split_at = max(candidates)
+                if split_at <= 0:
+                    break
+                result.append(semantic_unit[:split_at + 1].strip())
+                semantic_unit = semantic_unit[split_at + 1:].strip()
+            if semantic_unit:
+                result.append(semantic_unit)
+        return result
 
-            parts.append(text[start:end].strip())
-            start = end
+    def _table_parts(self, table: PdfTable, max_chars: int) -> list[str]:
+        width = max([len(table.headers), *(len(row) for row in table.rows)], default=0)
+        if width == 0:
+            return []
+        headers = (table.headers + [""] * width)[:width]
+        prefix = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * width) + " |"]
+        parts: list[str] = []
+        rows: list[str] = []
+        for row in table.rows:
+            rendered = "| " + " | ".join((row + [""] * width)[:width]) + " |"
+            if rows and len("\n".join([*prefix, *rows, rendered])) > max_chars:
+                parts.append("\n".join([*prefix, *rows]))
+                rows = []
+            if len("\n".join([*prefix, rendered])) > max_chars:
+                parts.extend(self._split_long_unit(rendered, max_chars))
+            else:
+                rows.append(rendered)
+        if rows or not parts:
+            parts.append("\n".join([*prefix, *rows]))
+        return parts
 
-        return [part for part in parts if part]
+    def _table_markdown(self, table: PdfTable) -> str:
+        width = max([len(table.headers), *(len(row) for row in table.rows)], default=0)
+        if width == 0:
+            return ""
+        headers = (table.headers + [""] * width)[:width]
+        lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * width) + " |"]
+        lines.extend("| " + " | ".join((row + [""] * width)[:width]) + " |" for row in table.rows)
+        return "\n".join(lines)
+
+    def _legacy_chunks(
+        self,
+        document_title: str,
+        pages: list[PdfPage],
+        max_chars: int,
+        source_path: str | Path | None,
+        corpus_version: str,
+    ) -> list[RegulationChunk]:
+        chunks: list[RegulationChunk] = []
+        section = self._extract_section_code(document_title)
+        document_key = self.parser.document_key(document_title)
+        current_article: str | None = None
+        for page in pages:
+            if "CONTENTS:" in page.text.upper():
+                continue
+            groups: list[tuple[str | None, list[str]]] = []
+            for line in [line.strip() for line in page.text.splitlines() if line.strip()]:
+                match = self.ARTICLE_PATTERN.match(line)
+                if match:
+                    current_article = match.group(1).upper()
+                    groups.append((current_article, [line]))
+                elif groups:
+                    groups[-1][1].append(line)
+            for article, lines in groups:
+                for part_ordinal, content in enumerate(self._split_units(lines, max_chars), start=1):
+                    digest = hashlib.sha256(content.encode()).hexdigest()
+                    chunks.append(RegulationChunk(
+                        chunk_id=f"{re.sub(r'[^a-z0-9]+', '-', document_title.lower()).strip('-')}:{corpus_version}:{(article or 'unknown').lower().replace(' ', '-')}:clause:p{part_ordinal:02d}",
+                        document_title=document_title, section_code=section, article=article,
+                        clause_id=article, page_number=page.page_number, page_start=page.page_number,
+                        page_end=page.page_number, heading_path=[x for x in (section, article) if x],
+                        chunk_index=len(chunks) + 1, content=content, source_path=str(source_path) if source_path else None,
+                        corpus_version=corpus_version, document_key=document_key, content_hash=digest,
+                        embedding_text=f"{section or ''} > {article or ''}\n\n{content}", part_ordinal=part_ordinal,
+                    ))
+        return chunks
 
     def _extract_section_code(self, document_title: str) -> str | None:
         match = self.SECTION_PATTERN.search(document_title)
         return match.group(1).title() if match else None
-
-    def _extract_article_from_line(self, line: str) -> str | None:
-        match = self.ARTICLE_PATTERN.match(line.strip())
-        if not match:
-            return None
-        return match.group(1).upper()
-
-    def _build_chunk_id(self, document_title: str, page_number: int, chunk_index: int) -> str:
-        slug = re.sub(r"[^a-z0-9]+", "-", document_title.lower()).strip("-")
-        return f"{slug}-p{page_number}-c{chunk_index}"

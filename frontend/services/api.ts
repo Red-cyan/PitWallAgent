@@ -3,6 +3,8 @@ import {
   ChatResponse,
   ChatSessionDeleteResponse,
   ChatSessionListResponse,
+  ActiveCorpus,
+  RetrievalDebugResponse,
   StreamEvent,
 } from "@/types/chat";
 
@@ -69,6 +71,7 @@ export async function sendChatMessage(payload: ChatPayload): Promise<ChatRespons
 export async function streamChatMessage(
   payload: ChatPayload,
   onEvent: (event: StreamEvent) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: "POST",
@@ -76,6 +79,7 @@ export async function streamChatMessage(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!response.ok || !response.body) {
@@ -110,6 +114,31 @@ export async function streamChatMessage(
       onEvent(parsed);
     }
   }
+}
+
+export async function getActiveCorpus(): Promise<ActiveCorpus> {
+  const response = await fetch(`${API_BASE_URL}/api/rules/corpus/active`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("Active corpus is unavailable.");
+  }
+  return response.json();
+}
+
+export async function debugRuleRetrieval(
+  question: string,
+  topK: number,
+): Promise<RetrievalDebugResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/rules/retrieve/debug`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, top_k: topK }),
+  });
+  if (!response.ok) {
+    throw new Error("Retrieval request failed.");
+  }
+  return response.json();
 }
 
 function parseSseEvent(rawEvent: string): StreamEvent | null {

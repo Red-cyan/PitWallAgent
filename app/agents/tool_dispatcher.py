@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable
 
 from app.core.logging import log_structured
 from app.core.metrics import TOOL_CALLS, TOOL_DURATION
@@ -134,7 +135,11 @@ class ToolDispatcher:
             "error": f"Unsupported intent: {intent}",
         }
 
-    def execute_plan(self, plan: dict) -> ToolResult:
+    def execute_plan(
+        self,
+        plan: dict,
+        on_token: Callable[[str], None] | None = None,
+    ) -> ToolResult:
         tool_name = plan["tool_name"]
         action = plan["action"]
         params = plan.get("params", {})
@@ -173,7 +178,7 @@ class ToolDispatcher:
             return self._record_result(result, action, started_at)
 
         if tool_name == self.regulation_tool.name:
-            result = self.regulation_tool.invoke(action=action, **params)
+            result = self.regulation_tool.invoke(action=action, _on_token=on_token, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
             return self._record_result(result, action, started_at)
 
@@ -183,7 +188,7 @@ class ToolDispatcher:
             return self._record_result(result, action, started_at)
 
         if tool_name == self.general_tool.name:
-            result = self.general_tool.invoke(action=action, **params)
+            result = self.general_tool.invoke(action=action, _on_token=on_token, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
             return self._record_result(result, action, started_at)
 

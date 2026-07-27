@@ -4,14 +4,14 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config.settings import settings
 from app.db.engine import SessionLocal
-from app.db.models import RegulationChunkRecord
+from app.db.models import RegulationChunkRecord, RegulationCorpusRecord
 from app.rag.retrieval.query_rewriter import QueryRewriter
-from app.schemas.rules import RetrievalDebugResponse, RetrievedChunk
+from app.schemas.rules import ActiveCorpusResponse, RetrievalDebugResponse, RetrievedChunk
 
 
 class RuleRepository:
@@ -21,6 +21,7 @@ class RuleRepository:
     MIN_RERANK_SCORE = 8
     PARTIAL_RERANK_SCORE = 1
     MIN_KEYWORD_EVIDENCE_SCORE = 6
+    KEYWORD_GUARDRAIL_SCORE = 20
     RRF_K = 60
     QUERY_STOP_WORDS = {
         "about",
@@ -123,8 +124,11 @@ class RuleRepository:
         query_rewriter: QueryRewriter | None = None,
         *,
         prefer_database: bool | None = None,
+        chunks_file: str | Path | None = None,
+        chunks_data: list[dict] | None = None,
     ) -> None:
-        self.chunks_file = Path("data/regulations/processed/chunks.json")
+        self.chunks_file = Path(chunks_file or "data/regulations/processed/chunks.json")
+        self._chunk_data = chunks_data
         self.prefer_database = (
             settings.regulation_prefer_database
             if prefer_database is None
@@ -140,7 +144,31 @@ class RuleRepository:
 
     def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
         debug_data = self.debug_retrieval(question=question, top_k=top_k)
-        return debug_data.retrieved_chunks
+        return self.expand_clause_context(debug_data.retrieved_chunks)
+
+    def expand_clause_context(self, hits: list[RetrievedChunk], max_neighbors: int = 1) -> list[RetrievedChunk]:
+        """Append adjacent parts without changing the rank or score of original hits."""
+        if not hits or max_neighbors < 1:
+            return hits
+        all_chunks = self._load_chunks()
+        hit_ids = {chunk.chunk_id for chunk in hits}
+        supplements: list[RetrievedChunk] = []
+        for hit in hits:
+            if not hit.clause_id:
+                continue
+            neighbors = [
+                chunk for chunk in all_chunks
+                if chunk.chunk_id not in hit_ids
+                and chunk.document_key == hit.document_key
+                and chunk.clause_id == hit.clause_id
+                and chunk.chunk_type == hit.chunk_type
+                and abs(chunk.part_ordinal - hit.part_ordinal) == 1
+            ]
+            neighbors.sort(key=lambda chunk: (abs(chunk.part_ordinal - hit.part_ordinal), chunk.part_ordinal))
+            for neighbor in neighbors[:max_neighbors]:
+                if neighbor.chunk_id not in {chunk.chunk_id for chunk in supplements}:
+                    supplements.append(neighbor)
+        return [*hits, *supplements]
 
     def search_keywords(self, question: str, top_k: int = 5) -> list[RetrievedChunk]:
         """Run the deterministic keyword pipeline without an LLM or embedding model."""
@@ -149,10 +177,12 @@ class RuleRepository:
         phrases = self._extract_phrases(normalized_question)
         keywords = self._expand_keywords(normalized_question)
         preferred_sections = self._match_preferred_sections(normalized_question)
+        exact_clause_ids = self._extract_exact_clause_ids(normalized_question)
         candidates = self._search_by_keywords(
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
             top_k=self.KEYWORD_CANDIDATE_LIMIT,
         )
         return self._rerank_chunks(
@@ -161,6 +191,7 @@ class RuleRepository:
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
         )
 
     def search(
@@ -181,10 +212,48 @@ class RuleRepository:
         rewritten_queries = self.query_rewriter.rewrite(question)
         questions = self._deduplicate_queries([normalized_question, *rewritten_queries])
         if mode == "vector":
-            return self._search_by_vector_queries(questions, top_k=top_k)
+            vector_results = self._search_by_vector_queries(questions, top_k=top_k)
+            return self._boost_exact_vector_results(
+                vector_results,
+                self._extract_exact_clause_ids(normalized_question),
+                top_k,
+            )
         if mode == "hybrid":
             return self.debug_retrieval(question, top_k=top_k).retrieved_chunks
         raise ValueError(f"Unsupported retrieval mode: {mode}")
+
+    def get_active_corpus(self) -> ActiveCorpusResponse | None:
+        try:
+            with SessionLocal() as session:
+                row = session.execute(
+                    select(
+                        RegulationCorpusRecord,
+                        func.count(RegulationChunkRecord.id),
+                        func.count(RegulationChunkRecord.embedding),
+                    )
+                    .join(
+                        RegulationChunkRecord,
+                        RegulationChunkRecord.corpus_version == RegulationCorpusRecord.corpus_version,
+                        isouter=True,
+                    )
+                    .where(RegulationCorpusRecord.active.is_(True))
+                    .group_by(RegulationCorpusRecord.corpus_version)
+                ).one_or_none()
+        except SQLAlchemyError:
+            return None
+        if row is None:
+            return None
+        corpus, chunk_count, embedding_count = row
+        return ActiveCorpusResponse(
+            corpus_version=corpus.corpus_version,
+            parser_version=corpus.parser_version,
+            embedding_model=corpus.embedding_model,
+            status=corpus.status,
+            chunk_count=chunk_count,
+            embedding_count=embedding_count,
+            created_at=corpus.created_at.isoformat(),
+            validation=corpus.validation or {},
+        )
 
     def get_section_chunks(self, section_code: str, limit: int = 6) -> list[RetrievedChunk]:
         normalized_section = self._normalize_section_code(section_code)
@@ -209,23 +278,35 @@ class RuleRepository:
         phrases = self._extract_phrases(scoring_question)
         keywords = self._expand_keywords(scoring_question)
         preferred_sections = self._match_preferred_sections(scoring_question)
+        exact_clause_ids = self._extract_exact_clause_ids(scoring_question)
         chunks = self._retrieve_candidate_chunks(
             retrieval_questions,
             top_k=top_k,
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
         )
         vector_candidates = chunks["vector"]
         keyword_candidates = chunks["keyword"]
         hybrid_candidates = chunks["hybrid"]
-        scored_chunks = self._rerank_chunks(
+        hybrid_results = self._rerank_chunks(
             chunks=hybrid_candidates,
             top_k=top_k,
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
         )
+        keyword_results = self._rerank_chunks(
+            chunks=keyword_candidates,
+            top_k=top_k,
+            phrases=phrases,
+            keywords=keywords,
+            preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
+        )
+        scored_chunks = self._apply_keyword_guardrail(hybrid_results, keyword_results)
         return RetrievalDebugResponse(
             question=question,
             normalized_question=normalized_question,
@@ -240,6 +321,25 @@ class RuleRepository:
             retrieved_chunks=scored_chunks,
         )
 
+    def _apply_keyword_guardrail(
+        self,
+        hybrid_results: list[RetrievedChunk],
+        keyword_results: list[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        if not keyword_results or (keyword_results[0].score or 0.0) < self.KEYWORD_GUARDRAIL_SCORE:
+            return hybrid_results
+        return [
+            chunk.model_copy(
+                update={
+                    "score_components": {
+                        **chunk.score_components,
+                        "keyword_guardrail": 1.0,
+                    }
+                }
+            )
+            for chunk in keyword_results
+        ]
+
     def _rerank_chunks(
         self,
         chunks: list[RetrievedChunk],
@@ -247,6 +347,7 @@ class RuleRepository:
         phrases: list[str],
         keywords: list[str],
         preferred_sections: list[str],
+        exact_clause_ids: list[str] | None = None,
     ) -> list[RetrievedChunk]:
         scored_chunks: list[tuple[float, RetrievedChunk]] = []
 
@@ -257,6 +358,8 @@ class RuleRepository:
                 keywords=keywords,
                 preferred_sections=preferred_sections,
             )
+            if exact_clause_ids and (chunk.clause_id or chunk.article) in exact_clause_ids:
+                score += 30
             phrase_matches = self._count_phrase_matches(chunk, phrases)
             hybrid_score = min(chunk.score or 0.0, 25.0)
             final_score = score + hybrid_score
@@ -339,15 +442,22 @@ class RuleRepository:
         phrases: list[str],
         keywords: list[str],
         preferred_sections: list[str],
+        exact_clause_ids: list[str] | None = None,
     ) -> dict[str, list[RetrievedChunk]]:
         vector_chunks = self._search_by_vector_queries(
             questions,
             top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
         )
+        vector_chunks = self._boost_exact_vector_results(
+            vector_chunks,
+            exact_clause_ids or [],
+            max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+        )
         keyword_chunks = self._search_by_keywords(
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
+            exact_clause_ids=exact_clause_ids,
             top_k=max(top_k, self.KEYWORD_CANDIDATE_LIMIT),
         )
 
@@ -362,6 +472,27 @@ class RuleRepository:
             "keyword": keyword_chunks,
             "hybrid": chunks,
         }
+
+    def _boost_exact_vector_results(
+        self,
+        vector_chunks: list[RetrievedChunk],
+        exact_clause_ids: list[str],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
+        if not exact_clause_ids:
+            return vector_chunks[:top_k]
+        exact = [
+            chunk.model_copy(
+                update={
+                    "score": max(chunk.score or 0.0, 100.0),
+                    "score_components": {**chunk.score_components, "exact_clause": 1.0},
+                }
+            )
+            for chunk in self._load_chunks()
+            if (chunk.clause_id or chunk.article) in exact_clause_ids
+        ]
+        deduplicated = {chunk.chunk_id: chunk for chunk in [*exact, *vector_chunks]}
+        return list(deduplicated.values())[:top_k]
 
     def _load_chunks(self) -> list[RetrievedChunk]:
         if self._cached_chunks is not None:
@@ -380,7 +511,10 @@ class RuleRepository:
         try:
             with SessionLocal() as session:
                 records = session.execute(
-                    select(RegulationChunkRecord).order_by(RegulationChunkRecord.id)
+                    select(RegulationChunkRecord)
+                    .join(RegulationCorpusRecord, RegulationCorpusRecord.corpus_version == RegulationChunkRecord.corpus_version)
+                    .where(RegulationCorpusRecord.active.is_(True))
+                    .order_by(RegulationChunkRecord.id)
                 ).scalars().all()
         except SQLAlchemyError:
             return []
@@ -397,15 +531,36 @@ class RuleRepository:
                 page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
                 page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
                 heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
+                clause_id=record.clause_id or record.article,
+                article_title=record.article_title,
+                chunk_type=record.chunk_type,
+                corpus_version=record.corpus_version,
+                document_key=record.document_key,
+                breadcrumb=(record.chunk_metadata or {}).get("heading_path") or [],
+                part_ordinal=(record.chunk_metadata or {}).get("part_ordinal") or 1,
             )
             for record in records
         ]
 
     def _load_chunks_from_file(self) -> list[RetrievedChunk]:
-        with self.chunks_file.open("r", encoding="utf-8") as file:
-            chunk_data = json.load(file)
+        if self._chunk_data is not None:
+            chunk_data = self._chunk_data
+        else:
+            with self.chunks_file.open("r", encoding="utf-8") as file:
+                chunk_data = json.load(file)
 
-        return [RetrievedChunk(**item) for item in chunk_data]
+        return [
+            RetrievedChunk(
+                **{
+                    **item,
+                    "page": item.get("page") or item.get("page_number"),
+                    "section": item.get("section") or item.get("section_code"),
+                    "clause_id": item.get("clause_id") or item.get("article"),
+                    "breadcrumb": item.get("breadcrumb") or item.get("heading_path") or [],
+                }
+            )
+            for item in chunk_data
+        ]
 
     def _normalize_section_code(self, section_code: str) -> str:
         match = re.search(r"section\s*([a-f])", section_code, flags=re.IGNORECASE)
@@ -487,7 +642,9 @@ class RuleRepository:
             with SessionLocal() as session:
                 records = session.execute(
                     select(RegulationChunkRecord)
+                    .join(RegulationCorpusRecord, RegulationCorpusRecord.corpus_version == RegulationChunkRecord.corpus_version)
                     .where(RegulationChunkRecord.embedding.is_not(None))
+                    .where(RegulationCorpusRecord.active.is_(True))
                     .order_by(RegulationChunkRecord.embedding.cosine_distance(question_embedding))
                     .limit(top_k)
                 ).scalars().all()
@@ -506,6 +663,13 @@ class RuleRepository:
                 page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
                 page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
                 heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
+                clause_id=record.clause_id or record.article,
+                article_title=record.article_title,
+                chunk_type=record.chunk_type,
+                corpus_version=record.corpus_version,
+                document_key=record.document_key,
+                breadcrumb=(record.chunk_metadata or {}).get("heading_path") or [],
+                part_ordinal=(record.chunk_metadata or {}).get("part_ordinal") or 1,
             )
             for record in records
         ]
@@ -515,7 +679,9 @@ class RuleRepository:
             with SessionLocal() as session:
                 chunk_id = session.scalar(
                     select(RegulationChunkRecord.id)
+                    .join(RegulationCorpusRecord, RegulationCorpusRecord.corpus_version == RegulationChunkRecord.corpus_version)
                     .where(RegulationChunkRecord.embedding.is_not(None))
+                    .where(RegulationCorpusRecord.active.is_(True))
                     .limit(1)
                 )
         except SQLAlchemyError:
@@ -528,9 +694,13 @@ class RuleRepository:
         keywords: list[str],
         preferred_sections: list[str],
         top_k: int,
+        exact_clause_ids: list[str] | None = None,
     ) -> list[RetrievedChunk]:
         all_chunks = self._load_chunks()
         candidate_chunks = self._keyword_candidates(all_chunks, [*keywords, *phrases])
+        if exact_clause_ids:
+            exact_chunks = [chunk for chunk in all_chunks if (chunk.clause_id or chunk.article) in exact_clause_ids]
+            candidate_chunks = list({chunk.chunk_id: chunk for chunk in [*candidate_chunks, *exact_chunks]}.values())
         idf = self._build_idf(all_chunks, keywords)
         scored_chunks: list[tuple[float, RetrievedChunk]] = []
 
@@ -543,6 +713,8 @@ class RuleRepository:
                 preferred_sections=preferred_sections,
             )
             score = bm25_score + heuristic_score
+            if exact_clause_ids and (chunk.clause_id or chunk.article) in exact_clause_ids:
+                score += 30
             if score > 0:
                 scored_chunks.append(
                     (
@@ -685,6 +857,8 @@ class RuleRepository:
             "flag": ["red", "yellow", "flag", "suspension", "stopped"],
             "safety": ["safety", "car", "vsc", "deployment"],
             "virtual": ["virtual", "safety", "car", "vsc"],
+            "track": ["track", "leave", "leaving"],
+            "limits": ["limit", "leave", "leaving"],
         }
 
         expanded_keywords: list[str] = []
@@ -709,11 +883,22 @@ class RuleRepository:
             if section not in matched_sections:
                 matched_sections.append(section)
 
+        for clause_id in self._extract_exact_clause_ids(question):
+            matched_sections.append(f"Section {clause_id[0]}")
+
         for section, keywords in self.SECTION_KEYWORDS.items():
             if any(keyword in normalized_question for keyword in keywords):
                 matched_sections.append(section)
 
+        if "championship points" in normalized_question or "points awarded" in normalized_question:
+            return ["Section A"]
+        if "investigation" in normalized_question and any(term in normalized_question for term in ("appeal", "confidential")):
+            return ["Section A"]
+
         return list(dict.fromkeys(matched_sections))
+
+    def _extract_exact_clause_ids(self, question: str) -> list[str]:
+        return list(dict.fromkeys(match.group(0).upper() for match in re.finditer(r"\b[A-F]\d+(?:\.\d+)+\b", question, re.I)))
 
     def _filter_chunks_by_section(
         self,
@@ -752,7 +937,6 @@ class RuleRepository:
         preferred_sections: list[str],
     ) -> int:
         normalized_content = self._normalized_content(chunk)
-        normalized_title = chunk.document_title.lower()
         content_score = 0
 
         for phrase in phrases:
@@ -770,8 +954,10 @@ class RuleRepository:
             return 0
 
         score = content_score
+        if chunk.chunk_type == "article_overview":
+            score = max(1, score - 4)
         for section in preferred_sections:
-            if section.lower() in normalized_title:
+            if section.lower() == self._chunk_section_code(chunk).lower():
                 score += 8
 
         return score
@@ -882,4 +1068,4 @@ class RuleRepository:
                 if any(phrase in content for phrase in phrase_terms):
                     candidate_ids.add(chunk.chunk_id)
 
-        return [self._chunks_by_id[chunk_id] for chunk_id in candidate_ids]
+        return [chunk for chunk in chunks if chunk.chunk_id in candidate_ids]

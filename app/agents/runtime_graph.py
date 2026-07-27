@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any, TypeVar, TypedDict, cast
 
 from app.agents.intent_router import IntentRouter
@@ -22,6 +23,7 @@ class AgentState(TypedDict, total=False):
     error: str | None
     final_answer: str
     trace: dict[str, Any]
+    on_token: Callable[[str], None] | None
 
 
 class LangGraphAgentRuntime:
@@ -43,8 +45,15 @@ class LangGraphAgentRuntime:
         self.response_formatter = response_formatter or AgentResponseFormatter()
         self.graph = self._build_graph()
 
-    def run(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
-        state = self.graph.invoke({"message": message, "fallback_intent": fallback_intent})
+    def run(
+        self,
+        message: str,
+        fallback_intent: str | None = None,
+        on_token: Callable[[str], None] | None = None,
+    ) -> AgentQueryResponse:
+        state = self.graph.invoke(
+            {"message": message, "fallback_intent": fallback_intent, "on_token": on_token}
+        )
         return AgentQueryResponse(
             intent=state["intent"],
             tool_name=state["tool_name"],
@@ -84,6 +93,7 @@ class LangGraphAgentRuntime:
             "fallback_intent": fallback_intent,
             "intent": tool_plan["intent"],
             "tool_plan": tool_plan,
+            "on_token": state.get("on_token"),
         }
 
     def _plan_tool_node(self, state: AgentState) -> AgentState:
@@ -95,13 +105,18 @@ class LangGraphAgentRuntime:
             "fallback_intent": state.get("fallback_intent"),
             "intent": intent,
             "tool_plan": tool_plan,
+            "on_token": state.get("on_token"),
         }
 
     def _execute_tool_node(self, state: AgentState) -> AgentState:
         message = self._require(state, "message", str)
         intent = self._require(state, "intent", str)
         tool_plan = self._require(state, "tool_plan", dict)
-        result = self.tool_dispatcher.execute_plan(tool_plan)
+        on_token = state.get("on_token")
+        if on_token is None:
+            result = self.tool_dispatcher.execute_plan(tool_plan)
+        else:
+            result = self.tool_dispatcher.execute_plan(tool_plan, on_token=on_token)
         return {
             "message": message,
             "fallback_intent": state.get("fallback_intent"),
@@ -111,6 +126,7 @@ class LangGraphAgentRuntime:
             "success": result.success,
             "result": result.payload,
             "error": result.error,
+            "on_token": state.get("on_token"),
         }
 
     def _format_response_node(self, state: AgentState) -> AgentState:

@@ -21,6 +21,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-json", action="store_true", help="Skip writing chunks.json.")
     parser.add_argument("--skip-db", action="store_true", help="Skip persisting chunks to the database.")
     parser.add_argument("--skip-embeddings", action="store_true", help="Skip embedding generation.")
+    parser.add_argument("--corpus-version", help="Stable version name for this corpus build.")
+    parser.add_argument("--validate-only", action="store_true", help="Parse and validate without writing to the database.")
+    parser.add_argument("--emit-markdown", action="store_true", help="Emit review Markdown beside structured JSON.")
+    parser.add_argument("--activate", action="store_true", help="Atomically activate this corpus after a successful build.")
     return parser.parse_args()
 
 
@@ -33,6 +37,10 @@ def main() -> None:
         persist_json=not args.skip_json,
         persist_db=not args.skip_db,
         include_embeddings=not args.skip_embeddings,
+        corpus_version=args.corpus_version,
+        validate_only=args.validate_only,
+        emit_markdown=args.emit_markdown,
+        activate=args.activate,
     )
 
     print(f"Documents ingested: {summary.document_count}")
@@ -40,6 +48,9 @@ def main() -> None:
     print(f"Embeddings generated: {summary.embedded_chunk_count}")
     if summary.output_path:
         print(f"Chunk manifest: {summary.output_path}")
+    print(f"Corpus version: {summary.corpus_version}")
+    print(f"Validation passed: {summary.validation_passed}")
+    print(f"Activated: {summary.activated}")
 
 
 if __name__ == "__main__":

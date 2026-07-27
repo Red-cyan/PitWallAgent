@@ -50,7 +50,7 @@ docker compose up --build
 
 ### 如何证明 RAG 有效
 
-Agent golden cases 衡量路由和回答契约；42 条独立 RAG 数据集衡量 Recall@1/5、MRR、条款命中率和域外强证据拒绝率。离线 keyword 门禁保持确定性，vector/hybrid 使用同一标注集在带 pgvector 和 embedding 的环境中做独立消融，避免网络和模型波动污染普通 PR CI。
+Agent golden cases 衡量路由和回答契约；60 条独立 RAG 数据集衡量 Section Recall、Clause Recall@1/5、MRR 和域外强证据拒绝率。离线 keyword 门禁保持确定性，vector/hybrid 使用同一标注集和 active corpus 在手动 integration job 中做消融。
 
 ### 如何处理外部依赖故障
 
@@ -58,6 +58,6 @@ HTTP 和 LLM 调用有明确超时；赛况和新闻服务提供保守 fallback�
 
 ## 必须主动说明的限制
 
-- SSE 当前是完整回答生成后的文本切片，不是底层 token streaming。
+- regulation/general 的 SSE 使用底层模型 token streaming；赛况等确定性回答在 trace 中标记为 `buffered`。
 - 当前评测不能替代领域专家对每条 FIA 结论的人工审核。
 - Compose 是单机演示拓扑，不代表已经实现高可用、认证和多租户。

@@ -5,6 +5,21 @@ class RuleAskRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question about FIA regulations.")
 
 
+class RetrievalDebugRequest(RuleAskRequest):
+    top_k: int = Field(default=5, ge=1, le=20, description="Number of final retrieval results.")
+
+
+class ActiveCorpusResponse(BaseModel):
+    corpus_version: str
+    parser_version: str
+    embedding_model: str | None = None
+    status: str
+    chunk_count: int = Field(ge=0)
+    embedding_count: int = Field(ge=0)
+    created_at: str
+    validation: dict = Field(default_factory=dict)
+
+
 class Citation(BaseModel):
     document_title: str = Field(..., description="Title of the source document.")
     article: str | None = Field(default=None, description="Article number or clause identifier.")
@@ -24,6 +39,13 @@ class RetrievedChunk(BaseModel):
     page_start: int | None = Field(default=None, ge=1, description="First source page covered by this chunk.")
     page_end: int | None = Field(default=None, ge=1, description="Last source page covered by this chunk.")
     heading_path: list[str] = Field(default_factory=list, description="Section/article heading path.")
+    clause_id: str | None = None
+    article_title: str | None = None
+    chunk_type: str = "clause"
+    corpus_version: str | None = None
+    document_key: str | None = None
+    breadcrumb: list[str] = Field(default_factory=list)
+    part_ordinal: int = 1
     score_components: dict[str, float] = Field(
         default_factory=dict,
         description="Explainable retrieval/rerank score components.",

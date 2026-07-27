@@ -1,0 +1,78 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active corpus chunks",
+      "id": 1,
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "pitwall_active_corpus_chunks", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Active embeddings",
+      "id": 2,
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "pitwall_active_corpus_embeddings", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "HTTP error rate",
+      "id": 3,
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(pitwall_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(pitwall_http_requests_total[5m])), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Stream P95 TTFT",
+      "id": 4,
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(pitwall_stream_time_to_first_token_seconds_bucket[5m])) by (le))", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP requests",
+      "id": 5,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [{ "expr": "sum(rate(pitwall_http_requests_total[1m])) by (route, status)", "legendFormat": "{{route}} {{status}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Stream outcomes",
+      "id": 6,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [{ "expr": "sum(rate(pitwall_stream_requests_total[5m])) by (outcome, mode)", "legendFormat": "{{outcome}} {{mode}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "RAG P95 latency",
+      "id": 7,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(pitwall_rag_retrieval_duration_seconds_bucket[5m])) by (le, query_type))", "legendFormat": "{{query_type}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM P95 latency",
+      "id": 8,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(pitwall_llm_duration_seconds_bucket[5m])) by (le, model))", "legendFormat": "{{model}}", "refId": "A" }]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["pitwall", "rag", "streaming"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
+  "timezone": "browser",
+  "title": "PitWall Overview",
+  "uid": "pitwall-overview",
+  "version": 1
+}

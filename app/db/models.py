@@ -25,10 +25,31 @@ class RegulationChunkRecord(Base):
     content: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(settings.regulation_embedding_dim))
     chunk_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
+    corpus_version: Mapped[str] = mapped_column(String(128), index=True, default="legacy", server_default="legacy")
+    document_key: Mapped[str | None] = mapped_column(String(128), index=True)
+    article_title: Mapped[str | None] = mapped_column(String(512))
+    clause_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    chunk_type: Mapped[str] = mapped_column(String(32), index=True, default="clause", server_default="clause")
+    content_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    embedding_text: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
     )
+
+
+class RegulationCorpusRecord(Base):
+    __tablename__ = "regulation_corpora"
+
+    corpus_version: Mapped[str] = mapped_column(String(128), primary_key=True)
+    parser_version: Mapped[str] = mapped_column(String(64))
+    source_hashes: Mapped[dict] = mapped_column(JSON)
+    build_parameters: Mapped[dict] = mapped_column(JSON)
+    embedding_model: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, index=True, default=False, server_default="false")
+    validation: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class NewsArticleRecord(Base):

@@ -1,0 +1,24 @@
+{
+  "corpus_version": "fia-2026-20260625",
+  "parser_version": "clause-tree-v1",
+  "source_hashes": {
+    "FIA 2026 F1 Regulations - Section A [General Provisions] - Iss 03 - 2026-06-25.pdf": "6ce8c9420ddb8194e1b5ea8f678dbbdcb4bb2094780e636324b709ee70d276d6",
+    "FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4).pdf": "77ecb97eaf08598c40073ebc9c52c8ec943dccef77af0c3a406edde7534b5110",
+    "FIA 2026 F1 Regulations - Section C [Technical] - Iss 19 - 2026-06-25.pdf": "8751d3d47870675336d87e449a1a87d7d51a17ead4f430f280cabded9b52ad0a",
+    "FIA 2026 F1 Regulations - Section D [Financial - F1 Teams] - Iss 07 - 2026-06-25.pdf": "b38f5a1b2c67edbe3c86e4f7d4adbfce6321504f8733a70201508b99ed4717b5",
+    "FIA 2026 F1 Regulations - Section E [Financial – PU Manufacturers] - Iss 06 - 2026-06-25.pdf": "7fed64aae631c008bc31669bf32e0d9d102bf416f08da48a240b72f5ee1bd658",
+    "FIA 2026 F1 Regulations - Section F [Operational] - Iss 09 - 2026-06-25.pdf": "bc8c03cef94a26fd0140cc822d2077b0912a3a3747a6329f6cad23c5ac3584db"
+  },
+  "chunk_max_chars": 1600,
+  "embedding_model": "BAAI/bge-m3",
+  "status": "active",
+  "active": true,
+  "created_at": "2026-07-27T06:20:40.509412Z",
+  "validation": {
+    "valid": true,
+    "clause_missing_rate": 0.0,
+    "body_coverage_rate": 1.0,
+    "false_header_clauses": [],
+    "errors": []
+  }
+}

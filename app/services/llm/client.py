@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Iterator
 from typing import Any, cast
 
 from openai import OpenAI
@@ -70,3 +71,54 @@ class LLMClient:
             output_length=len(content),
         )
         return content
+
+    def stream_chat(
+        self,
+        messages: list[dict[str, Any]],
+        temperature: float = 0.2,
+        max_tokens: int | None = None,
+        timeout: float | None = None,
+    ) -> Iterator[str]:
+        log_structured(
+            self.logger,
+            "llm_stream_started",
+            model=self.model,
+            message_count=len(messages),
+            temperature=temperature,
+        )
+        started_at = time.perf_counter()
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=cast(list[ChatCompletionMessageParam], messages),
+                temperature=temperature,
+                max_tokens=max_tokens if max_tokens is not None else settings.llm_max_tokens,
+                timeout=timeout,
+                stream=True,
+            )
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+        except Exception as exc:
+            LLM_CALLS.labels(self.model, "stream_error").inc()
+            LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
+            log_structured(
+                self.logger,
+                "llm_stream_failed",
+                model=self.model,
+                message_count=len(messages),
+                error_type=exc.__class__.__name__,
+            )
+            raise
+
+        LLM_CALLS.labels(self.model, "stream_success").inc()
+        LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
+        log_structured(
+            self.logger,
+            "llm_stream_completed",
+            model=self.model,
+            message_count=len(messages),
+        )

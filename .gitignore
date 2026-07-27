@@ -23,6 +23,11 @@ __pycache__/
 .tmp/
 .pytest-tmp/
 .pytest-cache-local/
+.playwright-results/
+frontend/.playwright-results/
+frontend/playwright-report/
+frontend/test-results/
+frontend/.playwright-server.pid
 .run/
 coverage.xml
 .coverage

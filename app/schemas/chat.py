@@ -19,6 +19,7 @@ class ChatSessionSummary(BaseModel):
     """会话摘要。"""
 
     session_id: str = Field(..., min_length=1)
+    title: str = Field(default="New conversation", min_length=1, max_length=80)
     turn_count: int = Field(default=0, ge=0)
     last_intent: str | None = None
     updated_at: datetime
