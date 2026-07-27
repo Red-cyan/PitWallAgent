@@ -7,6 +7,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
 from app.core.logging import log_structured
+from app.core.metrics import HTTP_DURATION, HTTP_REQUESTS
 
 
 class AccessLogMiddleware(BaseHTTPMiddleware):
@@ -23,7 +24,11 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as exc:
-            duration_ms = round((perf_counter() - start_time) * 1000, 2)
+            duration_seconds = perf_counter() - start_time
+            duration_ms = round(duration_seconds * 1000, 2)
+            route = self._route_label(request)
+            HTTP_REQUESTS.labels(request.method, route, "500").inc()
+            HTTP_DURATION.labels(request.method, route).observe(duration_seconds)
             log_structured(
                 self.logger,
                 "http_request",
@@ -36,7 +41,11 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
             )
             raise
 
-        duration_ms = round((perf_counter() - start_time) * 1000, 2)
+        duration_seconds = perf_counter() - start_time
+        duration_ms = round(duration_seconds * 1000, 2)
+        route = self._route_label(request)
+        HTTP_REQUESTS.labels(request.method, route, str(response.status_code)).inc()
+        HTTP_DURATION.labels(request.method, route).observe(duration_seconds)
         log_structured(
             self.logger,
             "http_request",
@@ -47,3 +56,7 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
             request_id=request_id,
         )
         return response
+
+    def _route_label(self, request: Request) -> str:
+        route = request.scope.get("route")
+        return str(getattr(route, "path", request.url.path))

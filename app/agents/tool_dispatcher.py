@@ -1,6 +1,8 @@
 import logging
+import time
 
 from app.core.logging import log_structured
+from app.core.metrics import TOOL_CALLS, TOOL_DURATION
 from app.tools.base import ToolResult
 from app.tools.general_tool import GeneralTool
 from app.tools.news_tool import NewsTool
@@ -136,6 +138,7 @@ class ToolDispatcher:
         tool_name = plan["tool_name"]
         action = plan["action"]
         params = plan.get("params", {})
+        started_at = time.perf_counter()
 
         log_structured(
             self.logger,
@@ -157,32 +160,32 @@ class ToolDispatcher:
                 action=action,
                 success=result.success,
             )
-            return result
+            return self._record_result(result, action, started_at)
 
         if tool_name == self.news_tool.name:
             result = self.news_tool.invoke(action=action, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
-            return result
+            return self._record_result(result, action, started_at)
 
         if tool_name == self.race_tool.name:
             result = self.race_tool.invoke(action=action, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
-            return result
+            return self._record_result(result, action, started_at)
 
         if tool_name == self.regulation_tool.name:
             result = self.regulation_tool.invoke(action=action, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
-            return result
+            return self._record_result(result, action, started_at)
 
         if tool_name == self.strategy_tool.name:
             result = self.strategy_tool.invoke(action=action, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
-            return result
+            return self._record_result(result, action, started_at)
 
         if tool_name == self.general_tool.name:
             result = self.general_tool.invoke(action=action, **params)
             log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
-            return result
+            return self._record_result(result, action, started_at)
 
         result = ToolResult(
             tool_name="dispatcher",
@@ -190,6 +193,12 @@ class ToolDispatcher:
             error=f"Unsupported tool name: {tool_name}",
         )
         log_structured(self.logger, "tool_plan_completed", tool_name=result.tool_name, action=action, success=result.success)
+        return self._record_result(result, action, started_at)
+
+    def _record_result(self, result: ToolResult, action: str, started_at: float) -> ToolResult:
+        outcome = "success" if result.success else "error"
+        TOOL_CALLS.labels(result.tool_name, action, outcome).inc()
+        TOOL_DURATION.labels(result.tool_name, action).observe(time.perf_counter() - started_at)
         return result
 
     def dispatch(self, intent: str, message: str) -> ToolResult:

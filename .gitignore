@@ -18,3 +18,11 @@ __pycache__/
 
 # Logs
 *.log
+
+# Local test artifacts
+.tmp/
+.pytest-tmp/
+.pytest-cache-local/
+.run/
+coverage.xml
+.coverage

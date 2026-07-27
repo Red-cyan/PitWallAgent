@@ -1,7 +1,9 @@
 import logging
 import re
+import time
 
 from app.core.logging import log_structured
+from app.core.metrics import RAG_DURATION, RAG_RETRIEVALS
 from app.repositories.rule_repository import RuleRepository
 from app.schemas.rules import (
     Citation,
@@ -256,14 +258,22 @@ class RegulationQAService:
 
     def ask(self, request: RuleAskRequest) -> RuleAskResponse:
         query_type, section_code = self._classify_query(request.question)
-        if self._is_unrelated_rule_question(request.question):
-            retrieved_chunks = []
-        elif query_type == "section_overview" and section_code is not None:
-            retrieved_chunks = self.knowledge_service.rule_repository.get_section_chunks(section_code, limit=6)
-        elif query_type == "document_overview":
-            retrieved_chunks = self.knowledge_service.rule_repository.get_document_overview_chunks(limit_per_section=1)
-        else:
-            retrieved_chunks = self.knowledge_service.retrieve_regulation_chunks(request.question)
+        retrieval_started_at = time.perf_counter()
+        try:
+            if self._is_unrelated_rule_question(request.question):
+                retrieved_chunks = []
+            elif query_type == "section_overview" and section_code is not None:
+                retrieved_chunks = self.knowledge_service.rule_repository.get_section_chunks(section_code, limit=6)
+            elif query_type == "document_overview":
+                retrieved_chunks = self.knowledge_service.rule_repository.get_document_overview_chunks(limit_per_section=1)
+            else:
+                retrieved_chunks = self.knowledge_service.retrieve_regulation_chunks(request.question)
+        except Exception:
+            RAG_RETRIEVALS.labels(query_type, "error").inc()
+            RAG_DURATION.labels(query_type).observe(time.perf_counter() - retrieval_started_at)
+            raise
+        RAG_RETRIEVALS.labels(query_type, "success").inc()
+        RAG_DURATION.labels(query_type).observe(time.perf_counter() - retrieval_started_at)
 
         log_structured(
             self.logger,

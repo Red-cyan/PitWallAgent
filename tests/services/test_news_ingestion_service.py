@@ -34,12 +34,15 @@ def test_news_ingestion_service_saves_articles(monkeypatch) -> None:
     monkeypatch.setattr(db.engine, "SessionLocal", testing_session)
     monkeypatch.setattr("app.services.news_ingestion_service.SessionLocal", testing_session)
 
-    service = NewsIngestionService()
-    saved_articles = service.ingest(source=StubSource(), limit=1)
+    try:
+        service = NewsIngestionService()
+        saved_articles = service.ingest(source=StubSource(), limit=1)
 
-    assert len(saved_articles) == 1
-    assert saved_articles[0].title == "Red flag in practice"
+        assert len(saved_articles) == 1
+        assert saved_articles[0].title == "Red flag in practice"
 
-    with testing_session() as session:
-        repository = NewsRepository(session)
-        assert len(repository.list_recent_articles()) == 1
+        with testing_session() as session:
+            repository = NewsRepository(session)
+            assert len(repository.list_recent_articles()) == 1
+    finally:
+        engine.dispose()

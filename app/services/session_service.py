@@ -50,7 +50,7 @@ class RedisClientProtocol(Protocol):
         """读取键值。"""
         ...
 
-    def setex(self, key: str, time: int, value: str) -> Any:
+    def set(self, name: str, value: str, *, ex: int) -> Any:
         """写入带 TTL 的键值。"""
         ...
 
@@ -125,10 +125,10 @@ class RedisSessionStore:
         return self._deserialize_session(payload)
 
     def save(self, session: ConversationSession) -> None:
-        self.client.setex(
+        self.client.set(
             self._build_key(session.session_id),
-            self.ttl_seconds,
             self._serialize_session(session),
+            ex=self.ttl_seconds,
         )
         self.client.zadd(
             self.SESSION_INDEX_KEY,

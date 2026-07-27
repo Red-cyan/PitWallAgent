@@ -2,10 +2,12 @@ import json
 import math
 import re
 from pathlib import Path
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.config.settings import settings
 from app.db.engine import SessionLocal
 from app.db.models import RegulationChunkRecord
 from app.rag.retrieval.query_rewriter import QueryRewriter
@@ -20,6 +22,28 @@ class RuleRepository:
     PARTIAL_RERANK_SCORE = 1
     MIN_KEYWORD_EVIDENCE_SCORE = 6
     RRF_K = 60
+    QUERY_STOP_WORDS = {
+        "about",
+        "apply",
+        "applies",
+        "are",
+        "does",
+        "explain",
+        "formula",
+        "from",
+        "govern",
+        "governs",
+        "how",
+        "into",
+        "regulation",
+        "regulations",
+        "the",
+        "under",
+        "what",
+        "when",
+        "which",
+        "with",
+    }
     QUERY_SYNONYMS = {
         "红旗": "red flag",
         "黄旗": "yellow flag",
@@ -87,17 +111,80 @@ class RuleRepository:
             "bodywork",
             "ride",
             "height",
+            "structure",
         ],
+        "Section D": ["f1 team cost cap", "team cost cap"],
+        "Section E": ["power unit manufacturer", "pu manufacturer", "manufacturer cost cap"],
+        "Section F": ["operational", "wind tunnel"],
     }
 
-    def __init__(self, query_rewriter: QueryRewriter | None = None) -> None:
+    def __init__(
+        self,
+        query_rewriter: QueryRewriter | None = None,
+        *,
+        prefer_database: bool | None = None,
+    ) -> None:
         self.chunks_file = Path("data/regulations/processed/chunks.json")
+        self.prefer_database = (
+            settings.regulation_prefer_database
+            if prefer_database is None
+            else prefer_database
+        )
         self._cached_chunks: list[RetrievedChunk] | None = None
+        self._normalized_content_cache: dict[str, str] = {}
+        self._token_stats_cache: dict[str, tuple[dict[str, int], int]] = {}
+        self._document_frequency_cache: dict[str, int] = {}
+        self._token_chunk_ids: dict[str, set[str]] | None = None
+        self._chunks_by_id: dict[str, RetrievedChunk] = {}
         self.query_rewriter = query_rewriter or QueryRewriter()
 
     def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
         debug_data = self.debug_retrieval(question=question, top_k=top_k)
         return debug_data.retrieved_chunks
+
+    def search_keywords(self, question: str, top_k: int = 5) -> list[RetrievedChunk]:
+        """Run the deterministic keyword pipeline without an LLM or embedding model."""
+
+        normalized_question = self._normalize_question(question)
+        phrases = self._extract_phrases(normalized_question)
+        keywords = self._expand_keywords(normalized_question)
+        preferred_sections = self._match_preferred_sections(normalized_question)
+        candidates = self._search_by_keywords(
+            phrases=phrases,
+            keywords=keywords,
+            preferred_sections=preferred_sections,
+            top_k=self.KEYWORD_CANDIDATE_LIMIT,
+        )
+        return self._rerank_chunks(
+            chunks=candidates,
+            top_k=top_k,
+            phrases=phrases,
+            keywords=keywords,
+            preferred_sections=preferred_sections,
+        )
+
+    def search(
+        self,
+        question: str,
+        *,
+        mode: Literal["keyword", "vector", "hybrid"] = "hybrid",
+        top_k: int = 5,
+    ) -> list[RetrievedChunk]:
+        """Run one retrieval strategy through a stable evaluation-facing API."""
+
+        if top_k < 1:
+            raise ValueError("top_k must be at least 1")
+        if mode == "keyword":
+            return self.search_keywords(question, top_k=top_k)
+
+        normalized_question = self._normalize_question(question)
+        rewritten_queries = self.query_rewriter.rewrite(question)
+        questions = self._deduplicate_queries([normalized_question, *rewritten_queries])
+        if mode == "vector":
+            return self._search_by_vector_queries(questions, top_k=top_k)
+        if mode == "hybrid":
+            return self.debug_retrieval(question, top_k=top_k).retrieved_chunks
+        raise ValueError(f"Unsupported retrieval mode: {mode}")
 
     def get_section_chunks(self, section_code: str, limit: int = 6) -> list[RetrievedChunk]:
         normalized_section = self._normalize_section_code(section_code)
@@ -280,10 +367,11 @@ class RuleRepository:
         if self._cached_chunks is not None:
             return self._cached_chunks
 
-        chunks = self._load_chunks_from_database()
-        if chunks:
-            self._cached_chunks = chunks
-            return self._cached_chunks
+        if self.prefer_database:
+            chunks = self._load_chunks_from_database()
+            if chunks:
+                self._cached_chunks = chunks
+                return self._cached_chunks
 
         self._cached_chunks = self._load_chunks_from_file()
         return self._cached_chunks
@@ -382,6 +470,11 @@ class RuleRepository:
         return merged_chunks[:top_k]
 
     def _search_by_vector(self, question: str, top_k: int) -> list[RetrievedChunk]:
+        if not settings.regulation_vector_retrieval_enabled:
+            return []
+        if not self._has_vector_data():
+            return []
+
         try:
             from app.rag.embedding.factory import build_embedding_service
 
@@ -417,6 +510,18 @@ class RuleRepository:
             for record in records
         ]
 
+    def _has_vector_data(self) -> bool:
+        try:
+            with SessionLocal() as session:
+                chunk_id = session.scalar(
+                    select(RegulationChunkRecord.id)
+                    .where(RegulationChunkRecord.embedding.is_not(None))
+                    .limit(1)
+                )
+        except SQLAlchemyError:
+            return False
+        return chunk_id is not None
+
     def _search_by_keywords(
         self,
         phrases: list[str],
@@ -425,10 +530,11 @@ class RuleRepository:
         top_k: int,
     ) -> list[RetrievedChunk]:
         all_chunks = self._load_chunks()
+        candidate_chunks = self._keyword_candidates(all_chunks, [*keywords, *phrases])
         idf = self._build_idf(all_chunks, keywords)
         scored_chunks: list[tuple[float, RetrievedChunk]] = []
 
-        for chunk in all_chunks:
+        for chunk in candidate_chunks:
             bm25_score = self._score_chunk_bm25(chunk=chunk, keywords=keywords, idf=idf)
             heuristic_score = self._score_chunk(
                 chunk=chunk,
@@ -515,6 +621,9 @@ class RuleRepository:
         if "unsafe release" in normalized_question:
             phrases.append("unsafe release")
 
+        if "safety structure" in normalized_question:
+            phrases.append("safety structure")
+
         if "red flag" in normalized_question:
             phrases.append("red flag")
 
@@ -546,6 +655,7 @@ class RuleRepository:
             token.strip(".,?!:;()[]").lower()
             for token in question.split()
             if len(token.strip(".,?!:;()[]")) >= 3
+            and token.strip(".,?!:;()[]").lower() not in self.QUERY_STOP_WORDS
         ]
 
         keyword_map = {
@@ -631,7 +741,7 @@ class RuleRepository:
         )
 
     def _count_phrase_matches(self, chunk: RetrievedChunk, phrases: list[str]) -> int:
-        normalized_content = chunk.content.lower()
+        normalized_content = self._normalized_content(chunk)
         return sum(1 for phrase in phrases if phrase in normalized_content)
 
     def _score_chunk(
@@ -641,7 +751,7 @@ class RuleRepository:
         keywords: list[str],
         preferred_sections: list[str],
     ) -> int:
-        normalized_content = chunk.content.lower()
+        normalized_content = self._normalized_content(chunk)
         normalized_title = chunk.document_title.lower()
         content_score = 0
 
@@ -674,11 +784,15 @@ class RuleRepository:
             return {}
 
         doc_count = len(chunks)
+        self._ensure_token_index(chunks)
         idf: dict[str, float] = {}
         for keyword in keywords:
             if not keyword:
                 continue
-            matches = sum(1 for chunk in chunks if keyword in chunk.content.lower())
+            matches = self._document_frequency_cache.get(keyword)
+            if matches is None:
+                matches = sum(1 for chunk in chunks if keyword in self._normalized_content(chunk))
+                self._document_frequency_cache[keyword] = matches
             idf[keyword] = math.log(1 + (doc_count - matches + 0.5) / (matches + 0.5)) if matches else 0.0
         return idf
 
@@ -689,23 +803,18 @@ class RuleRepository:
         keywords: list[str],
         idf: dict[str, float],
     ) -> float:
-        tokens = self._tokenize(chunk.content)
-        if not tokens:
+        token_counts, doc_len = self._token_stats(chunk)
+        if doc_len == 0:
             return 0.0
-
-        token_counts: dict[str, int] = {}
-        for token in tokens:
-            token_counts[token] = token_counts.get(token, 0) + 1
 
         k1 = 1.5
         b = 0.75
         avgdl = 180
-        doc_len = len(tokens)
         score = 0.0
         for keyword in keywords:
             normalized = keyword.lower()
             tf = token_counts.get(normalized, 0)
-            if tf == 0 and " " in normalized and normalized in chunk.content.lower():
+            if tf == 0 and " " in normalized and normalized in self._normalized_content(chunk):
                 tf = 1
             if tf == 0:
                 continue
@@ -713,3 +822,64 @@ class RuleRepository:
             score += idf.get(normalized, 0.0) * ((tf * (k1 + 1)) / denominator)
 
         return round(score, 4)
+
+    def _normalized_content(self, chunk: RetrievedChunk) -> str:
+        cached = self._normalized_content_cache.get(chunk.chunk_id)
+        if cached is None:
+            cached = chunk.content.lower()
+            self._normalized_content_cache[chunk.chunk_id] = cached
+        return cached
+
+    def _token_stats(self, chunk: RetrievedChunk) -> tuple[dict[str, int], int]:
+        cached = self._token_stats_cache.get(chunk.chunk_id)
+        if cached is not None:
+            return cached
+
+        tokens = self._tokenize(chunk.content)
+        token_counts: dict[str, int] = {}
+        for token in tokens:
+            token_counts[token] = token_counts.get(token, 0) + 1
+        result = (token_counts, len(tokens))
+        self._token_stats_cache[chunk.chunk_id] = result
+        return result
+
+    def _ensure_token_index(self, chunks: list[RetrievedChunk]) -> None:
+        if self._token_chunk_ids is not None:
+            return
+
+        token_chunk_ids: dict[str, set[str]] = {}
+        for chunk in chunks:
+            self._chunks_by_id[chunk.chunk_id] = chunk
+            token_counts, _ = self._token_stats(chunk)
+            for token in token_counts:
+                token_chunk_ids.setdefault(token, set()).add(chunk.chunk_id)
+        self._token_chunk_ids = token_chunk_ids
+        self._document_frequency_cache.update(
+            {token: len(chunk_ids) for token, chunk_ids in token_chunk_ids.items()}
+        )
+
+    def _keyword_candidates(
+        self,
+        chunks: list[RetrievedChunk],
+        terms: list[str],
+    ) -> list[RetrievedChunk]:
+        self._ensure_token_index(chunks)
+        token_chunk_ids = self._token_chunk_ids or {}
+        candidate_ids: set[str] = set()
+        phrase_terms: list[str] = []
+        for term in terms:
+            normalized = term.lower().strip()
+            if not normalized:
+                continue
+            if " " in normalized:
+                phrase_terms.append(normalized)
+            else:
+                candidate_ids.update(token_chunk_ids.get(normalized, set()))
+
+        if phrase_terms:
+            for chunk in chunks:
+                content = self._normalized_content(chunk)
+                if any(phrase in content for phrase in phrase_terms):
+                    candidate_ids.add(chunk.chunk_id)
+
+        return [self._chunks_by_id[chunk_id] for chunk_id in candidate_ids]

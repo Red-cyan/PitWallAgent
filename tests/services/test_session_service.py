@@ -17,9 +17,9 @@ class FakeRedisClient:
     def get(self, key: str) -> str | None:
         return self.values.get(key)
 
-    def setex(self, key: str, time: int, value: str) -> None:
-        self.values[key] = value
-        self.ttls[key] = time
+    def set(self, name: str, value: str, *, ex: int) -> None:
+        self.values[name] = value
+        self.ttls[name] = ex
 
     def zadd(self, key: str, mapping: dict[str, float]) -> None:
         self.sorted_sets.setdefault(key, {}).update(mapping)

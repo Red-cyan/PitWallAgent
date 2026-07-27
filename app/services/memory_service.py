@@ -79,10 +79,10 @@ class RedisLongTermMemoryStore:
         self.ttl_seconds = ttl_seconds or settings.memory_long_term_ttl_seconds
 
     def save(self, memory: LongTermMemory) -> None:
-        self.client.setex(
+        self.client.set(
             self._memory_key(memory.memory_id),
-            self.ttl_seconds,
             self._serialize(memory),
+            ex=self.ttl_seconds,
         )
         self.client.zadd(
             self._index_key(memory.owner_id),

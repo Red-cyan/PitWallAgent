@@ -1,0 +1,385 @@
+{
+  "metrics": {
+    "cases": 33,
+    "positive_cases": 30,
+    "recall_at_5": 1.0,
+    "mrr": 0.9733333333333333,
+    "negative_rejection_rate": 1.0
+  },
+  "results": [
+    {
+      "name": "general-principles",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "passed": true
+    },
+    {
+      "name": "applicable-regulations",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "passed": true
+    },
+    {
+      "name": "disciplinary-process",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "passed": true
+    },
+    {
+      "name": "code-of-ethics",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "passed": true
+    },
+    {
+      "name": "governance-overview",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A",
+        "Section A"
+      ],
+      "passed": true
+    },
+    {
+      "name": "unsafe-release",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "parc-ferme",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pit-lane-speed",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "red-flag",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "yellow-flag",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "safety-car",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "virtual-safety-car",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "stewards-investigation",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "dangerous-driving",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "qualifying-procedure",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "sprint-procedure",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "track-limits",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "impeding",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section B",
+        "Section D",
+        "Section E"
+      ],
+      "passed": true
+    },
+    {
+      "name": "plank-wear",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "floor-geometry",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "bodywork",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "skid-block",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "vehicle-dimensions",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "safety-structure",
+      "matched_rank": 5,
+      "retrieved_sections": [
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section B",
+        "Section C"
+      ],
+      "passed": true
+    },
+    {
+      "name": "team-cost-cap",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D"
+      ],
+      "passed": true
+    },
+    {
+      "name": "team-financial-reporting",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D",
+        "Section D"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pu-cost-cap",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "passed": true
+    },
+    {
+      "name": "pu-financial-audit",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E",
+        "Section E"
+      ],
+      "passed": true
+    },
+    {
+      "name": "wind-tunnel-testing",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F"
+      ],
+      "passed": true
+    },
+    {
+      "name": "operational-facilities",
+      "matched_rank": 1,
+      "retrieved_sections": [
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F",
+        "Section F"
+      ],
+      "passed": true
+    },
+    {
+      "name": "alien-rule",
+      "matched_rank": null,
+      "retrieved_sections": [
+        "Section B"
+      ],
+      "passed": true
+    },
+    {
+      "name": "teleportation-rule",
+      "matched_rank": null,
+      "retrieved_sections": [],
+      "passed": true
+    },
+    {
+      "name": "moon-race-rule",
+      "matched_rank": null,
+      "retrieved_sections": [],
+      "passed": true
+    }
+  ]
+}

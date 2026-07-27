@@ -20,17 +20,42 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.49.0",
     "redis>=8.0.1",
+    "alembic>=1.18.5",
+    "prometheus-client>=0.26.0",
 ]
 
 [dependency-groups]
 dev = [
     "pyright>=1.1.411",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.20",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "-p no:cacheprovider"
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+]
+markers = [
+    "unit: fast isolated tests without infrastructure",
+    "integration: API and repository boundary tests",
+    "eval: deterministic Agent and RAG quality regressions",
+    "infrastructure: tests requiring PostgreSQL and Redis",
+]
+
+[tool.coverage.run]
+source = [
+    "app/agents",
+    "app/repositories",
+    "app/services",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
 
 [tool.pyright]
 include = ["app", "scripts"]

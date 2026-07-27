@@ -12,7 +12,7 @@ def read_request_id() -> dict[str, str | None]:
 def test_request_context_generates_request_id_header() -> None:
     client = TestClient(app)
 
-    response = client.get("/health")
+    response = client.get("/health/live")
 
     assert response.status_code == 200
     assert response.headers["X-Request-Id"]

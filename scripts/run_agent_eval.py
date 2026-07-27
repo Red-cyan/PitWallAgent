@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import statistics
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -121,10 +122,51 @@ def _rate(results: list[EvalResult], attr: str) -> float:
     return passed / len(results)
 
 
+def _summary(results: list[EvalResult]) -> dict[str, float | int]:
+    latencies = [result.latency_ms for result in results]
+    return {
+        "cases": len(results),
+        "intent_accuracy": _rate(results, "intent_ok"),
+        "tool_accuracy": _rate(results, "tool_ok"),
+        "action_accuracy": _rate(results, "action_ok"),
+        "answer_pass_rate": _rate(results, "answer_ok"),
+        "evidence_pass_rate": _rate(results, "evidence_ok"),
+        "p50_latency_ms": statistics.median(latencies) if latencies else 0.0,
+        "p95_latency_ms": _percentile(latencies, 0.95),
+    }
+
+
+def _render_markdown(summary: dict[str, float | int], results: list[EvalResult]) -> str:
+    failures = [result for result in results if result.failures]
+    lines = [
+        "# Offline Agent Evaluation",
+        "",
+        f"- Cases: {summary['cases']}",
+        f"- Intent accuracy: {summary['intent_accuracy']:.2%}",
+        f"- Tool accuracy: {summary['tool_accuracy']:.2%}",
+        f"- Action accuracy: {summary['action_accuracy']:.2%}",
+        f"- Answer pass rate: {summary['answer_pass_rate']:.2%}",
+        f"- Evidence pass rate: {summary['evidence_pass_rate']:.2%}",
+        f"- P50 latency: {summary['p50_latency_ms']:.2f} ms",
+        f"- P95 latency: {summary['p95_latency_ms']:.2f} ms",
+        "",
+        "## Failures",
+        "",
+    ]
+    lines.extend(
+        (f"- `{result.name}`: {'; '.join(result.failures)}" for result in failures)
+        if failures
+        else ["None."]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run PitWall Agent golden evals.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
     parser.add_argument("--fail-fast", action="store_true")
+    parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()
 
     harness = _load_harness()
@@ -140,15 +182,23 @@ def main() -> int:
             if args.fail_fast:
                 break
 
-    latencies = [result.latency_ms for result in results]
-    print(f"cases: {len(results)}")
-    print(f"intent accuracy: {_rate(results, 'intent_ok'):.2%}")
-    print(f"tool accuracy: {_rate(results, 'tool_ok'):.2%}")
-    print(f"action accuracy: {_rate(results, 'action_ok'):.2%}")
-    print(f"answer pass rate: {_rate(results, 'answer_ok'):.2%}")
-    print(f"evidence pass rate: {_rate(results, 'evidence_ok'):.2%}")
-    print(f"p50 latency ms: {statistics.median(latencies) if latencies else 0.0:.2f}")
-    print(f"p95 latency ms: {_percentile(latencies, 0.95):.2f}")
+    summary = _summary(results)
+    print(f"cases: {summary['cases']}")
+    print(f"intent accuracy: {summary['intent_accuracy']:.2%}")
+    print(f"tool accuracy: {summary['tool_accuracy']:.2%}")
+    print(f"action accuracy: {summary['action_accuracy']:.2%}")
+    print(f"answer pass rate: {summary['answer_pass_rate']:.2%}")
+    print(f"evidence pass rate: {summary['evidence_pass_rate']:.2%}")
+    print(f"p50 latency ms: {summary['p50_latency_ms']:.2f}")
+    print(f"p95 latency ms: {summary['p95_latency_ms']:.2f}")
+
+    payload = {"metrics": summary, "results": [asdict(result) for result in results]}
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if args.markdown_output:
+        args.markdown_output.parent.mkdir(parents=True, exist_ok=True)
+        args.markdown_output.write_text(_render_markdown(summary, results), encoding="utf-8")
 
     return 0 if all(not result.failures for result in results) and len(results) == len(cases) else 1
 

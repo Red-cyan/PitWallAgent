@@ -36,8 +36,12 @@ class Settings(BaseSettings):
     regulation_embedding_model: str = "BAAI/bge-m3"
     regulation_embedding_batch_size: int = 8
     regulation_embedding_device: str = "cpu"
+    regulation_prefer_database: bool = True
+    regulation_vector_retrieval_enabled: bool = True
     formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
     news_request_timeout_seconds: float = 10.0
+    upstream_get_max_retries: int = 2
+    upstream_get_backoff_seconds: float = 0.2
     news_user_agent: str = "PitWall-Agent/0.1"
     race_data_base_url: str = "https://api.jolpi.ca/ergast/f1"
     race_request_timeout_seconds: float = 3.0

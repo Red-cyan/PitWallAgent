@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -11,6 +12,7 @@ from app.api.strategy import router as strategy_router
 from app.config.settings import settings
 from app.db.engine import SessionLocal
 from app.db.models import NewsArticleRecord, RegulationChunkRecord
+from app.core.metrics import render_metrics
 
 router = APIRouter()
 
@@ -22,6 +24,28 @@ def root():
 
 @router.get("/health")
 def health():
+    return _health_payload()
+
+
+@router.get("/health/live", tags=["system"])
+def liveness():
+    return {"status": "ok"}
+
+
+@router.get("/health/ready", tags=["system"])
+def readiness() -> JSONResponse:
+    payload = _health_payload()
+    response_status = status.HTTP_200_OK if payload["status"] == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
+    return JSONResponse(content=payload, status_code=response_status)
+
+
+@router.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    payload, content_type = render_metrics()
+    return Response(content=payload, media_type=content_type)
+
+
+def _health_payload() -> dict:
     checks = {
         "database": _check_database(),
         "redis": _check_redis(),

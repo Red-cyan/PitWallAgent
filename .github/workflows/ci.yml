@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  backend:
+  backend-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +20,80 @@ jobs:
         run: uv run ruff check .
       - name: Pyright
         run: uv run pyright
-      - name: Pytest
-        run: uv run pytest
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: uv sync --dev
+      - name: Unit and integration tests with coverage
+        run: uv run pytest -m "unit or integration" --cov --cov-report=term-missing --cov-report=xml
+      - name: Eval regression tests
+        run: uv run pytest -m eval
+      - name: Agent quality gate
+        run: uv run python scripts/run_agent_eval.py
+      - name: RAG quality gate
+        run: >-
+          uv run python scripts/run_rag_eval.py
+          --mode keyword
+          --min-recall-at-1 0.75
+          --min-recall-at-5 0.85
+          --min-clause-hit-rate 0.85
+          --min-rejection-rate 1.0
+
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+  backend-infrastructure:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: pitwall
+          POSTGRES_USER: pitwall
+          POSTGRES_PASSWORD: pitwall
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pitwall -d pitwall"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://pitwall:pitwall@localhost:5432/pitwall
+      REDIS_URL: redis://localhost:6379/0
+      SESSION_BACKEND: redis
+      RUN_INFRA_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: uv sync --dev
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+      - name: PostgreSQL and Redis integration tests
+        run: uv run pytest -m infrastructure
 
   frontend:
     runs-on: ubuntu-latest

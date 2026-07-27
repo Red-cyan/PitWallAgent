@@ -47,11 +47,14 @@ def test_news_backfill_service_updates_existing_article(monkeypatch) -> None:
             )
         )
 
-    service = NewsBackfillService()
-    updated_articles = service.backfill_formula1_articles(limit=10)
+    try:
+        service = NewsBackfillService()
+        updated_articles = service.backfill_formula1_articles(limit=10)
 
-    assert len(updated_articles) == 1
-    assert updated_articles[0].summary == "Updated summary."
-    assert updated_articles[0].content == "Updated full content."
-    assert updated_articles[0].author == "F1"
-    assert updated_articles[0].tags == ["Silverstone"]
+        assert len(updated_articles) == 1
+        assert updated_articles[0].summary == "Updated summary."
+        assert updated_articles[0].content == "Updated full content."
+        assert updated_articles[0].author == "F1"
+        assert updated_articles[0].tags == ["Silverstone"]
+    finally:
+        engine.dispose()

@@ -31,6 +31,48 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pitwall-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://pitwall:pitwall@postgres:5432/pitwall
+      SESSION_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+      REGULATION_VECTOR_RETRIEVAL_ENABLED: ${REGULATION_VECTOR_RETRIEVAL_ENABLED:-false}
+      CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-v4-flash}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+    container_name: pitwall-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

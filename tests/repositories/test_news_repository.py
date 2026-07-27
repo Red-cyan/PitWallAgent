@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 
 from sqlalchemy import create_engine
@@ -8,11 +10,16 @@ from app.repositories.news_repository import NewsRepository
 from app.schemas.news import NewsArticleCreate
 
 
-def build_session() -> Session:
+@contextmanager
+def build_session() -> Iterator[Session]:
     engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
     testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-    return testing_session()
+    try:
+        with testing_session() as session:
+            yield session
+    finally:
+        engine.dispose()
 
 
 def test_upsert_article_inserts_new_record() -> None:

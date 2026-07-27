@@ -1,105 +1,123 @@
 # PitWall Agent
 
-PitWall Agent 是一个面向 Formula 1 信息检索与规则问答的 AI Agent 项目。它把 FastAPI、Next.js、LangGraph、RAG、pgvector、Redis 和外部 F1 数据源整合到一个可演示的工程系统中，目标是回答赛程、积分榜、FIA 规则、新闻和策略类问题，并在需要事实依据时优先检索外部数据。
+面向 Formula 1 的可解释 AI Agent。系统通过单 Agent、多工具架构整合实时赛况、新闻、FIA 规则 RAG、策略分析与多轮会话，重点展示 Agent 质量评测、证据引用、故障降级和可观测性，而不只是调用一次大模型。
 
-## 核心能力
+## 已实现能力
 
-- 对话式 F1 助手：支持多轮会话、会话列表、历史加载和删除。
-- Agent 工具编排：根据用户意图调度新闻、赛事、规则、策略和通用问答工具。
-- FIA 规则 RAG：从 FIA 2026 规则 PDF 切分 chunks，优先使用 Postgres + pgvector 检索，失败时退回本地 chunks 与关键词重排。
-- 实时/准实时数据：赛事数据来自 Jolpica / Ergast-compatible API，新闻来自 Formula1 RSS；外部服务不可用时有本地 seed 降级。
-- 可观测性：结构化日志、请求 ID、工具 trace、健康诊断接口。
+- LangGraph 运行图：意图识别、计划生成、工具执行、回答格式化。
+- 五类工具：赛况、新闻、FIA 规则、策略分析、通用问答。
+- 规则 RAG：keyword/BM25、pgvector、RRF hybrid fusion、rerank、引用和无证据保护。
+- 会话记忆：内存或 Redis backend，支持历史加载、压缩摘要和长期偏好。
+- 工程能力：FastAPI、Next.js、Alembic、Docker Compose、结构化日志、Prometheus 指标和分层 CI。
+- 可解释前端：展示 intent、tool、action、confidence、latency、citation 和 retrieved chunks。
+
+## 质量基线
+
+| 评测 | 数据集 | 当前结果 |
+|---|---:|---:|
+| Agent intent/tool/action/answer/evidence | 56 cases | 100% |
+| Offline RAG Recall@1 / Recall@5 | 39 positive cases | 89.74% / 94.87% |
+| Offline RAG MRR / 条款命中率 | 39 positive cases | 0.9231 / 94.87% |
+| 域外强证据拒绝率 | 3 negative cases | 100% |
+| 核心 Python 模块覆盖率 | unit + integration | 81.75% |
+
+完整结果见 [Agent baseline](docs/evals/agent-baseline.md)、[clause-level RAG baseline](docs/evals/rag-clause-keyword.md) 和 [RAG ablation protocol](docs/evals/rag-ablation.md)。这些是确定性离线门禁；真实 LLM 的输出质量仍会受到模型提供商和提示版本影响。
 
 ## 架构
 
 ```text
 Next.js UI
-  -> FastAPI API
-  -> ChatService / AgentService
+  -> FastAPI chat/SSE API
+  -> ChatService + Redis session memory
   -> LangGraph runtime
-  -> ToolDispatcher
-  -> News / Race / Regulation / Strategy / General tools
-  -> PostgreSQL + pgvector, Redis, Jolpica API, Formula1 RSS, LLM provider
+  -> Planner -> ToolDispatcher -> ResponseFormatter
+  -> Race / News / Regulation RAG / Strategy / General tools
+  -> PostgreSQL + pgvector / Redis / external F1 sources / LLM
 ```
 
-当前向量存储使用 `pgvector/pgvector:pg17`，不是 Milvus。历史文档中如果出现 Milvus，应以当前代码和 `docker-compose.yml` 为准。
+关键取舍：当前采用单 Agent 多工具，而不是多 Agent。这样能让路由、工具参数、fallback、引用和失败状态保持可测试、可追踪，适合当前五个明确领域。
 
-## 快速启动
+## 一键启动
+
+前置条件：Docker Desktop，建议至少 8 GB 可用内存。首次构建会安装 sentence-transformers，耗时取决于网络与机器性能。
 
 ```bash
-uv sync
-docker compose up -d
-uv run python scripts/init_pgvector_db.py
-uv run python scripts/import_regulation_chunks.py
-uv run uvicorn app.main:app --reload
+docker compose up --build
 ```
 
-前端：
+启动后访问：
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- Web UI: `http://localhost:3000`
+- OpenAPI: `http://localhost:8000/docs`
+- Liveness: `http://localhost:8000/health/live`
+- Readiness: `http://localhost:8000/health/ready`
+- Prometheus metrics: `http://localhost:8000/metrics`
 
-默认前端访问 `http://localhost:3000`，后端访问 `http://127.0.0.1:8000`。
+Backend 启动时会自动执行 `alembic upgrade head`。已有 pre-Alembic 本地数据库会被初始迁移接管，不会重建已有业务表。
 
-## 配置
-
-复制 `.env.example` 为 `.env` 后按需填写：
+如需真实模型回答，在 `.env` 中配置：
 
 ```env
 LLM_API_KEY=
 LLM_BASE_URL=https://api.deepseek.com
 LLM_MODEL=deepseek-v4-flash
-
-SESSION_BACKEND=redis
-REDIS_URL=redis://localhost:6379/0
-SESSION_TTL_SECONDS=604800
 ```
 
-没有配置 LLM key 时，系统会使用启发式规划和部分 fallback 回答；规则问答会尽量基于检索证据返回保守结果。
+未配置 key 时，路由与多数工具仍可运行；生成环节会使用保守 fallback。
 
-## 常用演示问题
+## 本地开发
 
-- `下一场比赛是哪个？`
-- `车手积分榜第一名是谁？`
-- `constructor standings`
-- `parc ferme 是什么规则？`
-- `unsafe release 怎么处罚？`
-- `今天 F1 有什么新闻？`
-- `安全车下 Ferrari 要不要进站？`
-- `刚才那条规则和处罚有什么关系？`
+```bash
+uv sync
+docker compose up -d postgres redis
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+如果只想离线使用法规 JSON 而不连接 pgvector，可设置：
+
+```env
+REGULATION_PREFER_DATABASE=false
+REGULATION_VECTOR_RETRIEVAL_ENABLED=false
+```
 
 ## 质量门禁
 
 ```bash
 uv run ruff check .
 uv run pyright
-uv run pytest
+uv run pytest -m "unit or integration" --cov
+uv run pytest -m eval
 uv run python scripts/run_agent_eval.py
+uv run python scripts/run_rag_eval.py --mode keyword
 cd frontend && npm run build
+docker compose config --quiet
 ```
 
-当前目标是后端 lint、类型检查、pytest、Agent eval 和前端 build 全部通过。`pytest` 覆盖 API、服务、工具、Agent runtime、RAG 检索、日志和 golden eval case；`scripts/run_agent_eval.py` 从 `data/evals/agent_cases.jsonl` 读取同一批样例并输出 intent/tool/action/answer/evidence/latency 指标。
+测试会强制关闭真实数据库、embedding 和 LLM 调用。真实外部服务验证应通过独立 smoke test 运行，避免 CI 因网络或费用波动失去确定性。
 
-## 当前优化重点
+## 可观测性
 
-- Agent 质量评估：`data/evals/agent_cases.jsonl` 是 pytest golden test 和独立 eval script 的共同数据源。
-- RAG overview：规则问答会区分 `fact_lookup`、`section_overview`、`document_overview`，用于回答 `SectionA讲了什么内容`、`F1的大体规则是什么样的` 等概览问题。
-- 前端可观测性：最后一条 assistant 回答带默认折叠的“调试 / 证据”面板，展示 intent、tool、action、answer status、confidence、evidence、latency、citations 和 retrieved chunks。
-- 面试材料：中文讲解见 `docs/cn/03_Interview_Guide_zh.md`。
+每个请求带 `X-Request-Id`，日志记录请求、Agent、工具、RAG 和 LLM 阶段。`/metrics` 暴露：
 
-## 诊断接口
+- HTTP 请求量、状态码和延迟
+- 工具调用量、结果和延迟
+- LLM 调用结果和延迟
+- RAG 检索结果和延迟
 
-- `GET /health`：返回数据库、Redis、LLM、RAG chunks、新闻表的诊断状态。
-- `GET /api/agent/query`：低层 Agent 调试接口。
-- `POST /api/chat`：主对话接口。
-- `POST /api/chat/stream`：SSE 输出接口。当前实现是完整生成后分片输出，不是底层 LLM token streaming。
+指标使用路由模板和有限枚举标签，避免 session ID 等高基数字段污染 Prometheus。
 
-## 工程取舍
+## 已知限制
 
-- 单 Agent + 多工具：降低调试复杂度，适合 MVP 和面试讲解。
-- pgvector 而非独立向量库：减少本地部署成本，便于作品集复现。
-- 检索优先、生成其次：规则类问题必须基于证据；证据不足时应明确拒绝编造。
-- 降级优先：外部 API 不可用时保留基本演示能力，但响应中会通过 `source` 字段暴露数据来源。
+- `/api/chat/stream` 当前在完整回答生成后按文本切片发送 SSE，不是底层 LLM token streaming。
+- 离线 RAG 基线衡量条款和 chunk 检索，不等价于人工事实正确性评分或端到端回答正确率。
+- Docker Compose 面向单机作品集演示，不包含高可用、用户认证或多租户。
+- 外部 F1 API/RSS 不可用时会回退本地 seed，响应中的 `source` 会暴露数据来源。
+
+产品、架构和面试讲解材料位于 [docs](docs/README.md)。

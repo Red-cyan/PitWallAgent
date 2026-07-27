@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, cast
 
 from openai import OpenAI
@@ -6,6 +7,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from app.config.settings import settings
 from app.core.logging import log_structured
+from app.core.metrics import LLM_CALLS, LLM_DURATION
 
 
 class LLMClient:
@@ -36,6 +38,7 @@ class LLMClient:
             message_count=len(messages),
             temperature=temperature,
         )
+        started_at = time.perf_counter()
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -45,6 +48,8 @@ class LLMClient:
                 timeout=timeout,
             )
         except Exception as exc:
+            LLM_CALLS.labels(self.model, "error").inc()
+            LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
             log_structured(
                 self.logger,
                 "llm_request_failed",
@@ -55,6 +60,8 @@ class LLMClient:
             raise
 
         content = response.choices[0].message.content or ""
+        LLM_CALLS.labels(self.model, "success").inc()
+        LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
         log_structured(
             self.logger,
             "llm_request_completed",

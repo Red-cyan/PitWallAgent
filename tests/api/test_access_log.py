@@ -15,14 +15,14 @@ def test_access_log_records_successful_request(caplog) -> None:
     client = TestClient(app)
 
     with caplog.at_level(logging.INFO, logger="pitwall.access"):
-        response = client.get("/health", headers={"X-Request-Id": "req-success"})
+        response = client.get("/health/live", headers={"X-Request-Id": "req-success"})
 
     assert response.status_code == 200
     record = next(record for record in caplog.records if record.name == "pitwall.access")
     payload = json.loads(record.message)
     assert payload["event"] == "http_request"
     assert payload["request_id"] == "req-success"
-    assert payload["path"] == "/health"
+    assert payload["path"] == "/health/live"
     assert payload["status_code"] == 200
 
 

@@ -6,10 +6,9 @@ import re
 
 from bs4 import BeautifulSoup
 import feedparser
-import httpx
-
 from app.config.settings import settings
 from app.schemas.news import NewsArticleCreate
+from app.services.http_retry import get_with_retry
 
 
 class Formula1RSSSource:
@@ -72,13 +71,13 @@ class Formula1RSSSource:
         return self._fetch_article_detail(article_url)
 
     def _fetch_url(self, url: str) -> str:
-        response = httpx.get(
+        response = get_with_retry(
             url,
+            provider="formula1_news",
             headers={"User-Agent": settings.news_user_agent},
             timeout=settings.news_request_timeout_seconds,
             follow_redirects=True,
         )
-        response.raise_for_status()
         return response.text
 
     def _fetch_article_detail(self, article_url: str) -> dict:

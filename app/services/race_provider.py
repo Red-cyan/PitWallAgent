@@ -2,10 +2,9 @@ from datetime import UTC, datetime
 import time
 from typing import Any, Callable, Protocol
 
-import httpx
-
 from app.config.settings import settings
 from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, RaceWeekend, SessionInfo
+from app.services.http_retry import get_with_retry
 
 
 class RaceDataProvider(Protocol):
@@ -164,13 +163,13 @@ class JolpicaRaceDataProvider:
         return parsed
 
     def _fetch_json(self, path: str) -> dict[str, Any]:
-        response = httpx.get(
+        response = get_with_retry(
             f"{self.base_url}/{path}",
+            provider="jolpica_race",
             timeout=settings.race_request_timeout_seconds,
             headers={"User-Agent": settings.news_user_agent},
             follow_redirects=True,
         )
-        response.raise_for_status()
         return response.json()
 
     def _parse_race_weekend(self, item: dict[str, Any]) -> RaceWeekend:

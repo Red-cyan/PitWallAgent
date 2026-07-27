@@ -1,0 +1,574 @@
+{
+  "metrics": {
+    "cases": 56,
+    "intent_accuracy": 1.0,
+    "tool_accuracy": 1.0,
+    "action_accuracy": 1.0,
+    "answer_pass_rate": 1.0,
+    "evidence_pass_rate": 1.0,
+    "p50_latency_ms": 0.03,
+    "p95_latency_ms": 0.0625
+  },
+  "results": [
+    {
+      "name": "full-calendar-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 1.13,
+      "failures": []
+    },
+    {
+      "name": "full-calendar-typo",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.07,
+      "failures": []
+    },
+    {
+      "name": "all-schedule-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.05,
+      "failures": []
+    },
+    {
+      "name": "season-calendar-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.05,
+      "failures": []
+    },
+    {
+      "name": "schedule-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "calendar-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "next-race-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "next-race-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "previous-race-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "previous-race-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "race-time-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "race-time-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "qualifying-time",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "practice-time",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "follow-up-race-time",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.05,
+      "failures": []
+    },
+    {
+      "name": "driver-standings-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.36,
+      "failures": []
+    },
+    {
+      "name": "driver-leader-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "driver-second-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "driver-specific-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "driver-standings-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "constructor-standings-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "constructor-leader-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "constructor-standings-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "team-specific-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "team-third-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "red-flag-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "safety-car-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "parc-ferme-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "unsafe-release-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "yellow-flag-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "vsc-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "plank-rule",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "technical-directive",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "no-rule-evidence-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "no-rule-evidence-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "latest-news-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "latest-news-en",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "article-detail",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "article-insight",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "article-rules",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "strategy-safety-car",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "strategy-undercut",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "strategy-tyre",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "strategy-low-context",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "strategy-track-position",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    },
+    {
+      "name": "greeting",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "general-history",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "correction",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "broad-f1",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.06,
+      "failures": []
+    },
+    {
+      "name": "general-no-live-guess",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.03,
+      "failures": []
+    },
+    {
+      "name": "constructor-top5-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "driver-fourth-does-not-inherit-team-context-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.04,
+      "failures": []
+    },
+    {
+      "name": "pit-lane-speeding-rule-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "dangerous-driving-rule-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "section-a-overview-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.02,
+      "failures": []
+    },
+    {
+      "name": "document-overview-cn",
+      "intent_ok": true,
+      "tool_ok": true,
+      "action_ok": true,
+      "answer_ok": true,
+      "evidence_ok": true,
+      "latency_ms": 0.01,
+      "failures": []
+    }
+  ]
+}
