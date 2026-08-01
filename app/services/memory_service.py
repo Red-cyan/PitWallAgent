@@ -31,6 +31,10 @@ class MemoryContext:
     estimated_context_tokens: int = 0
     summary_used: bool = False
     compacted_turn_count: int = 0
+    compression_mode: str | None = None
+    compression_fallback: bool = False
+    compression_input_tokens: int = 0
+    compression_output_tokens: int = 0
 
     def trace(self) -> dict[str, object]:
         return {
@@ -39,6 +43,10 @@ class MemoryContext:
             "memory_long_term_count": self.long_term_memory_count,
             "memory_estimated_context_tokens": self.estimated_context_tokens,
             "memory_compacted_turn_count": self.compacted_turn_count,
+            "memory_compression_mode": self.compression_mode,
+            "memory_compression_fallback": self.compression_fallback,
+            "memory_compression_input_tokens": self.compression_input_tokens,
+            "memory_compression_output_tokens": self.compression_output_tokens,
         }
 
 
@@ -189,7 +197,7 @@ class MemoryService:
 
         sections.append(f"Current user message:\nUser: {current_message}")
         rendered = "\n\n".join(sections)
-        rendered = self._fit_context_budget(rendered)
+        rendered = self._fit_context_budget(rendered, current_message, recent_turns, session.summary)
         return MemoryContext(
             rendered=rendered,
             recent_turn_count=len(recent_turns),
@@ -197,6 +205,10 @@ class MemoryService:
             estimated_context_tokens=self.estimate_tokens(rendered),
             summary_used=bool(session.summary),
             compacted_turn_count=session.compacted_turn_count,
+            compression_mode=session.compression_mode,
+            compression_fallback=session.compression_fallback,
+            compression_input_tokens=session.compression_input_tokens,
+            compression_output_tokens=session.compression_output_tokens,
         )
 
     def record_interaction(
@@ -256,13 +268,39 @@ class MemoryService:
             lines.append(f"{role}: {turn.message}")
         return "\n".join(lines)
 
-    def _fit_context_budget(self, rendered: str) -> str:
+    def _fit_context_budget(
+        self,
+        rendered: str,
+        current_message: str,
+        recent_turns: list[ConversationTurn],
+        summary: str | None,
+    ) -> str:
         budget = settings.memory_context_token_budget
         if budget <= 0 or self.estimate_tokens(rendered) <= budget:
             return rendered
 
-        max_chars = max(budget * 3, 200)
-        return rendered[-max_chars:].lstrip()
+        # Keep the active question and recent turns intact before trimming memory.
+        required = f"Recent turns:\n{self._format_turns(recent_turns)}\n\nCurrent user message:\nUser: {current_message}"
+        if self.estimate_tokens(required) > budget:
+            return self._truncate_to_budget(required, budget)
+        remaining = budget - self.estimate_tokens(required)
+        if summary and remaining > 0:
+            summary_section = f"Conversation summary:\n{summary.strip()}"
+            max_chars = max(remaining * 3, 40)
+            summary_section = summary_section[:max_chars]
+            return f"{summary_section}\n\n{required}" if self.estimate_tokens(summary_section) <= remaining else required
+        return required
+
+    def _truncate_to_budget(self, text: str, budget: int) -> str:
+        low, high = 0, len(text)
+        while low < high:
+            midpoint = (low + high + 1) // 2
+            candidate = text[-midpoint:].lstrip()
+            if self.estimate_tokens(candidate) <= budget:
+                low = midpoint
+            else:
+                high = midpoint - 1
+        return text[-low:].lstrip() if low else ""
 
     def _extract_memory(
         self,

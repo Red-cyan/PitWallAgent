@@ -55,14 +55,16 @@ class ChatService:
             has_fallback_intent=fallback_intent is not None,
         )
 
-        self.session_service.append_user_message(session.session_id, message)
+        self.session_service.append_user_message(session.session_id, message, compact=False)
         response = self.agent_service.handle_query(
             message,
             fallback_intent=fallback_intent,
             conversation_context=memory_context.rendered,
         )
+        self.session_service.append_agent_response(session.session_id, response, compact=False)
+        self.session_service.compact_session(session.session_id)
+        memory_context = self._refresh_memory_context(session.session_id, memory_context)
         response.trace = self._with_memory_trace(response.trace, memory_context)
-        self.session_service.append_agent_response(session.session_id, response)
         self.memory_service.record_interaction(
             session_id=session.session_id,
             user_message=message,
@@ -116,7 +118,7 @@ class ChatService:
             current_message=message,
         )
 
-        self.session_service.append_user_message(session.session_id, message)
+        self.session_service.append_user_message(session.session_id, message, compact=False)
         yield {
             "event": "status",
             "data": event_data(message="retrieving", stage="retrieving"),
@@ -189,7 +191,6 @@ class ChatService:
                     }
 
             total_ms = round((time.perf_counter() - started_at) * 1000, 2)
-            response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
             response_payload.trace = {
                 **response_payload.trace,
                 "request_id": request_id,
@@ -199,7 +200,10 @@ class ChatService:
                     "stream_total": total_ms,
                 },
             }
-            self.session_service.append_agent_response(session.session_id, response_payload)
+            self.session_service.append_agent_response(session.session_id, response_payload, compact=False)
+            self.session_service.compact_session(session.session_id)
+            memory_context = self._refresh_memory_context(session.session_id, memory_context)
+            response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
             self.memory_service.record_interaction(
                 session_id=session.session_id,
                 user_message=message,
@@ -322,3 +326,15 @@ class ChatService:
             **trace,
             "memory": memory_context.trace(),
         }
+
+    def _refresh_memory_context(self, session_id: str, context: MemoryContext) -> MemoryContext:
+        session = self.session_service.get_session(session_id)
+        if session is None:
+            return context
+        context.summary_used = bool(session.summary)
+        context.compacted_turn_count = session.compacted_turn_count
+        context.compression_mode = session.compression_mode
+        context.compression_fallback = session.compression_fallback
+        context.compression_input_tokens = session.compression_input_tokens
+        context.compression_output_tokens = session.compression_output_tokens
+        return context

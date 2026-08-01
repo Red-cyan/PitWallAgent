@@ -9,6 +9,7 @@ from uuid import uuid4
 from app.config.settings import settings
 from app.schemas.agent import AgentQueryResponse
 from app.schemas.chat import ConversationTurn
+from app.services.context_compaction import ContextCompactionService
 
 
 @dataclass
@@ -21,6 +22,10 @@ class ConversationSession:
     summary: str | None = None
     summary_updated_at: datetime | None = None
     compacted_turn_count: int = 0
+    compression_mode: str | None = None
+    compression_fallback: bool = False
+    compression_input_tokens: int = 0
+    compression_output_tokens: int = 0
 
 
 class SessionStore(Protocol):
@@ -163,6 +168,10 @@ class RedisSessionStore:
             if session.summary_updated_at
             else None,
             "compacted_turn_count": session.compacted_turn_count,
+            "compression_mode": session.compression_mode,
+            "compression_fallback": session.compression_fallback,
+            "compression_input_tokens": session.compression_input_tokens,
+            "compression_output_tokens": session.compression_output_tokens,
             "history": [turn.model_dump(mode="json") for turn in session.history],
         }
         return json.dumps(payload, ensure_ascii=False)
@@ -177,6 +186,10 @@ class RedisSessionStore:
             if data.get("summary_updated_at")
             else None,
             compacted_turn_count=int(data.get("compacted_turn_count", 0)),
+            compression_mode=data.get("compression_mode"),
+            compression_fallback=bool(data.get("compression_fallback", False)),
+            compression_input_tokens=int(data.get("compression_input_tokens", 0)),
+            compression_output_tokens=int(data.get("compression_output_tokens", 0)),
             history=[ConversationTurn.model_validate(turn) for turn in data.get("history", [])],
         )
 
@@ -215,8 +228,9 @@ class SessionStoreFactory:
 class SessionService:
     """会话服务。"""
 
-    def __init__(self, store: SessionStore | None = None) -> None:
+    def __init__(self, store: SessionStore | None = None, compaction_service: ContextCompactionService | None = None) -> None:
         self.store = store or SessionStoreFactory.create()
+        self.compaction_service = compaction_service or ContextCompactionService()
 
     def get_or_create_session(self, session_id: str | None = None) -> ConversationSession:
         resolved_session_id = session_id or self._generate_session_id()
@@ -229,17 +243,17 @@ class SessionService:
     def get_session(self, session_id: str) -> ConversationSession | None:
         return self.store.get(session_id)
 
-    def append_user_message(self, session_id: str, message: str) -> ConversationTurn:
+    def append_user_message(self, session_id: str, message: str, *, compact: bool = True) -> ConversationTurn:
         session = self.get_or_create_session(session_id)
         turn = ConversationTurn(
             role="user",
             message=message,
             created_at=datetime.now(UTC),
         )
-        self._append_turn(session, turn)
+        self._append_turn(session, turn, compact=compact)
         return turn
 
-    def append_agent_response(self, session_id: str, response: AgentQueryResponse) -> ConversationTurn:
+    def append_agent_response(self, session_id: str, response: AgentQueryResponse, *, compact: bool = True) -> ConversationTurn:
         session = self.get_or_create_session(session_id)
         turn = ConversationTurn(
             role="assistant",
@@ -248,7 +262,7 @@ class SessionService:
             intent=response.intent,
             tool_name=response.tool_name,
         )
-        self._append_turn(session, turn)
+        self._append_turn(session, turn, compact=compact)
         return turn
 
     def get_history(self, session_id: str) -> list[ConversationTurn]:
@@ -272,11 +286,12 @@ class SessionService:
 
         return None
 
-    def _append_turn(self, session: ConversationSession, turn: ConversationTurn) -> None:
+    def _append_turn(self, session: ConversationSession, turn: ConversationTurn, *, compact: bool = True) -> None:
         session.history.append(turn)
         session.updated_at = turn.created_at
 
-        self._compact_history_if_needed(session)
+        if compact:
+            self._compact_history_if_needed(session)
 
         self.store.save(session)
 
@@ -293,7 +308,7 @@ class SessionService:
         )
         threshold = settings.memory_compaction_token_threshold
         exceeds_turn_limit = len(session.history) > max_turns
-        exceeds_token_limit = threshold > 0 and estimated_tokens > threshold
+        exceeds_token_limit = threshold > 0 and estimated_tokens >= threshold * 0.8
         if not exceeds_turn_limit and not exceeds_token_limit:
             return
 
@@ -302,10 +317,20 @@ class SessionService:
         if not old_turns:
             return
 
-        session.summary = self._merge_summary(session.summary, old_turns)
+        result = self.compaction_service.compact(session.summary, old_turns)
+        session.summary = result.summary
         session.summary_updated_at = session.updated_at
         session.compacted_turn_count += len(old_turns)
+        session.compression_mode = result.mode
+        session.compression_fallback = result.fallback
+        session.compression_input_tokens = result.input_tokens
+        session.compression_output_tokens = result.output_tokens
         session.history = session.history[-keep_turns:]
+
+    def compact_session(self, session_id: str) -> None:
+        session = self.get_or_create_session(session_id)
+        self._compact_history_if_needed(session)
+        self.store.save(session)
 
     def _merge_summary(self, existing_summary: str | None, turns: list[ConversationTurn]) -> str:
         lines: list[str] = []
