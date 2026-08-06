@@ -76,6 +76,23 @@ class EvalToolDispatcher(ToolDispatcher):
                 return Result({"action": action, "season": "current", "race": self.schedule[1]})
             if action == "get_previous_race":
                 return Result({"action": action, "season": "current", "race": self.schedule[0]})
+            if action == "get_race_results":
+                return Result(
+                    {
+                        "action": action,
+                        "season": "current",
+                        "race_result": {
+                            "season": 2026,
+                            "round_number": 8,
+                            "grand_prix_name": "Austrian Grand Prix",
+                            "results": [
+                                {"position": 1, "driver_name": "Lando Norris", "team_name": "McLaren", "points": 25},
+                                {"position": 2, "driver_name": "Max Verstappen", "team_name": "Red Bull", "points": 18},
+                                {"position": 3, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 15},
+                            ],
+                        },
+                    }
+                )
             if action == "get_driver_standings":
                 return Result(
                     {
@@ -286,7 +303,7 @@ def run_case(service: AgentService, case: EvalCase) -> AgentQueryResponse:
 def test_golden_agent_quality_cases() -> None:
     service = build_service()
 
-    assert len(CASES) == 56
+    assert len(CASES) == 59
     for case in CASES:
         response = run_case(service, case)
         assert response.intent == case.expected_intent, case.name

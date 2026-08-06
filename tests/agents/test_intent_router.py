@@ -16,6 +16,9 @@ def test_intent_router_routes_race_queries() -> None:
     assert router.route("下一站比赛是什么时候？") == "race"
     assert router.route("现在谁是车手积分榜第一名") == "race"
     assert router.route("现在哪只车队是第一名") == "race"
+    assert router.route("谁夺冠了") == "race"
+    assert router.route("谁赢得了比赛") == "race"
+    assert router.route("上一场比赛谁赢了") == "race"
 
 
 def test_intent_router_prefers_news_over_race_for_entity_news() -> None:

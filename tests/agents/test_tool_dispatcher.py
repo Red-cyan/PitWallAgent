@@ -114,7 +114,16 @@ def test_tool_dispatcher_routes_bare_team_names_to_constructor_standings() -> No
 def test_tool_dispatcher_routes_result_queries_to_race_results() -> None:
     dispatcher = build_dispatcher()
 
-    for message in ("谁赢了上一站", "英国站冠军是谁", "维斯塔潘上一站第几名", "昨天比赛结果怎么样"):
+    for message in (
+        "谁赢了上一站",
+        "英国站冠军是谁",
+        "维斯塔潘上一站第几名",
+        "昨天比赛结果怎么样",
+        "谁赢得了比赛",
+        "谁夺冠了",
+        "上一场比赛谁赢了",
+        "哪支车队拿下了冠军",
+    ):
         plan = dispatcher.build_plan(intent="race", message=message)
 
         assert plan["tool_name"] == "race_tool"
