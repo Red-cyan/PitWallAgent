@@ -75,7 +75,7 @@ def test_langgraph_runtime_runs_end_to_end() -> None:
     assert response.result["tool_plan"]["action"] == "list_recent"
     assert response.trace["action"] == "list_recent"
     assert response.trace["intent"] == "news"
-    assert response.final_answer.startswith("已获取最近的 F1 新闻")
+    assert "Headline 1" in response.final_answer
 
 
 def test_langgraph_runtime_formats_requested_race_position() -> None:

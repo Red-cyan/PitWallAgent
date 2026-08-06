@@ -19,7 +19,7 @@ class ReActReflector:
     """
 
     _SUPPORTED_ACTIONS = {
-        "news": {"list_recent", "get_article", "get_insights", "get_rules_analysis"},
+        "news": {"list_recent", "search", "get_article", "get_insights", "get_rules_analysis"},
         "race": {
             "list_schedule",
             "get_next_race",

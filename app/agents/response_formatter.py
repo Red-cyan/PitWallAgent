@@ -143,9 +143,11 @@ class AgentResponseFormatter:
 
             articles = result.get("articles", [])
             if articles:
-                titles = [article["title"] for article in articles[:3] if "title" in article]
-                if titles:
-                    return f"已获取最近的 F1 新闻，重点包括：{'；'.join(titles)}。"
+                return self._format_news_list(
+                    articles,
+                    action=str(result.get("action") or "list_recent"),
+                    query=result.get("query"),
+                )
             return "已完成新闻查询。"
 
         if intent == "race":
@@ -169,6 +171,47 @@ class AgentResponseFormatter:
             return "已完成通用问答。"
 
         return "已完成请求处理。"
+
+    def _format_news_list(self, articles: list[dict[str, Any]], *, action: str, query: str | None) -> str:
+        lines: list[str] = []
+        for article in articles[:5]:
+            title = article.get("title", "")
+            if not title:
+                continue
+            date_text = self._format_news_date(article.get("published_at"))
+            summary = article.get("summary") or ""
+            summary = " ".join(summary.split())
+            if len(summary) > 60:
+                summary = summary[:60] + "…"
+            suffix = f"：{summary}" if summary else ""
+            lines.append(f"- {title}{date_text}{suffix}")
+
+        if not lines:
+            return "没有找到相关的 F1 新闻。"
+
+        if action == "search":
+            header = f"关于“{query}”的 F1 新闻："
+        else:
+            header = "最近的 F1 新闻："
+        total_hint = f"\n共返回 {len(articles)} 条；如想看某条的详情或规则解读，直接说明主题即可。"
+        return header + "\n" + "\n".join(lines) + total_hint
+
+    def _format_news_date(self, value: Any) -> str:
+        if value is None:
+            return ""
+        try:
+            if isinstance(value, str):
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            elif isinstance(value, datetime):
+                parsed = value
+            else:
+                return ""
+        except ValueError:
+            return ""
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        local_time = parsed.astimezone(self.DISPLAY_TIMEZONE)
+        return f"（{local_time.strftime('%m-%d %H:%M')}）"
 
     def _build_race_answer(self, *, message: str, result: dict[str, Any]) -> str:
         race = result.get("race")

@@ -5,7 +5,7 @@
 ## 核心能力
 
 - LangGraph 运行图：意图识别、计划生成、工具执行、回答格式化。
-- 五类工具：赛况、新闻、法规、策略和通用 F1 问答。
+- 五类工具：赛况、新闻、法规、策略和通用 F1 问答。新闻为多源 RSS 聚合（Motorsport + F1 官方，仅消费官方订阅格式，不抓取 HTML 正文），启动自动摄入 + 手动刷新端点，支持按车手/车队/赛道中英别名检索。
 - Clause-aware RAG：PDF 结构化解析、跨页条款、表格、确定性 chunk ID、active corpus 原子切换。
 - Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、交叉编码器重排（bge-reranker-v2-m3）、精确条款提升和 keyword guardrail。
 - 真实 SSE：regulation/general 的 LLM token 直接输出；确定性回答显式标记为 `buffered`。

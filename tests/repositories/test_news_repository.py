@@ -149,3 +149,36 @@ def test_list_articles_for_backfill_filters_missing_content_by_default() -> None
 
         assert len(articles) == 1
         assert articles[0].title == "Missing content"
+
+def test_search_articles_matches_title_and_summary() -> None:
+    with build_session() as session:
+        repository = NewsRepository(session)
+        repository.upsert_article(
+            NewsArticleCreate(
+                source_name="formula1",
+                source_article_id="news-001",
+                title="McLaren upgrade for Silverstone",
+                summary="Aerodynamic changes.",
+                article_url="https://www.formula1.com/en/latest/article/test-1.666.html",
+            )
+        )
+        repository.upsert_article(
+            NewsArticleCreate(
+                source_name="motorsport",
+                source_article_id="news-002",
+                title="Ferrari pit stop drama",
+                article_url="https://www.motorsport.com/f1/news/1.666/",
+            )
+        )
+
+        hits = repository.search_articles(query="McLaren upgrade", limit=5)
+
+        assert len(hits) == 1
+        assert hits[0].title == "McLaren upgrade for Silverstone"
+
+
+def test_search_articles_returns_empty_for_blank_query() -> None:
+    with build_session() as session:
+        repository = NewsRepository(session)
+
+        assert repository.search_articles(query="   ", limit=5) == []

@@ -18,6 +18,15 @@ def test_intent_router_routes_race_queries() -> None:
     assert router.route("现在哪只车队是第一名") == "race"
 
 
+def test_intent_router_prefers_news_over_race_for_entity_news() -> None:
+    router = IntentRouter()
+
+    assert router.route("关于迈凯伦有什么新闻？") == "news"
+    assert router.route("诺里斯的最新消息") == "news"
+    assert router.route("迈凯伦积分榜") == "race"
+    assert router.route("今天几点比赛") == "race"
+
+
 def test_intent_router_defaults_to_general_for_non_matching_queries() -> None:
     router = IntentRouter()
 

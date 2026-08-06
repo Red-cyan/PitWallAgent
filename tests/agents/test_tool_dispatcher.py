@@ -73,6 +73,16 @@ def test_tool_dispatcher_builds_news_plan() -> None:
     assert plan["action"] == "list_recent"
 
 
+def test_tool_dispatcher_routes_topic_news_to_search() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="news", message="关于迈凯伦的最新消息")
+
+    assert plan["tool_name"] == "news_tool"
+    assert plan["action"] == "search"
+    assert "迈凯伦" in plan["params"]["query"]
+
+
 def test_tool_dispatcher_builds_race_plan_for_next_race() -> None:
     dispatcher = build_dispatcher()
 

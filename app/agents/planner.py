@@ -16,7 +16,7 @@ class LLMQueryPlanner:
     """Use an LLM to choose the right capability, with heuristic fallback."""
 
     _SUPPORTED_ACTIONS = {
-        "news": {"list_recent", "get_article", "get_insights", "get_rules_analysis"},
+        "news": {"list_recent", "search", "get_article", "get_insights", "get_rules_analysis"},
         "race": {
             "list_schedule",
             "get_next_race",
@@ -178,7 +178,7 @@ class LLMQueryPlanner:
                     "Choose exactly one intent and one action. "
                     "Return only JSON with keys: intent, action, params. "
                     "Supported intents and actions: "
-                    "news:list_recent|get_article|get_insights|get_rules_analysis; "
+                    "news:list_recent|search|get_article|get_insights|get_rules_analysis; "
                     "race:list_schedule|get_next_race|get_previous_race|get_driver_standings|get_constructor_standings; "
                     "regulation:ask; "
                     "strategy:analyze; "
@@ -191,6 +191,7 @@ class LLMQueryPlanner:
                     "something is allowed or how it is punished. "
                     "Use strategy for pit stop or tactical analysis. "
                     "Use news only when the user explicitly asks for news, headlines, or recent updates. "
+                    "Use news:search to find articles about a specific topic, team, driver, or circuit. "
                     "Use news:get_article for a specific article by id, get_insights for article analysis, "
                     "and get_rules_analysis when the user asks how a news article relates to FIA rules."
                 ),

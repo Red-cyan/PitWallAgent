@@ -1,15 +1,36 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.schemas.news import NewsArticleRead, NewsInsightResponse, NewsRuleAnalysisResponse
+from app.schemas.news import (
+    NewsArticleRead,
+    NewsInsightResponse,
+    NewsRefreshResponse,
+    NewsRuleAnalysisResponse,
+)
+from app.services.news_ingestion_service import NewsIngestionService
 from app.services.news_service import NewsService
 
 router = APIRouter(prefix="/api/news", tags=["news"])
 news_service = NewsService()
+news_ingestion_service = NewsIngestionService()
 
 
 @router.get("", response_model=list[NewsArticleRead])
 def list_news(limit: int = Query(default=20, ge=1, le=100)) -> list[NewsArticleRead]:
     return news_service.list_recent_articles(limit=limit)
+
+
+@router.get("/search", response_model=list[NewsArticleRead])
+def search_news(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[NewsArticleRead]:
+    return news_service.search_articles(query=q, limit=limit)
+
+
+@router.post("/refresh", response_model=NewsRefreshResponse)
+def refresh_news(limit: int = Query(default=20, ge=1, le=100)) -> NewsRefreshResponse:
+    saved = news_ingestion_service.ingest(limit=limit)
+    return NewsRefreshResponse(ingested_count=len(saved), articles=saved)
 
 
 @router.get("/{article_id}", response_model=NewsArticleRead)

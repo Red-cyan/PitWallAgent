@@ -1,4 +1,4 @@
-from sqlalchemy import Select, select
+from sqlalchemy import Select, or_, select
 from sqlalchemy.orm import Session
 
 from app.db.models import NewsArticleRecord
@@ -32,11 +32,16 @@ class NewsRepository:
             return NewsArticleRead.from_record(record)
 
         existing.title = article.title
-        existing.summary = article.summary
-        existing.content = article.content
-        existing.author = article.author
-        existing.published_at = article.published_at
-        existing.tags = article.tags
+        if article.summary is not None:
+            existing.summary = article.summary
+        if article.content is not None:
+            existing.content = article.content
+        if article.author is not None:
+            existing.author = article.author
+        if article.published_at is not None:
+            existing.published_at = article.published_at
+        if article.tags:
+            existing.tags = article.tags
         existing.raw_payload = article.raw_payload
         existing.is_deleted = False
         self.session.commit()
@@ -46,7 +51,10 @@ class NewsRepository:
     def list_recent_articles(self, limit: int = 20) -> list[NewsArticleRead]:
         records = self.session.execute(
             self._base_active_query()
-            .order_by(NewsArticleRecord.published_at.desc(), NewsArticleRecord.id.desc())
+            .order_by(
+                NewsArticleRecord.published_at.desc().nulls_last(),
+                NewsArticleRecord.id.desc(),
+            )
             .limit(limit)
         ).scalars().all()
         return [NewsArticleRead.from_record(record) for record in records]
@@ -59,6 +67,31 @@ class NewsRepository:
             return None
 
         return NewsArticleRead.from_record(record)
+
+    def search_articles(self, query: str, limit: int = 10) -> list[NewsArticleRead]:
+        terms = [term for term in query.split() if term]
+        if not terms:
+            return []
+
+        conditions = []
+        for term in terms[:4]:
+            pattern = f"%{term}%"
+            conditions.append(
+                NewsArticleRecord.title.ilike(pattern)
+                | NewsArticleRecord.summary.ilike(pattern)
+                | NewsArticleRecord.content.ilike(pattern)
+            )
+
+        records = self.session.execute(
+            self._base_active_query()
+            .where(or_(*conditions))
+            .order_by(
+                NewsArticleRecord.published_at.desc().nulls_last(),
+                NewsArticleRecord.id.desc(),
+            )
+            .limit(limit)
+        ).scalars().all()
+        return [NewsArticleRead.from_record(record) for record in records]
 
     def list_articles_for_backfill(
         self,

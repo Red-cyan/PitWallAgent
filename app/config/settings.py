@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     regulation_rerank_batch_size: int = 8
     regulation_embedding_query_instruction: str = ""
     formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
+    motorsport_feed_url: str = "https://www.motorsport.com/rss/f1/news/"
+    news_ingest_on_startup: bool = True
+    news_ingest_startup_limit: int = 15
     news_request_timeout_seconds: float = 10.0
     upstream_get_max_retries: int = 2
     upstream_get_backoff_seconds: float = 0.2

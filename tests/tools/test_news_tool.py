@@ -35,6 +35,9 @@ class StubNewsService:
             return None
         return self.list_recent_articles(1)[0]
 
+    def search_articles(self, query: str, limit: int = 10) -> list[NewsArticleRead]:
+        return self.list_recent_articles(limit)[:limit]
+
     def get_article_insights(self, article_id: int) -> NewsInsightResponse | None:
         article = self.get_article_by_id(article_id)
         if article is None:
@@ -87,6 +90,26 @@ def test_news_tool_lists_recent_articles() -> None:
     assert result.success is True
     assert result.payload["action"] == "list_recent"
     assert len(result.payload["articles"]) == 1
+
+
+def test_news_tool_searches_articles() -> None:
+    tool = NewsTool(news_service=StubNewsService())
+
+    result = tool.invoke(action="search", query="McLaren upgrade", limit=5)
+
+    assert result.success is True
+    assert result.payload["action"] == "search"
+    assert result.payload["query"] == "McLaren upgrade"
+    assert len(result.payload["articles"]) == 1
+
+
+def test_news_tool_search_requires_query() -> None:
+    tool = NewsTool(news_service=StubNewsService())
+
+    result = tool.invoke(action="search", query="   ")
+
+    assert result.success is False
+    assert result.error == "News search requires a query."
 
 
 def test_news_tool_returns_insights() -> None:

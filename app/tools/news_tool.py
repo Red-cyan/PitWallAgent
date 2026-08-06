@@ -41,6 +41,36 @@ class NewsTool:
                 )
                 return result
 
+            if action == "search":
+                query = kwargs.get("query", "").strip()
+                if not query:
+                    result = ToolResult(
+                        tool_name=self.name,
+                        success=False,
+                        error="News search requires a query.",
+                    )
+                    log_structured(self.logger, "news_tool_completed", action=action, success=result.success)
+                    return result
+                limit = int(kwargs.get("limit", 5))
+                articles = self.news_service.search_articles(query=query, limit=limit)
+                result = ToolResult(
+                    tool_name=self.name,
+                    success=True,
+                    payload={
+                        "action": action,
+                        "query": query,
+                        "articles": [article.model_dump(mode="json") for article in articles],
+                    },
+                )
+                log_structured(
+                    self.logger,
+                    "news_tool_completed",
+                    action=action,
+                    success=result.success,
+                    article_count=len(result.payload["articles"]),
+                )
+                return result
+
             if action == "get_article":
                 article_id = int(kwargs["article_id"])
                 article = self.news_service.get_article_by_id(article_id)

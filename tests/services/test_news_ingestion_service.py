@@ -46,3 +46,99 @@ def test_news_ingestion_service_saves_articles(monkeypatch) -> None:
             assert len(repository.list_recent_articles()) == 1
     finally:
         engine.dispose()
+
+
+def test_news_ingestion_aggregates_multiple_sources(monkeypatch) -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app import db
+
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    Base.metadata.create_all(engine)
+    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+    monkeypatch.setattr(db.engine, "SessionLocal", testing_session)
+    monkeypatch.setattr("app.services.news_ingestion_service.SessionLocal", testing_session)
+
+    class SecondSource(StubSource):
+        source_name = "motorsport"
+
+        def fetch_articles(self, limit: int = 20) -> list[NewsArticleCreate]:
+            return [
+                NewsArticleCreate(
+                    source_name="motorsport",
+                    source_article_id="m-001",
+                    title="Ferrari strategy call",
+                    article_url="https://www.motorsport.com/f1/news/m-001/",
+                )
+            ]
+
+    try:
+        service = NewsIngestionService()
+        saved = service.ingest(source=[StubSource(), SecondSource()], limit=1)
+
+        assert len(saved) == 2
+        assert {article.source_name for article in saved} == {"formula1", "motorsport"}
+    finally:
+        engine.dispose()
+
+
+def test_news_ingestion_preserves_missing_published_at(monkeypatch) -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app import db
+
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    Base.metadata.create_all(engine)
+    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+    monkeypatch.setattr(db.engine, "SessionLocal", testing_session)
+    monkeypatch.setattr("app.services.news_ingestion_service.SessionLocal", testing_session)
+
+    class NoDateSource(StubSource):
+        def fetch_articles(self, limit: int = 20) -> list[NewsArticleCreate]:
+            return [
+                NewsArticleCreate(
+                    source_name="formula1",
+                    source_article_id="news-003",
+                    title="No date article",
+                    article_url="https://www.formula1.com/en/latest/article/test-3.111.html",
+                    published_at=None,
+                )
+            ]
+
+    try:
+        service = NewsIngestionService()
+        saved = service.ingest(source=NoDateSource(), limit=1)
+
+        assert saved[0].published_at is None
+    finally:
+        engine.dispose()
+
+
+def test_news_ingestion_skips_failing_source(monkeypatch) -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app import db
+
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    Base.metadata.create_all(engine)
+    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+    monkeypatch.setattr(db.engine, "SessionLocal", testing_session)
+    monkeypatch.setattr("app.services.news_ingestion_service.SessionLocal", testing_session)
+
+    class FailingSource:
+        source_name = "broken"
+
+        def fetch_articles(self, limit: int = 20):
+            raise RuntimeError("network down")
+
+    try:
+        service = NewsIngestionService()
+        saved = service.ingest(source=[FailingSource(), StubSource()], limit=1)
+
+        assert len(saved) == 1
+        assert saved[0].source_name == "formula1"
+    finally:
+        engine.dispose()

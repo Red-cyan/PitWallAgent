@@ -74,6 +74,13 @@ class NewsArticleRead(BaseModel):
         )
 
 
+class NewsRefreshResponse(BaseModel):
+    """新闻刷新结果。"""
+
+    ingested_count: int
+    articles: list[NewsArticleRead]
+
+
 class NewsEntity(BaseModel):
     """新闻实体。"""
 

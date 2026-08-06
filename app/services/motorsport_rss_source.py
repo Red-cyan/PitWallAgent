@@ -4,13 +4,13 @@ from app.config.settings import settings
 from app.services.rss_source import RSSFeedSource
 
 
-class Formula1RSSSource(RSSFeedSource):
-    """Formula1 官方 RSS 新闻源（仅订阅源元数据，不抓取详情页）。"""
+class MotorsportRSSSource(RSSFeedSource):
+    """Motorsport.com F1 新闻 RSS 源（含发布时间与较完整摘要）。"""
 
-    source_name = "formula1"
+    source_name = "motorsport"
 
     def __init__(self, feed_url: str | None = None, fetcher=None) -> None:
         super().__init__(
-            feed_url=feed_url or settings.formula1_feed_url,
+            feed_url=feed_url or settings.motorsport_feed_url,
             fetcher=fetcher,
         )

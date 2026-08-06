@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from collections.abc import Callable
 
@@ -28,13 +29,48 @@ class ToolDispatcher:
         self.strategy_tool = strategy_tool or StrategyTool()
         self.general_tool = general_tool or GeneralTool()
 
+    NEWS_STOPWORDS = {
+        "新闻",
+        "资讯",
+        "news",
+        "headlines",
+        "headline",
+        "最近",
+        "最新",
+        "今天",
+        "有什么",
+        "看看",
+        "给我",
+        "讲讲",
+        "关于",
+        "一下",
+        "的",
+        "f1",
+        "formula",
+        "赛事",
+        "有",
+        "吗",
+        "吧",
+        "呢",
+        "什么",
+        "怎么",
+        "哪些",
+        "啥",
+        "the",
+        "latest",
+        "recent",
+        "today",
+        "get",
+        "give",
+        "some",
+        "any",
+        "me",
+        "about",
+    }
+
     def build_plan(self, intent: str, message: str) -> dict:
         if intent == "news":
-            return {
-                "tool_name": self.news_tool.name,
-                "action": "list_recent",
-                "params": {"limit": 5},
-            }
+            return self._news_plan(message)
 
         if intent == "race":
             lowered = message.lower()
@@ -134,6 +170,34 @@ class ToolDispatcher:
             "params": {},
             "error": f"Unsupported intent: {intent}",
         }
+
+    def _news_plan(self, message: str) -> dict:
+        query = self._extract_news_query(message)
+        if query:
+            return {
+                "tool_name": self.news_tool.name,
+                "action": "search",
+                "params": {"query": query, "limit": 5},
+            }
+        return {
+            "tool_name": self.news_tool.name,
+            "action": "list_recent",
+            "params": {"limit": 5},
+        }
+
+    def _extract_news_query(self, message: str) -> str | None:
+        words = sorted(self.NEWS_STOPWORDS, key=len, reverse=True)
+        stop_pattern = re.compile(
+            "|".join(re.escape(word) for word in words),
+            re.IGNORECASE,
+        )
+        remaining = stop_pattern.sub(" ", message)
+        remaining = re.sub(r"[\s，。,.!?！？、:：]+", " ", remaining).strip()
+        tokens = [token for token in remaining.split() if token]
+        if not tokens:
+            return None
+        query = " ".join(tokens)
+        return query[:60]
 
     def execute_plan(
         self,

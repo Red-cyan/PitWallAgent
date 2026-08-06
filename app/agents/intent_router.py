@@ -2,6 +2,15 @@ import re
 
 
 class IntentRouter:
+    NEWS_STRONG_KEYWORDS = (
+        "news",
+        "headline",
+        "\u65b0\u95fb",
+        "\u56f4\u573a",
+        "\u52a8\u6001",
+        "\u6d88\u606f",
+        "\u8d44\u8baf",
+    )
     NEWS_KEYWORDS = (
         "news",
         "today",
@@ -173,6 +182,9 @@ class IntentRouter:
 
         if self._contains_any(normalized, self.REGULATION_KEYWORDS):
             return "regulation"
+
+        if self._contains_any(normalized, self.NEWS_STRONG_KEYWORDS):
+            return "news"
 
         if self._contains_any(normalized, self.RACE_KEYWORDS):
             return "race"

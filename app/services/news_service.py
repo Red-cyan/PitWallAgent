@@ -21,6 +21,26 @@ class NewsService:
             repository = NewsRepository(session)
             return repository.list_recent_articles(limit=limit)
 
+    def search_articles(self, query: str, limit: int = 10) -> list[NewsArticleRead]:
+        expanded_query = self._expand_query_aliases(query)
+        with SessionLocal() as session:
+            repository = NewsRepository(session)
+            return repository.search_articles(query=expanded_query, limit=limit)
+
+    def _expand_query_aliases(self, query: str) -> str:
+        """把中文实体（车手/车队/赛道）展开为英文别名，匹配英文新闻语料。"""
+        lowered = query.lower()
+        expanded = [query]
+        for aliases in (
+            self.insight_service.DRIVER_ALIASES,
+            self.insight_service.TEAM_ALIASES,
+            self.insight_service.CIRCUIT_ALIASES,
+        ):
+            for alias, normalized in aliases.items():
+                if alias in lowered and normalized.lower() not in lowered:
+                    expanded.append(normalized)
+        return " ".join(expanded)
+
     def get_article_by_id(self, article_id: int) -> NewsArticleRead | None:
         with SessionLocal() as session:
             repository = NewsRepository(session)
