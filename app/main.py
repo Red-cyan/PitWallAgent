@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import router
 from app.config.settings import settings
 from app.core.logging import configure_logging, log_structured
+from app.mcp.pitwall_server import PitWallServer
 from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.request_context import RequestContextMiddleware
 
@@ -58,3 +59,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+mcp_server = PitWallServer()
+app.mount("/mcp", mcp_server.streamable_http_app())

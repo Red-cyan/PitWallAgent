@@ -251,7 +251,19 @@ RRF score = sum(1 / (60 + rank))
 
 相关文本不等于足够证据。例如数值问题只命中 Article 概览时不能让 LLM 补数。引用保留文档、Clause、页码、chunk type、corpus version 和 breadcrumb；debug API 额外给出 score components，用于区分召回失败和排序失败。
 
-## 14. 前端
+## 14. MCP 集成
+
+`app/mcp/` 用官方 `mcp` SDK（FastMCP）把三类核心能力暴露为标准 MCP 工具：法规 RAG（`regulation_ask`、`regulation_debug_retrieval`）、赛况（`race_schedule`、`race_next`、`race_previous`、`race_driver_standings`、`race_constructor_standings`、`race_results`）、新闻（`news_search`、`news_recent`）。
+
+工具方法直接复用 `RegulationQAService` / `RaceService` / `NewsService`，与内部 Agent 工具同源，不复制业务逻辑；返回统一 `{success, ...}` 契约，证据不足沿用确定性拒绝语义。
+
+- stdio：`uv run python -m app.mcp`，可被 Claude Desktop、`uvx mcp dev`（inspector）直接拉起。
+- Streamable HTTP：`app.main` 挂载 `/mcp` 子应用，远程 client 指向 `http://localhost:8000/mcp`。
+- 测试：`tests/mcp/test_pitwall_server.py` 断言工具注册集合与每个工具的出入参、错误路径。
+
+设计细节见 `docs/rfcs/zh/RFC-007-MCP_zh.md`。
+
+## 15. 前端
 
 Chat 页面管理 session、history、流式草稿、状态、错误和选中证据。收到 delta 追加草稿，收到 completed 后用服务端完整对象替换，确保最终证据与 trace 一致。停止生成只取消当前请求，失败时保留手动重试入口。证据在桌面端为侧栏，移动端为 drawer。
 
@@ -259,7 +271,7 @@ RAG Lab 不是第二个聊天页，而是检索调试台：展示 active corpus�
 
 当前没有 Redux/Zustand，因为跨页面共享状态很少。复杂缓存、权限或乐观更新出现后再引入更合理。
 
-## 15. 数据模型和迁移
+## 16. 数据模型和迁移
 
 | 表 | 作用 |
 | --- | --- |
@@ -269,13 +281,13 @@ RAG Lab 不是第二个聊天页，而是检索调试台：展示 active corpus�
 
 查询必须限定 active corpus，否则保留的旧版本会产生重复条款。`chunk_id` 唯一，常用结构化字段有索引。`20260727_0002_clause_aware_corpus.py` 增加 corpus 字段和 manifest 表；修改 ORM 后忘记升级 Alembic，会在真实数据库出现“column does not exist”，即使 mock 测试正常。
 
-## 16. 可观测性
+## 17. 可观测性
 
 结构化日志记录 request ID、路由、工具、检索数量、结果和阶段耗时，但不应记录密钥。`/metrics` 暴露 HTTP、Tool、LLM、RAG、Stream、TTFT、总时长、active corpus 数量和上游重试等 Prometheus 指标。
 
 分析 TTFT 时要结合 `stream_mode`，buffered 首片和真实 provider token 含义不同。`ops/` 的 Grafana 配置证明观测闭环，不代表生产告警、长期存储或高可用已经完成。
 
-## 17. 测试和评测
+## 18. 测试和评测
 
 四层质量保障：单元测试覆盖 Planner、Parser、Chunker 和排序；API/Repository 测试覆盖契约与证据；离线 golden cases 覆盖 Agent 和 60 条法规问题；Playwright 覆盖桌面/移动 Chat、停止、证据和 RAG Lab。
 
@@ -294,7 +306,7 @@ npm run test:e2e
 
 Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型、active corpus 和 pgvector，放在 integration job，避免普通 CI 下载大模型。当前基线为 200 passed、2 skipped；Keyword Recall@5 100%、Section Recall@5 100%、MRR 约 0.80；Hybrid Recall@5 100%；拒绝率 100%。以 `docs/evals/` 最新报告为准。
 
-## 18. 常见问题与定位
+## 19. 常见问题与定位
 
 | 现象 | 常见原因 | 定位与处理 |
 | --- | --- | --- |
@@ -316,7 +328,7 @@ Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型�
 
 先判断问题属于浏览器协议、API、Agent、Tool、检索、数据还是模型。不要一看到错误答案就只改 prompt。
 
-## 19. 已知边界和安全问题
+## 20. 已知边界和安全问题
 
 - 没有认证、授权、多租户和 rate limit，不能直接暴露公网。
 - session ID 不是可靠身份凭证。
@@ -330,7 +342,7 @@ Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型�
 - SSE producer 使用线程；高并发要评估线程、队列背压和取消传播。
 - 日志与长期记忆尚未实现完整隐私和删除治理。
 
-## 20. 面试表达与源码练习
+## 21. 面试表达与源码练习
 
 推荐用问题、方案、取舍、数据来讲：
 
@@ -362,7 +374,7 @@ Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型�
 
 **生产化还缺什么？** 认证授权、rate limit、Secret 管理、异步任务、连接池/背压、隐私治理、告警与 SLO，之后才是多实例和独立向量库。
 
-## 21. 文档冲突时以什么为准
+## 22. 文档冲突时以什么为准
 
 优先级：测试验证过的当前代码 -> Alembic 与 API schema -> corpus manifest 和评测报告 -> 本导读与根 README -> 产品/历史架构/RFC 的设计意图。
 

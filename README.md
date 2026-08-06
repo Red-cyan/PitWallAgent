@@ -10,6 +10,7 @@
 - Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、交叉编码器重排（bge-reranker-v2-m3）、精确条款提升和 keyword guardrail。
 - 真实 SSE：regulation/general 的 LLM token 直接输出；确定性回答显式标记为 `buffered`。
 - 可恢复会话：Redis 历史、上下文压缩、长期偏好、语义记忆召回（BGE-M3 向量 + 词法回退）、停止生成和显式重试。
+- MCP 互操作：法规 RAG、赛况、新闻能力以标准 MCP 工具暴露，支持 stdio（Claude Desktop / mcp inspector）与 Streamable HTTP（`/mcp`）两种传输。
 - 全栈工作台：Chat、会话管理、证据抽屉，以及独立的 RAG Lab 检索分析页。
 - 工程保障：Alembic、Docker Compose、Prometheus、Grafana、结构化日志、CI、Playwright 和离线评测。
 
@@ -105,6 +106,26 @@ HF_MODELS_DIR=E:\AIModels
 ```env
 POSTGRES_HOST_PORT=15432
 ```
+
+## 接入 MCP
+
+核心能力以标准 MCP 工具暴露（法规 RAG、赛况、新闻，共 10 个工具）。
+
+本地 stdio（Claude Desktop、`mcp inspector`）：
+
+```bash
+uv run python -m app.mcp
+uvx mcp dev app/mcp/pitwall_server.py
+```
+
+Streamable HTTP（随 FastAPI 一起启动）：
+
+```bash
+docker compose up -d
+# 任意 MCP client 指向 http://localhost:8000/mcp
+```
+
+工具清单与返回契约见 `docs/rfcs/zh/RFC-007-MCP_zh.md`。
 
 ## 开发与质量门禁
 
