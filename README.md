@@ -87,6 +87,25 @@ LLM_MODEL=deepseek-v4-flash
 
 未配置 key 时，权威数据工具和确定性 fallback 仍可演示；通用生成会明确降级。
 
+### 启用向量检索 / 重排 / 语义记忆
+
+BGE-M3（embeddings）与 bge-reranker-v2-m3（重排）约需 5 GB 磁盘。默认关闭，避免 CI 和首次启动下载大模型：
+
+```env
+REGULATION_VECTOR_RETRIEVAL_ENABLED=true
+REGULATION_RERANK_ENABLED=true
+MEMORY_VECTOR_RETRIEVAL_ENABLED=true
+HF_TOKEN=
+# 可选：把宿主机已下载的模型目录挂载进容器（HF_HOME 所在目录，含 huggingface/ 与 sentence-transformers/）
+HF_MODELS_DIR=E:\AIModels
+```
+
+若本机 5432 端口被系统保留（Windows Hyper-V 排除段 5340-5439 常见），可改宿主映射端口：
+
+```env
+POSTGRES_HOST_PORT=15432
+```
+
 ## 开发与质量门禁
 
 ```bash

@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: pitwall
       POSTGRES_PASSWORD: pitwall
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -42,10 +42,19 @@ services:
       SESSION_BACKEND: redis
       REDIS_URL: redis://redis:6379/0
       REGULATION_VECTOR_RETRIEVAL_ENABLED: ${REGULATION_VECTOR_RETRIEVAL_ENABLED:-false}
+      REGULATION_RERANK_ENABLED: ${REGULATION_RERANK_ENABLED:-false}
+      MEMORY_VECTOR_RETRIEVAL_ENABLED: ${MEMORY_VECTOR_RETRIEVAL_ENABLED:-false}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HOME: /models/huggingface
+      HF_HUB_CACHE: /models/huggingface/hub
+      TRANSFORMERS_CACHE: /models/huggingface/transformers
+      SENTENCE_TRANSFORMERS_HOME: /models/sentence-transformers
       CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
       LLM_MODEL: ${LLM_MODEL:-deepseek-v4-flash}
+    volumes:
+      - ${HF_MODELS_DIR:-./.hf-models}:/models
     ports:
       - "8000:8000"
     depends_on:
