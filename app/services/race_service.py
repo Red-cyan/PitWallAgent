@@ -1,7 +1,12 @@
 from datetime import UTC, datetime
 
 from app.config.settings import settings
-from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, RaceWeekend
+from app.schemas.race import (
+    ConstructorStandingEntry,
+    DriverStandingEntry,
+    RaceResult,
+    RaceWeekend,
+)
 from app.services.race_provider import JolpicaRaceDataProvider, RaceDataProvider
 
 
@@ -44,3 +49,20 @@ class RaceService:
     def list_constructor_standings(self, season: int | str | None = None) -> list[ConstructorStandingEntry]:
         resolved_season = season or settings.race_default_season
         return self.provider.list_constructor_standings(resolved_season)
+
+    def get_race_results(
+        self,
+        season: int | str | None = None,
+        round_number: int | None = None,
+        now: datetime | None = None,
+    ) -> RaceResult | None:
+        """返回指定轮次（默认最近一场已结束比赛）的比赛结果。"""
+        resolved_season = season or settings.race_default_season
+
+        if round_number is None:
+            previous_race = self.get_previous_race(resolved_season, now=now)
+            if previous_race is None:
+                return None
+            round_number = previous_race.round_number
+
+        return self.provider.get_race_results(resolved_season, round_number)

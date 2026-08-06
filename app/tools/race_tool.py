@@ -116,6 +116,22 @@ class RaceTool:
                 )
                 return result
 
+            if action == "get_race_results":
+                round_number = kwargs.get("round_number")
+                race_result = self.race_service.get_race_results(season, round_number=round_number)
+                result = ToolResult(
+                    tool_name=self.name,
+                    success=race_result is not None,
+                    payload={
+                        "action": action,
+                        "season": season,
+                        "race_result": race_result.model_dump(mode="json") if race_result else None,
+                    },
+                    error=None if race_result is not None else "No completed race results found.",
+                )
+                log_structured(self.logger, "race_tool_completed", action=action, season=season, success=result.success)
+                return result
+
             result = ToolResult(
                 tool_name=self.name,
                 success=False,

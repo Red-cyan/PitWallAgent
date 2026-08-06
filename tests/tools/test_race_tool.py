@@ -1,6 +1,13 @@
 from datetime import UTC, datetime
 
-from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, RaceWeekend, SessionInfo
+from app.schemas.race import (
+    ConstructorStandingEntry,
+    DriverStandingEntry,
+    RaceResult,
+    RaceResultEntry,
+    RaceWeekend,
+    SessionInfo,
+)
 from app.tools.race_tool import RaceTool
 
 
@@ -36,6 +43,18 @@ class StubRaceService:
             ConstructorStandingEntry(position=1, team_name="Mercedes", points=302, source="stub")
         ]
 
+    def get_race_results(self, season, round_number=None) -> RaceResult:
+        return RaceResult(
+            season=2026,
+            round_number=8,
+            grand_prix_name="Austrian Grand Prix",
+            results=[
+                RaceResultEntry(position=1, driver_name="Andrea Kimi Antonelli", team_name="Mercedes", points=25, source="stub"),
+                RaceResultEntry(position=2, driver_name="Charles Leclerc", team_name="Ferrari", points=18, source="stub"),
+            ],
+            source="stub",
+        )
+
 
 def test_race_tool_returns_schedule() -> None:
     tool = RaceTool(race_service=StubRaceService())
@@ -62,3 +81,13 @@ def test_race_tool_returns_driver_standings() -> None:
 
     assert result.success is True
     assert result.payload["standings"][0]["driver_name"] == "Andrea Kimi Antonelli"
+
+
+def test_race_tool_returns_race_results() -> None:
+    tool = RaceTool(race_service=StubRaceService())
+
+    result = tool.invoke(action="get_race_results")
+
+    assert result.success is True
+    assert result.payload["race_result"]["grand_prix_name"] == "Austrian Grand Prix"
+    assert result.payload["race_result"]["results"][0]["driver_name"] == "Andrea Kimi Antonelli"

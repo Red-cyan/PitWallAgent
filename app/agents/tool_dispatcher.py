@@ -115,6 +115,47 @@ class ToolDispatcher:
                 "\u51ef\u8fea\u62c9\u514b",
             )
 
+            result_explicit_tokens = (
+                "winner",
+                "won",
+                "win",
+                "victory",
+                "podium",
+                "result",
+                "results",
+                "\u8c01\u8d62\u4e86",
+                "\u51a0\u519b",
+                "\u83b7\u80dc",
+                "\u80dc\u5229",
+                "\u9886\u5956\u53f0",
+                "\u7ed3\u679c",
+                "\u62ff\u4e0b",
+                "\u5236\u80dc",
+            )
+            result_previous_signal = (
+                "previous" in lowered
+                or "last race" in lowered
+                or "\u4e0a\u4e00\u7ad9" in message
+                or "\u4e0a\u4e00\u573a" in message
+            )
+            result_position_signal = (
+                "\u7b2c\u51e0" in message
+                or "\u540d\u6b21" in message
+                or "\u6210\u7ee9" in message
+                or "how did" in lowered
+                or "finish" in lowered
+                or "finished" in lowered
+            )
+
+            if any(token in lowered or token in message for token in result_explicit_tokens) or (
+                result_previous_signal and result_position_signal
+            ):
+                return {
+                    "tool_name": self.race_tool.name,
+                    "action": "get_race_results",
+                    "params": {},
+                }
+
             if (
                 "constructor" in lowered
                 or "team standings" in lowered

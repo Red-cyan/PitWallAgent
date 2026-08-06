@@ -3,7 +3,14 @@ import time
 from typing import Any, Callable, Protocol
 
 from app.config.settings import settings
-from app.schemas.race import ConstructorStandingEntry, DriverStandingEntry, RaceWeekend, SessionInfo
+from app.schemas.race import (
+    ConstructorStandingEntry,
+    DriverStandingEntry,
+    RaceResult,
+    RaceResultEntry,
+    RaceWeekend,
+    SessionInfo,
+)
 from app.services.http_retry import get_with_retry
 
 
@@ -20,6 +27,10 @@ class RaceDataProvider(Protocol):
 
     def list_constructor_standings(self, season: int | str) -> list[ConstructorStandingEntry]:
         """Return constructor standings for a season."""
+        ...
+
+    def get_race_results(self, season: int | str, round_number: int) -> RaceResult:
+        """Return the race results for a specific round."""
         ...
 
 
@@ -88,6 +99,51 @@ class StaticRaceDataProvider:
             ConstructorStandingEntry(position=2, team_name="Ferrari", points=204, source=self.SOURCE),
             ConstructorStandingEntry(position=3, team_name="McLaren", points=159, source=self.SOURCE),
         ]
+
+    def get_race_results(self, season: int | str, round_number: int) -> RaceResult:
+        return RaceResult(
+            season=2026,
+            round_number=round_number,
+            grand_prix_name="British Grand Prix",
+            circuit_name="Silverstone Circuit",
+            country="United Kingdom",
+            results=[
+                RaceResultEntry(
+                    position=1,
+                    driver_name="Andrea Kimi Antonelli",
+                    team_name="Mercedes",
+                    points=25,
+                    grid=1,
+                    laps=52,
+                    status="Finished",
+                    time="1:23:45.678",
+                    source=self.SOURCE,
+                ),
+                RaceResultEntry(
+                    position=2,
+                    driver_name="George Russell",
+                    team_name="Mercedes",
+                    points=18,
+                    grid=2,
+                    laps=52,
+                    status="Finished",
+                    time="+5.432",
+                    source=self.SOURCE,
+                ),
+                RaceResultEntry(
+                    position=3,
+                    driver_name="Charles Leclerc",
+                    team_name="Ferrari",
+                    points=15,
+                    grid=3,
+                    laps=52,
+                    status="Finished",
+                    time="+12.109",
+                    source=self.SOURCE,
+                ),
+            ],
+            source=self.SOURCE,
+        )
 
 
 class JolpicaRaceDataProvider:
@@ -161,6 +217,58 @@ class JolpicaRaceDataProvider:
 
         self._set_cached(cache_key, parsed)
         return parsed
+
+    def get_race_results(self, season: int | str, round_number: int) -> RaceResult:
+        cache_key = f"race_results:{season}:{round_number}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        try:
+            payload = self.fetch_json(f"{season}/{round_number}/results.json")
+            race_payload = payload["MRData"]["RaceTable"]["Races"][0]
+            parsed = self._parse_race_result(race_payload)
+        except Exception:
+            parsed = self.fallback_provider.get_race_results(season, round_number)
+
+        self._set_cached(cache_key, parsed)
+        return parsed
+
+    def _parse_race_result(self, race_payload: dict[str, Any]) -> RaceResult:
+        entries: list[RaceResultEntry] = []
+        for item in race_payload.get("Results", []):
+            driver = item["Driver"]
+            constructor = item.get("Constructor") or {}
+            constructors = item.get("Constructors") or []
+            constructor_name = (
+                constructor.get("name")
+                or (constructors[0]["name"] if constructors else None)
+                or "Unknown"
+            )
+            time_value = item.get("Time", {}).get("time") if isinstance(item.get("Time"), dict) else None
+            entries.append(
+                RaceResultEntry(
+                    position=int(item["position"]),
+                    driver_name=f"{driver['givenName']} {driver['familyName']}",
+                    team_name=constructor_name,
+                    points=int(float(item["points"])),
+                    grid=int(item["grid"]) if item.get("grid") else None,
+                    laps=int(item["laps"]) if item.get("laps") else None,
+                    status=item.get("status"),
+                    time=time_value,
+                    source=self.SOURCE,
+                )
+            )
+
+        return RaceResult(
+            season=int(race_payload["season"]),
+            round_number=int(race_payload["round"]),
+            grand_prix_name=race_payload["raceName"],
+            circuit_name=race_payload.get("Circuit", {}).get("circuitName"),
+            country=race_payload.get("Circuit", {}).get("Location", {}).get("country"),
+            results=entries,
+            source=self.SOURCE,
+        )
 
     def _fetch_json(self, path: str) -> dict[str, Any]:
         response = get_with_retry(

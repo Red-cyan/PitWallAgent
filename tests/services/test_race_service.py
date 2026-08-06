@@ -103,3 +103,86 @@ def test_race_service_returns_next_and_previous_race() -> None:
     assert next_race.grand_prix_name == "British Grand Prix"
     assert previous_race is not None
     assert previous_race.grand_prix_name == "Austrian Grand Prix"
+
+RESULTS_PAYLOAD = {
+    "MRData": {
+        "RaceTable": {
+            "Races": [
+                {
+                    "season": "2026",
+                    "round": "8",
+                    "raceName": "Austrian Grand Prix",
+                    "Circuit": {
+                        "circuitName": "Red Bull Ring",
+                        "Location": {"country": "Austria"},
+                    },
+                    "Results": [
+                        {
+                            "position": "1",
+                            "points": "25",
+                            "grid": "1",
+                            "laps": "71",
+                            "status": "Finished",
+                            "Time": {"time": "1:25:00.123"},
+                            "Driver": {"givenName": "Andrea Kimi", "familyName": "Antonelli"},
+                            "Constructor": {"name": "Mercedes"},
+                        },
+                        {
+                            "position": "2",
+                            "points": "18",
+                            "grid": "3",
+                            "laps": "71",
+                            "status": "Finished",
+                            "Time": {"time": "+8.554"},
+                            "Driver": {"givenName": "Charles", "familyName": "Leclerc"},
+                            "Constructor": {"name": "Ferrari"},
+                        },
+                    ],
+                }
+            ]
+        }
+    }
+}
+
+
+def test_jolpica_provider_parses_race_results() -> None:
+    provider = JolpicaRaceDataProvider(
+        fetch_json=lambda path: RESULTS_PAYLOAD,
+        fallback_provider=StaticRaceDataProvider(),
+    )
+
+    result = provider.get_race_results(2026, round_number=8)
+
+    assert result.grand_prix_name == "Austrian Grand Prix"
+    assert len(result.results) == 2
+    assert result.results[0].driver_name == "Andrea Kimi Antonelli"
+    assert result.results[0].team_name == "Mercedes"
+    assert result.results[0].points == 25
+    assert result.results[0].grid == 1
+    assert result.results[0].status == "Finished"
+
+
+def test_race_service_resolves_previous_round_results() -> None:
+    provider = JolpicaRaceDataProvider(
+        fetch_json=lambda path: SCHEDULE_PAYLOAD if "results" not in path else RESULTS_PAYLOAD,
+        fallback_provider=StaticRaceDataProvider(),
+    )
+    service = RaceService(provider=provider)
+
+    result = service.get_race_results(2026, now=datetime(2026, 7, 2, 12, 0, tzinfo=UTC))
+
+    assert result is not None
+    assert result.round_number == 8
+    assert result.grand_prix_name == "Austrian Grand Prix"
+
+
+def test_race_service_returns_none_when_no_completed_race() -> None:
+    provider = JolpicaRaceDataProvider(
+        fetch_json=lambda path: SCHEDULE_PAYLOAD,
+        fallback_provider=StaticRaceDataProvider(),
+    )
+    service = RaceService(provider=provider)
+
+    result = service.get_race_results(2026, now=datetime(2026, 1, 1, tzinfo=UTC))
+
+    assert result is None

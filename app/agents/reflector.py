@@ -24,6 +24,7 @@ class ReActReflector:
             "list_schedule",
             "get_next_race",
             "get_previous_race",
+            "get_race_results",
             "get_driver_standings",
             "get_constructor_standings",
         },

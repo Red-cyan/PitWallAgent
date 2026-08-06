@@ -21,6 +21,7 @@ class LLMQueryPlanner:
             "list_schedule",
             "get_next_race",
             "get_previous_race",
+            "get_race_results",
             "get_driver_standings",
             "get_constructor_standings",
         },
@@ -179,7 +180,7 @@ class LLMQueryPlanner:
                     "Return only JSON with keys: intent, action, params. "
                     "Supported intents and actions: "
                     "news:list_recent|search|get_article|get_insights|get_rules_analysis; "
-                    "race:list_schedule|get_next_race|get_previous_race|get_driver_standings|get_constructor_standings; "
+                    "race:list_schedule|get_next_race|get_previous_race|get_race_results|get_driver_standings|get_constructor_standings; "
                     "regulation:ask; "
                     "strategy:analyze; "
                     "general:answer. "

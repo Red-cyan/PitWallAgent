@@ -213,7 +213,41 @@ class AgentResponseFormatter:
         local_time = parsed.astimezone(self.DISPLAY_TIMEZONE)
         return f"（{local_time.strftime('%m-%d %H:%M')}）"
 
+    def _build_race_results_answer(self, *, message: str, race_result: dict[str, Any]) -> str:
+        grand_prix_name = race_result.get("grand_prix_name") or "最近一场比赛"
+        results = race_result.get("results", [])
+        if not results:
+            return "暂无可用的比赛结果。"
+
+        subject = self._find_result_driver(message, results)
+        if subject is not None:
+            return (
+                f"{subject['driver_name']}（{subject['team_name']}）在 {grand_prix_name} "
+                f"获得第 {subject['position']} 名。"
+            )
+
+        winner = results[0]
+        lines = [f"{winner['driver_name']}（{winner['team_name']}）赢得 {grand_prix_name}。"]
+        for entry in results[1:3]:
+            lines.append(f"第 {entry['position']} 名：{entry['driver_name']}（{entry['team_name']}）")
+        return " ".join(lines)
+
+    def _find_result_driver(self, message: str, results: list[dict[str, Any]]) -> dict[str, Any] | None:
+        normalized = message.lower()
+        for entry in results:
+            driver_name = entry.get("driver_name", "")
+            if driver_name.lower() in normalized:
+                return entry
+            for alias, canonical in self.DRIVER_ALIASES.items():
+                if alias in normalized and canonical.lower() in driver_name.lower():
+                    return entry
+        return None
+
     def _build_race_answer(self, *, message: str, result: dict[str, Any]) -> str:
+        race_result = result.get("race_result")
+        if isinstance(race_result, dict) and race_result.get("results"):
+            return self._build_race_results_answer(message=message, race_result=race_result)
+
         race = result.get("race")
         if race and race.get("grand_prix_name"):
             action = result.get("action")

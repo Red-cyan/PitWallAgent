@@ -111,6 +111,24 @@ def test_tool_dispatcher_routes_bare_team_names_to_constructor_standings() -> No
         assert plan["action"] == "get_constructor_standings"
 
 
+def test_tool_dispatcher_routes_result_queries_to_race_results() -> None:
+    dispatcher = build_dispatcher()
+
+    for message in ("谁赢了上一站", "英国站冠军是谁", "维斯塔潘上一站第几名", "昨天比赛结果怎么样"):
+        plan = dispatcher.build_plan(intent="race", message=message)
+
+        assert plan["tool_name"] == "race_tool"
+        assert plan["action"] == "get_race_results"
+
+
+def test_tool_dispatcher_keeps_schedule_question_out_of_results() -> None:
+    dispatcher = build_dispatcher()
+
+    plan = dispatcher.build_plan(intent="race", message="上一站比赛是什么时候？")
+
+    assert plan["action"] == "get_previous_race"
+
+
 def test_tool_dispatcher_builds_race_plan_for_next_race_time_question() -> None:
     dispatcher = build_dispatcher()
 

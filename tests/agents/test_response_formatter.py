@@ -198,3 +198,52 @@ def test_response_formatter_formats_news_insights() -> None:
     )
 
     assert answer == "这篇新闻关注迈凯伦升级。 关键点：升级集中在底板；车队预计排位受益。"
+
+
+def test_response_formatter_formats_race_results_with_winner_and_podium() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="谁赢了",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "race_result": {
+                "grand_prix_name": "Austrian Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 25},
+                    {"position": 2, "driver_name": "Charles Leclerc", "team_name": "Ferrari", "points": 18},
+                    {"position": 3, "driver_name": "Max Verstappen", "team_name": "Red Bull", "points": 15},
+                ],
+            }
+        },
+        error=None,
+    )
+
+    assert "Andrea Kimi Antonelli" in answer
+    assert "赢得 Austrian Grand Prix" in answer
+    assert "Charles Leclerc" in answer
+
+
+def test_response_formatter_highlights_requested_driver_in_results() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="勒克莱尔上一站第几名",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "race_result": {
+                "grand_prix_name": "Austrian Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 25},
+                    {"position": 2, "driver_name": "Charles Leclerc", "team_name": "Ferrari", "points": 18},
+                ],
+            }
+        },
+        error=None,
+    )
+
+    assert answer == "Charles Leclerc（Ferrari）在 Austrian Grand Prix 获得第 2 名。"
