@@ -9,6 +9,7 @@ settings.session_backend = "memory"
 settings.redis_url = None
 settings.regulation_prefer_database = False
 settings.regulation_vector_retrieval_enabled = False
+settings.regulation_rerank_enabled = False
 settings.llm_api_key = None
 settings.llm_planner_enabled = False
 
@@ -18,6 +19,7 @@ def pytest_runtest_setup(item):
     settings.redis_url = None
     settings.regulation_prefer_database = False
     settings.regulation_vector_retrieval_enabled = False
+    settings.regulation_rerank_enabled = False
     settings.llm_api_key = None
     settings.llm_planner_enabled = False
 

@@ -62,7 +62,7 @@ def test_red_flag_question_in_chinese_without_rewrite_still_prefers_sporting_sec
 def test_chinese_pit_lane_speeding_question_expands_to_regulation_keywords() -> None:
     repository = RuleRepository()
 
-    normalized = repository._normalize_question("维修区超速是什么")
+    normalized = repository._normalize_question("维修区超速是什么？")
     keywords = repository._expand_keywords(normalized)
     preferred_sections = repository._match_preferred_sections(normalized)
 
@@ -76,7 +76,7 @@ def test_chinese_pit_lane_speeding_question_expands_to_regulation_keywords() -> 
 def test_chinese_dangerous_driving_question_expands_to_regulation_keywords() -> None:
     repository = RuleRepository()
 
-    normalized = repository._normalize_question("危险驾驶是什么")
+    normalized = repository._normalize_question("危险驾驶是什么？")
     keywords = repository._expand_keywords(normalized)
     preferred_sections = repository._match_preferred_sections(normalized)
 
@@ -93,7 +93,7 @@ def test_compact_section_name_prefers_requested_section() -> None:
 
     repository = RuleRepository(query_rewriter=EmptyQueryRewriter())
 
-    debug = repository.debug_retrieval("SectionA讲了什么内容", top_k=3)
+    debug = repository.debug_retrieval("SectionA讲了什么内容？", top_k=3)
 
     assert debug.normalized_question.startswith("Section A")
     assert debug.preferred_sections == ["Section A"]
@@ -138,7 +138,7 @@ def test_debug_retrieval_exposes_candidate_stages() -> None:
 
     repository = RuleRepository(query_rewriter=EmptyQueryRewriter())
 
-    debug = repository.debug_retrieval("维修区超速是什么", top_k=2)
+    debug = repository.debug_retrieval("维修区超速是什么？", top_k=2)
 
     assert debug.retrieval_queries
     assert debug.keyword_candidates
@@ -196,3 +196,66 @@ def test_keyword_search_preserves_corpus_order_for_equal_scores() -> None:
     )
 
     assert [chunk.chunk_id for chunk in results] == ["zeta", "alpha"]
+
+def test_apply_model_rerank_reorders_and_tags_chunks(monkeypatch) -> None:
+    repository = RuleRepository(prefer_database=False)
+    chunks = [
+        RetrievedChunk(
+            chunk_id=f"c{i}",
+            content=f"content {i}",
+            document_title="FIA Regulations Section B",
+            section="Section B",
+            score=float(i),
+            score_components={"rerank_final": float(i)},
+        )
+        for i in range(4)
+    ]
+
+    class StubReranker:
+        def score(self, query: str, texts: list[str]) -> list[float]:
+            return [1.0, 0.5, 0.9, 0.1]
+
+    import sys
+
+    from app.rag.rerank import factory as rerank_factory
+
+    monkeypatch.setattr(rerank_factory, "build_reranker", lambda: StubReranker())
+    monkeypatch.setitem(sys.modules, "app.rag.rerank.factory", rerank_factory)
+
+    result = repository._apply_model_rerank("safety car?", chunks, top_k=2)
+
+    assert [chunk.chunk_id for chunk in result] == ["c0", "c2"]
+    assert result[0].score_components["rerank_model"] == 1.0
+    assert result[0].score_components["rerank_heuristic"] == 0.0
+    assert result[0].score_components["rerank_final"] == 0.0
+
+
+def test_apply_model_rerank_passthrough_without_model(monkeypatch) -> None:
+    import sys
+
+    from app.rag.rerank import factory as rerank_factory
+
+    monkeypatch.setattr(rerank_factory, "build_reranker", lambda: None)
+    monkeypatch.setitem(sys.modules, "app.rag.rerank.factory", rerank_factory)
+
+    repository = RuleRepository(prefer_database=False)
+    chunks = sorted(
+        (
+            RetrievedChunk(
+                chunk_id=f"c{i}",
+                content=f"content {i}",
+                document_title="FIA Regulations Section B",
+                section="Section B",
+                score=float(i),
+            )
+            for i in range(4)
+        ),
+        key=lambda chunk: chunk.score,
+        reverse=True,
+    )
+
+    result = repository._apply_model_rerank("safety car?", chunks, top_k=2)
+
+    assert [chunk.chunk_id for chunk in result] == ["c3", "c2"]
+    assert all("rerank_model" not in chunk.score_components for chunk in result)
+

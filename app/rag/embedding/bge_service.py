@@ -62,3 +62,14 @@ class BgeEmbeddingService(EmbeddingService):
             show_progress_bar=False,
         )
         return cast(Any, embeddings).tolist()
+
+    def embed_query(self, query: str) -> list[float]:
+        """生成检索查询向量，按 BGE 官方建议附加查询指令前缀。
+
+        BGE-M3 在文档与查询上使用一致的稠密编码，查询侧附加指令可提升
+        retrieval 效果；文档向量在入库时已固定，不再重复附加。
+        """
+        instruction = settings.regulation_embedding_query_instruction
+        if not instruction or query.startswith(instruction):
+            return self.embed_texts([query])[0]
+        return self.embed_texts([f"{instruction}{query}"])[0]

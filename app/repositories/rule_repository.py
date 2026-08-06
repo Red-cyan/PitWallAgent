@@ -292,7 +292,7 @@ class RuleRepository:
         hybrid_candidates = chunks["hybrid"]
         hybrid_results = self._rerank_chunks(
             chunks=hybrid_candidates,
-            top_k=top_k,
+            top_k=max(top_k, settings.regulation_rerank_max_candidates),
             phrases=phrases,
             keywords=keywords,
             preferred_sections=preferred_sections,
@@ -306,7 +306,12 @@ class RuleRepository:
             preferred_sections=preferred_sections,
             exact_clause_ids=exact_clause_ids,
         )
-        scored_chunks = self._apply_keyword_guardrail(hybrid_results, keyword_results)
+        guardrail_results = self._apply_keyword_guardrail(hybrid_results, keyword_results)
+        final_results = self._apply_model_rerank(
+            question=scoring_question,
+            chunks=guardrail_results,
+            top_k=top_k,
+        )
         return RetrievalDebugResponse(
             question=question,
             normalized_question=normalized_question,
@@ -318,7 +323,7 @@ class RuleRepository:
             vector_candidates=vector_candidates,
             keyword_candidates=keyword_candidates,
             hybrid_candidates=hybrid_candidates,
-            retrieved_chunks=scored_chunks,
+            retrieved_chunks=final_results,
         )
 
     def _apply_keyword_guardrail(
@@ -339,6 +344,51 @@ class RuleRepository:
             )
             for chunk in keyword_results
         ]
+
+    def _apply_model_rerank(
+        self,
+        question: str,
+        chunks: list[RetrievedChunk],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
+        """使用交叉编码器重排候选，作为最终排序。
+
+        模型不可用（未开启 / 加载失败）时原样返回；重排只改变顺序并补充
+        rerank_model 分数，保留既有启发式 score_components 供证据强度判定。
+        """
+        if not chunks or top_k < 1:
+            return chunks
+
+        candidates = chunks[: settings.regulation_rerank_max_candidates]
+        try:
+            from app.rag.rerank.factory import build_reranker
+
+            reranker = build_reranker()
+        except Exception:
+            reranker = None
+        if reranker is None:
+            return chunks[:top_k]
+
+        texts = [chunk.content for chunk in candidates]
+        model_scores = reranker.score(question, texts)
+
+        scored: list[RetrievedChunk] = []
+        for chunk, model_score in zip(candidates, model_scores, strict=True):
+            scored.append(
+                chunk.model_copy(
+                    update={
+                        "score": float(model_score),
+                        "score_components": {
+                            **chunk.score_components,
+                            "rerank_heuristic": float(chunk.score or 0.0),
+                            "rerank_model": float(model_score),
+                        },
+                    }
+                )
+            )
+
+        scored.sort(key=lambda chunk: chunk.score or 0.0, reverse=True)
+        return scored[:top_k]
 
     def _rerank_chunks(
         self,
@@ -634,7 +684,7 @@ class RuleRepository:
             from app.rag.embedding.factory import build_embedding_service
 
             embedding_service = build_embedding_service()
-            question_embedding = embedding_service.embed_texts([question])[0]
+            question_embedding = embedding_service.embed_query(question)
         except Exception:
             return []
 

@@ -7,7 +7,7 @@
 - LangGraph 运行图：意图识别、计划生成、工具执行、回答格式化。
 - 五类工具：赛况、新闻、法规、策略和通用 F1 问答。
 - Clause-aware RAG：PDF 结构化解析、跨页条款、表格、确定性 chunk ID、active corpus 原子切换。
-- Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、rerank、精确条款提升和 keyword guardrail。
+- Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、交叉编码器重排（bge-reranker-v2-m3）、精确条款提升和 keyword guardrail。
 - 真实 SSE：regulation/general 的 LLM token 直接输出；确定性回答显式标记为 `buffered`。
 - 可恢复会话：Redis 历史、上下文压缩、长期偏好、停止生成和显式重试。
 - 全栈工作台：Chat、会话管理、证据抽屉，以及独立的 RAG Lab 检索分析页。
@@ -20,13 +20,14 @@
 | Agent intent/tool/action/evidence golden cases | 100% |
 | Keyword Section Recall@5 | 100% |
 | Keyword Clause Recall@5 | 100% |
-| Keyword MRR | 79.36% |
+| Keyword MRR | 79.65% |
+| Vector-only Clause Recall@5 | 66.67%（弱于 keyword，hybrid 用 RRF + 重排补齐） |
 | Adaptive hybrid Clause Recall@5 | 100% |
-| Adaptive hybrid MRR | 78%+ |
+| Adaptive hybrid MRR | ~78% |
 | 无答案强证据拒绝率 | 100% |
 | Active corpus | 1,984 chunks / 1,984 embeddings |
 
-评测集包含 60 条精确条款、跨页、表格、同义改写、跨 Section 干扰和无答案问题。Raw vector 是消融项，hybrid 在强 keyword 信号下使用 lexical guardrail，避免相关条款被弱向量结果挤出 Top 5。
+评测集包含 60 条精确条款、跨页、表格、同义改写、跨 Section 干扰和无答案问题。Raw vector 是消融项（R@5 66.67%），弱向量信号由 keyword guardrail 兜底；hybrid 用 bge-reranker-v2-m3 交叉编码器对融合候选做最终排序（`rerank_model` 分数进入 `score_components`）。当前评测集对 keyword 已偏易，重排的收益主要体现在排序质量而非 Recall；Vector-only 评测在 CI 手动 workflow 的 `hybrid-eval` job 中与 keyword/hybrid 一起进门禁。评测在无 LLM key 下运行以保证确定性。
 
 ## 架构
 

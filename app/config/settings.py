@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     regulation_embedding_device: str = "cpu"
     regulation_prefer_database: bool = True
     regulation_vector_retrieval_enabled: bool = True
+    regulation_rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    regulation_rerank_enabled: bool = True
+    regulation_rerank_max_candidates: int = 15
+    regulation_rerank_batch_size: int = 8
+    regulation_embedding_query_instruction: str = ""
     formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
     news_request_timeout_seconds: float = 10.0
     upstream_get_max_retries: int = 2
