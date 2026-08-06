@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     llm_planner_enabled: bool = True
     llm_planner_max_tokens: int = 160
     llm_planner_timeout_seconds: float = 4.0
+    agent_react_max_steps: int = 3
+    agent_judge_enabled: bool = True
+    agent_judge_on_success_general: bool = True
+    agent_judge_max_tokens: int = 160
+    agent_judge_timeout_seconds: float = 4.0
     query_rewrite_max_tokens: int = 180
     query_rewrite_timeout_seconds: float = 4.0
     hf_token: str | None = Field(

@@ -91,6 +91,7 @@ class AgentService:
                     on_token=on_token,
                 )
             response.trace = self._with_latency_trace(response.trace, started_at)
+            steps = response.trace.get("steps")
             log_structured(
                 self.logger,
                 "agent_query_completed",
@@ -98,6 +99,8 @@ class AgentService:
                 tool_name=response.tool_name,
                 success=response.success,
                 runtime_mode="langgraph",
+                react_steps=len(steps) if isinstance(steps, list) else 0,
+                judge_outcome=response.trace.get("judge_outcome"),
             )
             return response
 
