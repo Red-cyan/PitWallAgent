@@ -9,7 +9,7 @@
 - Clause-aware RAG：PDF 结构化解析、跨页条款、表格、确定性 chunk ID、active corpus 原子切换。
 - Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、交叉编码器重排（bge-reranker-v2-m3）、精确条款提升和 keyword guardrail。
 - 真实 SSE：regulation/general 的 LLM token 直接输出；确定性回答显式标记为 `buffered`。
-- 可恢复会话：Redis 历史、上下文压缩、长期偏好、停止生成和显式重试。
+- 可恢复会话：Redis 历史、上下文压缩、长期偏好、语义记忆召回（BGE-M3 向量 + 词法回退）、停止生成和显式重试。
 - 全栈工作台：Chat、会话管理、证据抽屉，以及独立的 RAG Lab 检索分析页。
 - 工程保障：Alembic、Docker Compose、Prometheus、Grafana、结构化日志、CI、Playwright 和离线评测。
 

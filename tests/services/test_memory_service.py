@@ -32,6 +32,8 @@ def test_memory_service_builds_structured_context_with_summary_and_recent_turns(
     assert context.summary_used is True
     assert context.recent_turn_count == 2
     assert context.compacted_turn_count == 6
+    assert context.memory_retrieval_mode == "disabled"
+    assert context.trace()["memory_retrieval_mode"] == "disabled"
 
 
 def test_memory_service_records_and_retrieves_stable_preferences() -> None:

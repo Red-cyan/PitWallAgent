@@ -35,6 +35,7 @@ class MemoryContext:
     compression_fallback: bool = False
     compression_input_tokens: int = 0
     compression_output_tokens: int = 0
+    memory_retrieval_mode: str = "disabled"
 
     def trace(self) -> dict[str, object]:
         return {
@@ -47,6 +48,7 @@ class MemoryContext:
             "memory_compression_fallback": self.compression_fallback,
             "memory_compression_input_tokens": self.compression_input_tokens,
             "memory_compression_output_tokens": self.compression_output_tokens,
+            "memory_retrieval_mode": self.memory_retrieval_mode,
         }
 
 
@@ -55,6 +57,18 @@ class LongTermMemoryStore(Protocol):
         ...
 
     def list(self, owner_id: str = "default") -> list[LongTermMemory]:
+        ...
+
+
+class MemoryRetriever(Protocol):
+    """语义记忆召回接口；不可用时返回 None 以触发词法回退。"""
+
+    def retrieve(
+        self,
+        query: str,
+        memories: list[LongTermMemory],
+        top_k: int,
+    ) -> list[LongTermMemory] | None:
         ...
 
 
@@ -168,9 +182,15 @@ class MemoryService:
         store: LongTermMemoryStore | None = None,
         *,
         owner_id: str = "default",
+        retriever: MemoryRetriever | None = None,
     ) -> None:
         self.store = store or LongTermMemoryStoreFactory.create()
         self.owner_id = owner_id
+        if retriever is None:
+            from app.services.memory_retriever import SemanticMemoryRetriever
+
+            retriever = SemanticMemoryRetriever()
+        self.retriever = retriever
 
     def build_context(
         self,
@@ -179,7 +199,7 @@ class MemoryService:
         current_message: str,
     ) -> MemoryContext:
         recent_turns = session.history[-max(1, settings.memory_recent_turns) :]
-        long_term_memories = self.retrieve_memories(current_message)
+        long_term_memories, retrieval_mode = self._retrieve_memories_with_mode(current_message)
 
         sections: list[str] = []
         if session.summary:
@@ -209,6 +229,7 @@ class MemoryService:
             compression_fallback=session.compression_fallback,
             compression_input_tokens=session.compression_input_tokens,
             compression_output_tokens=session.compression_output_tokens,
+            memory_retrieval_mode=retrieval_mode,
         )
 
     def record_interaction(
@@ -233,13 +254,29 @@ class MemoryService:
         return memory
 
     def retrieve_memories(self, query: str) -> list[LongTermMemory]:
+        memories, _ = self._retrieve_memories_with_mode(query)
+        return memories
+
+    def _retrieve_memories_with_mode(self, query: str) -> tuple[list[LongTermMemory], str]:
         if not settings.memory_long_term_enabled:
-            return []
+            return [], "disabled"
 
         memories = self.store.list(self.owner_id)
         if not memories:
-            return []
+            return [], "disabled"
 
+        top_k = max(0, settings.memory_long_term_top_k)
+        semantic = self.retriever.retrieve(query, memories, top_k)
+        if semantic is not None:
+            return semantic, "semantic"
+        return self._retrieve_by_keywords(query, memories, top_k), "lexical"
+
+    def _retrieve_by_keywords(
+        self,
+        query: str,
+        memories: list[LongTermMemory],
+        top_k: int,
+    ) -> list[LongTermMemory]:
         query_terms = self._terms(query)
         scored: list[tuple[float, LongTermMemory]] = []
         for memory in memories:
@@ -252,7 +289,7 @@ class MemoryService:
             key=lambda item: (item[0], item[1].updated_at),
             reverse=True,
         )
-        return [memory for _, memory in scored[: max(0, settings.memory_long_term_top_k)]]
+        return [memory for _, memory in scored[:top_k]]
 
     def estimate_tokens(self, text: str | None) -> int:
         if not text:
