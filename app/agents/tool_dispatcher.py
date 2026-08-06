@@ -88,6 +88,32 @@ class ToolDispatcher:
                 "\u6c49\u5bc6\u5c14\u987f",
                 "\u76ae\u4e9a\u65af\u7279\u91cc",
             )
+            team_subject_tokens = (
+                "red bull",
+                "ferrari",
+                "mclaren",
+                "mercedes",
+                "aston martin",
+                "williams",
+                "alpine",
+                "haas",
+                "sauber",
+                "audi",
+                "cadillac",
+                "\u7ea2\u725b",
+                "\u6cd5\u62c9\u5229",
+                "\u8fc8\u51ef\u4f26",
+                "\u6885\u8d5b\u5fb7\u65af",
+                "\u5954\u9a70",
+                "\u6885\u5954",
+                "\u963f\u65af\u987f\u9a6c\u4e01",
+                "\u5a01\u5ec9\u59c6\u65af",
+                "\u963f\u5c14\u5e15",
+                "\u54c8\u65af",
+                "\u7d22\u4f2f",
+                "\u5965\u8fea",
+                "\u51ef\u8fea\u62c9\u514b",
+            )
 
             if (
                 "constructor" in lowered
@@ -95,6 +121,7 @@ class ToolDispatcher:
                 or "constructors" in lowered
                 or "team" in lowered
                 or "\u8f66\u961f" in message
+                or any(token in lowered or token in message for token in team_subject_tokens)
             ):
                 return {
                     "tool_name": self.race_tool.name,

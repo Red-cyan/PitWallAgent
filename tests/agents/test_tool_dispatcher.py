@@ -101,6 +101,16 @@ def test_tool_dispatcher_builds_race_plan_for_previous_race() -> None:
     assert plan["action"] == "get_previous_race"
 
 
+def test_tool_dispatcher_routes_bare_team_names_to_constructor_standings() -> None:
+    dispatcher = build_dispatcher()
+
+    for team in ("法拉利", "红牛", "迈凯伦", "Ferrari", "Red Bull"):
+        plan = dispatcher.build_plan(intent="race", message=team)
+
+        assert plan["tool_name"] == "race_tool"
+        assert plan["action"] == "get_constructor_standings"
+
+
 def test_tool_dispatcher_builds_race_plan_for_next_race_time_question() -> None:
     dispatcher = build_dispatcher()
 
