@@ -53,7 +53,7 @@ def test_red_flag_question_in_chinese_without_rewrite_still_prefers_sporting_sec
 
     repository = RuleRepository(query_rewriter=EmptyQueryRewriter())
 
-    chunks = repository.search_relevant_chunks("\u7ea2\u65d7\u662f\u4ec0\u4e48\uff1f")
+    chunks = repository.search_relevant_chunks("红旗是什么？")
 
     assert chunks
     assert "Section B" in chunks[0].document_title

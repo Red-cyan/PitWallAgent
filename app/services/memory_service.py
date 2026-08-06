@@ -396,5 +396,5 @@ class MemoryService:
             for token in normalized.split()
             if len(token.strip(".,?!:;()[]")) >= 3
         }
-        cjk_terms = {char for char in text if "\u4e00" <= char <= "\u9fff"}
+        cjk_terms = {char for char in text if "一" <= char <= "鿿"}
         return ascii_terms | cjk_terms

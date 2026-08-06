@@ -81,12 +81,12 @@ class ToolDispatcher:
                 "russell",
                 "hamilton",
                 "piastri",
-                "\u7ef4\u65af\u5854\u6f58",
-                "\u8bfa\u91cc\u65af",
-                "\u52d2\u514b\u83b1\u5c14",
-                "\u62c9\u585e\u5c14",
-                "\u6c49\u5bc6\u5c14\u987f",
-                "\u76ae\u4e9a\u65af\u7279\u91cc",
+                "维斯塔潘",
+                "诺里斯",
+                "勒克莱尔",
+                "拉塞尔",
+                "汉密尔顿",
+                "皮亚斯特里",
             )
             team_subject_tokens = (
                 "red bull",
@@ -100,19 +100,19 @@ class ToolDispatcher:
                 "sauber",
                 "audi",
                 "cadillac",
-                "\u7ea2\u725b",
-                "\u6cd5\u62c9\u5229",
-                "\u8fc8\u51ef\u4f26",
-                "\u6885\u8d5b\u5fb7\u65af",
-                "\u5954\u9a70",
-                "\u6885\u5954",
-                "\u963f\u65af\u987f\u9a6c\u4e01",
-                "\u5a01\u5ec9\u59c6\u65af",
-                "\u963f\u5c14\u5e15",
-                "\u54c8\u65af",
-                "\u7d22\u4f2f",
-                "\u5965\u8fea",
-                "\u51ef\u8fea\u62c9\u514b",
+                "红牛",
+                "法拉利",
+                "迈凯伦",
+                "梅赛德斯",
+                "奔驰",
+                "梅奔",
+                "阿斯顿马丁",
+                "威廉姆斯",
+                "阿尔帕",
+                "哈斯",
+                "索伯",
+                "奥迪",
+                "凯迪拉克",
             )
 
             result_explicit_tokens = (
@@ -123,25 +123,25 @@ class ToolDispatcher:
                 "podium",
                 "result",
                 "results",
-                "\u8c01\u8d62\u4e86",
-                "\u51a0\u519b",
-                "\u83b7\u80dc",
-                "\u80dc\u5229",
-                "\u9886\u5956\u53f0",
-                "\u7ed3\u679c",
-                "\u62ff\u4e0b",
-                "\u5236\u80dc",
+                "谁赢了",
+                "冠军",
+                "获胜",
+                "胜利",
+                "领奖台",
+                "结果",
+                "拿下",
+                "制胜",
             )
             result_previous_signal = (
                 "previous" in lowered
                 or "last race" in lowered
-                or "\u4e0a\u4e00\u7ad9" in message
-                or "\u4e0a\u4e00\u573a" in message
+                or "上一站" in message
+                or "上一场" in message
             )
             result_position_signal = (
-                "\u7b2c\u51e0" in message
-                or "\u540d\u6b21" in message
-                or "\u6210\u7ee9" in message
+                "第几" in message
+                or "名次" in message
+                or "成绩" in message
                 or "how did" in lowered
                 or "finish" in lowered
                 or "finished" in lowered
@@ -161,7 +161,7 @@ class ToolDispatcher:
                 or "team standings" in lowered
                 or "constructors" in lowered
                 or "team" in lowered
-                or "\u8f66\u961f" in message
+                or "车队" in message
                 or any(token in lowered or token in message for token in team_subject_tokens)
             ):
                 return {
@@ -174,8 +174,8 @@ class ToolDispatcher:
                 "driver" in lowered
                 or "drivers" in lowered
                 or "championship" in lowered
-                or "\u8f66\u624b" in message
-                or "\u79ef\u5206" in message
+                or "车手" in message
+                or "积分" in message
                 or any(token in lowered or token in message for token in driver_subject_tokens)
             ):
                 return {
@@ -184,21 +184,21 @@ class ToolDispatcher:
                     "params": {},
                 }
 
-            if "previous" in lowered or "last race" in lowered or "\u4e0a\u4e00\u7ad9" in message or "\u4e0a\u4e00\u573a" in message:
+            if "previous" in lowered or "last race" in lowered or "上一站" in message or "上一场" in message:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_previous_race",
                     "params": {},
                 }
 
-            if "next" in lowered or "\u4e0b\u4e00\u7ad9" in message or "\u4e0b\u4e00\u573a" in message:
+            if "next" in lowered or "下一站" in message or "下一场" in message:
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_next_race",
                     "params": {},
                 }
 
-            if any(token in lowered or token in message for token in ("time", "date", "when", "\u65f6\u95f4", "\u65e5\u671f", "\u51e0\u70b9")):
+            if any(token in lowered or token in message for token in ("time", "date", "when", "时间", "日期", "几点")):
                 return {
                     "tool_name": self.race_tool.name,
                     "action": "get_next_race",

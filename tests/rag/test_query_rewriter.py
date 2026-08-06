@@ -52,7 +52,7 @@ def test_query_rewriter_skips_non_cjk_questions() -> None:
 def test_query_rewriter_returns_structural_fallback_when_llm_fails() -> None:
     rewriter = QueryRewriter(llm_client=FailingLLMClient())
 
-    queries = rewriter.rewrite("\u963b\u6321\u5176\u4ed6\u8f66\u624b\u4f1a\u600e\u6837")
+    queries = rewriter.rewrite("阻挡其他车手会怎样")
 
     assert queries
     assert any("Sporting Regulations" in query for query in queries)
