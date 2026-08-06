@@ -54,6 +54,7 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
             status_code=response.status_code,
             duration_ms=duration_ms,
             request_id=request_id,
+            origin=request.headers.get("origin"),
         )
         return response
 
