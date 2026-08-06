@@ -141,7 +141,7 @@ export async function debugRuleRetrieval(
   return response.json();
 }
 
-function parseSseEvent(rawEvent: string): StreamEvent | null {
+export function parseSseEvent(rawEvent: string): StreamEvent | null {
   const lines = rawEvent.split("\n");
   const eventLine = lines.find((line) => line.startsWith("event:"));
   const dataLines = lines.filter((line) => line.startsWith("data:"));

@@ -47,11 +47,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = [
-    "app/agents",
-    "app/repositories",
-    "app/services",
-]
+source = ["app"]
 
 [tool.coverage.report]
 fail_under = 80

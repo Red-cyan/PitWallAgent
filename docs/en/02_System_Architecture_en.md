@@ -2,6 +2,8 @@
 
 # PitWall Agent
 
+> This document keeps the full architecture design and evolution background and may contain ideas that are not yet implemented or have been adjusted. **The following capabilities are NOT implemented yet and are roadmap/evolution targets only: Nginx reverse proxy, LangSmith integration, WebSocket channel (currently SSE), TailwindCSS and shadcn/ui (currently hand-written CSS + CSS variables), scheduler_service, object storage, Redis-based rate limiting, user authentication.** For how the code actually runs today, see [Codebase Walkthrough](../cn/06_Codebase_Walkthrough_zh.md) and trust the code, Alembic migrations, tests, and evaluation reports.
+
 ---
 
 # Document Information
@@ -349,7 +351,7 @@ The Agent Runtime acts as the reasoning engine of the system but does not own bu
 
                                       │
 
-                              HTTP / WebSocket
+                              HTTP / SSE (true streaming)
 
                                       │
 
@@ -835,8 +837,7 @@ No business logic should exist inside this layer.
 - Next.js
 - React
 - TypeScript
-- TailwindCSS
-- shadcn/ui
+- Hand-written CSS + CSS variables (TailwindCSS / shadcn/ui are roadmap items, not used)
 
 ---
 
@@ -1042,7 +1043,7 @@ backend/
 
         session_service.py
 
-        scheduler_service.py
+        scheduler_service.py   # roadmap, not implemented
 
 ```
 
@@ -2691,8 +2692,7 @@ Configuration is strictly managed through environment variables:
 
 ```mermaid
 flowchart TB
-    docker-compose["docker-compose.yml"] --> nginx
-    docker-compose --> frontend["Next.js"]
+    docker-compose["docker-compose.yml"] --> frontend["Next.js"]
     docker-compose --> backend["FastAPI"]
     docker-compose --> postgres
     docker-compose --> redis
@@ -3289,11 +3289,11 @@ This execution chain allows developers to **identify performance bottlenecks** a
 
 ---
 
-## 10.12 LangSmith Integration
+## 10.12 LangSmith Integration (roadmap, not connected)
 
-**LangSmith** is used to observe Agent Runtime behavior.
+**LangSmith** for observing Agent Runtime behavior is a planned option that is not currently integrated; current observability is covered by structured logging and Prometheus/Grafana metrics.
 
-**Typical capabilities:**
+**Planned typical capabilities:**
 - Workflow visualisation
 - Tool execution traces
 - Prompt inspection

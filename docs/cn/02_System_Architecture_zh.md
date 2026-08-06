@@ -2,7 +2,7 @@
 
 # PitWall Agent
 
-> 本文保留完整架构设计与项目演进背景，其中可能包含尚未落地或已经调整的设想。需要理解当前代码实际如何运行时，请先阅读 [源码导读与工程实践](06_Codebase_Walkthrough_zh.md)，并以代码、Alembic migration、测试和评测报告为准。
+> 本文保留完整架构设计与项目演进背景，其中可能包含尚未落地或已经调整的设想。**以下能力当前未实现，属于规划/演进目标，不以此为准：Nginx 反向代理、LangSmith 接入、WebSocket 通道（当前为 SSE）、TailwindCSS 与 shadcn/ui（当前为手写 CSS + CSS 变量）、scheduler_service 定时任务、对象存储、基于 Redis 的接口限流、用户认证。** 需要理解当前代码实际如何运行时，请先阅读 [源码导读与工程实践](06_Codebase_Walkthrough_zh.md)，并以代码、Alembic migration、测试和评测报告为准。
 
 ---
 
@@ -343,9 +343,9 @@ Agent 运行时充当系统的推理引擎，但不拥有业务逻辑或基础�
                                     用户
                                       │
                                       ▼
-                           Next.js Web 应用程序
+                            Next.js Web 应用程序
                                       │
-                              HTTP / WebSocket
+                              HTTP / SSE（真实流式）
                                       │
                                       ▼
                                  FastAPI API
@@ -781,8 +781,7 @@ Agent 运行时
 - Next.js
 - React
 - TypeScript
-- TailwindCSS
-- shadcn/ui
+- 手写 CSS + CSS 变量（TailwindCSS / shadcn/ui 为规划项，未使用）
 
 ---
 
@@ -967,7 +966,7 @@ backend/
         race_service.py
         knowledge_service.py
         session_service.py
-        scheduler_service.py
+        scheduler_service.py   # 规划中，尚未实现
 ```
 
 ---
@@ -2501,8 +2500,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    docker-compose["docker-compose.yml"] --> nginx
-    docker-compose --> frontend["Next.js"]
+    docker-compose["docker-compose.yml"] --> frontend["Next.js"]
     docker-compose --> backend["FastAPI"]
     docker-compose --> postgres
     docker-compose --> redis
@@ -3097,18 +3095,18 @@ LLM
 
 ---
 
-## 10.12 LangSmith 集成
+## 10.12 LangSmith 集成（规划中，未接入）
 
-**LangSmith** 用于观察 Agent 运行时行为。
+**LangSmith** 用于观察 Agent 运行时行为的方案尚在规划中，当前并未接入；现有可观测性由结构化日志与 Prometheus/Grafana 指标承担。
 
-**典型能力：**
+**规划中的典型能力：**
 - 工作流可视化
 - 工具执行追踪
 - 提示检查
 - 模型性能分析
 - 故障诊断
 
-LangSmith 主要用于**开发和测试**。  
+若后续接入，LangSmith 主要用于**开发和测试**。  
 对于生产部署，确保敏感数据得到妥善处理。
 
 ---

@@ -495,9 +495,9 @@ The project is built upon a modern AI-native technology stack.
 | Relational Database | PostgreSQL |
 | Cache | Redis |
 | Package Management | uv |
-| Reverse Proxy | Nginx |
+| Reverse Proxy | None (Nginx is a roadmap item) |
 | Containerization | Docker Compose |
-| Observability | LangSmith |
+| Observability | Prometheus + Grafana (local) |
 | CI/CD | GitHub Actions |
 
 Each technology has been selected through an Architecture Decision Record (ADR/RFC) process to ensure long-term maintainability and production readiness.

@@ -378,7 +378,7 @@ PitWall 智能助手采用分层架构。
 - PostgreSQL
 - Redis
 - PostgreSQL + pgvector
-- 对象存储
+- 对象存储（规划中，当前规则 PDF 存于 `data/regulations/raw`）
 - 外部 API
 
 该层与业务逻辑完全隔离。
@@ -418,9 +418,9 @@ PitWall 智能助手旨在展示现代软件工程实践。
 | 关系型数据库 | PostgreSQL |
 | 缓存 | Redis |
 | 包管理 | uv |
-| 反向代理 | Nginx |
+| 反向代理 | 无（Nginx 为规划项） |
 | 容器化 | Docker Compose |
-| 可观测性 | LangSmith |
+| 可观测性 | Prometheus + Grafana（本地） |
 | CI/CD | GitHub Actions |
 
 每项技术都经过架构决策记录（ADR/RFC）流程选型，确保长期可维护性与生产级可用性。
@@ -594,8 +594,8 @@ PitWall 智能助手旨在展示现代软件工程实践。
 ## 工程层面
 - 项目结构整洁清晰
 - 文档体系完善
-- 生产级部署方案就绪
-- 自动化测试稳定
+- 容器化一键部署（Compose 单机演示拓扑；生产级 HA/认证/TLS 为已知边界，不在此作品集范围内）
+- 自动化测试稳定（覆盖全 `app/`，80% 覆盖率门禁）
 - 代码库具备可维护性
 
 ---

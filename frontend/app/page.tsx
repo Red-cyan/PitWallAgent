@@ -7,16 +7,11 @@ import { EvidencePanel } from "@/components/evidence-panel";
 import { MessageBubble } from "@/components/message-bubble";
 import { SessionList } from "@/components/session-list";
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { extractCitations } from "@/lib/chat-utils";
 import { deleteSession, getChatHistory, listSessions, streamChatMessage } from "@/services/api";
-import { AgentTrace, ChatResponse, ChatSessionSummary, Citation, ConversationTurn } from "@/types/chat";
+import { AgentTrace, ChatResponse, ChatSessionSummary, ConversationTurn } from "@/types/chat";
 
 type StreamingAssistantState = { text: string; sessionId?: string };
-
-function extractCitations(response: ChatResponse | null): Citation[] {
-  if (!response) return [];
-  const result = response.response.result as { response?: { citations?: Citation[] } };
-  return result.response?.citations ?? [];
-}
 
 export default function HomePage() {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
