@@ -31,6 +31,7 @@ class LLMClient:
         temperature: float = 0.2,
         max_tokens: int | None = None,
         timeout: float | None = None,
+        response_format: Any | None = None,
     ) -> str:
         log_structured(
             self.logger,
@@ -41,13 +42,16 @@ class LLMClient:
         )
         started_at = time.perf_counter()
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=cast(list[ChatCompletionMessageParam], messages),
-                temperature=temperature,
-                max_tokens=max_tokens if max_tokens is not None else settings.llm_max_tokens,
-                timeout=timeout,
-            )
+            create_kwargs: dict[str, Any] = {
+                "model": self.model,
+                "messages": cast(list[ChatCompletionMessageParam], messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
+                "timeout": timeout,
+            }
+            if response_format is not None:
+                create_kwargs["response_format"] = response_format
+            response = self.client.chat.completions.create(**create_kwargs)
         except Exception as exc:
             LLM_CALLS.labels(self.model, "error").inc()
             LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)

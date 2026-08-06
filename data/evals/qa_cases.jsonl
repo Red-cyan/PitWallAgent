@@ -1,0 +1,21 @@
+{"name":"general-principles","question":"What general principles govern the Formula 1 regulations?","expected_answer_status":"answered","language":"en"}
+{"name":"unsafe-release","question":"What is an unsafe release from the pit lane?","expected_answer_status":"answered","language":"en"}
+{"name":"parc-ferme","question":"When do parc ferme restrictions apply?","expected_answer_status":"answered","language":"en"}
+{"name":"red-flag","question":"What happens when a race is suspended with a red flag?","expected_answer_status":"answered","language":"en"}
+{"name":"safety-car","question":"How does the safety car procedure work?","expected_answer_status":"answered","language":"en"}
+{"name":"pit-lane-speed","question":"What is the pit lane speed limit rule?","expected_answer_status":"answered","language":"en"}
+{"name":"stewards-investigation","question":"How do the stewards investigate an on-track incident?","expected_answer_status":"answered","language":"en"}
+{"name":"dangerous-driving","question":"What penalty applies to dangerous driving?","expected_answer_status":"answered","language":"en"}
+{"name":"plank-wear","question":"What technical rule limits plank wear?","expected_answer_status":"answered","language":"en"}
+{"name":"floor-geometry","question":"What requirements apply to floor geometry?","expected_answer_status":"answered","language":"en"}
+{"name":"fuel-flow-meter","question":"Where must the fuel flow meter be fitted?","expected_answer_status":"partial_evidence","language":"en"}
+{"name":"team-cost-cap","question":"What cost cap applies to F1 teams in Section D?","expected_answer_status":"answered","language":"en"}
+{"name":"pu-cost-cap","question":"What cost cap applies to power unit manufacturers in Section E?","expected_answer_status":"answered","language":"en"}
+{"name":"wind-tunnel-testing","question":"What operational limits apply to wind tunnel testing in Section F?","expected_answer_status":"answered","language":"en"}
+{"name":"red-flag-zh","question":"红旗出示后，比赛暂停程序是什么？","expected_answer_status":"answered","language":"zh"}
+{"name":"virtual-safety-car-zh","question":"虚拟安全车期间车手要遵守什么要求？","expected_answer_status":"answered","language":"zh"}
+{"name":"plank-wear-zh","question":"技术规则如何限制赛车底板磨损？","expected_answer_status":"answered","language":"zh"}
+{"name":"unsafe-release-paraphrase","question":"Can a car be sent from its pit box into another car's path?","expected_answer_status":"answered","language":"en"}
+{"name":"alien-rule-zh","question":"外星人赛车该怎么处理？","expected_answer_status":"insufficient_evidence","language":"zh"}
+{"name":"teleportation-rule","question":"extraterrestrial teleportation axiom","expected_answer_status":"insufficient_evidence","language":"en"}
+{"name":"ufo-rule-zh","question":"ufo 入侵维修区的规则是什么？","expected_answer_status":"insufficient_evidence","language":"zh"}

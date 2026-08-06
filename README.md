@@ -26,6 +26,10 @@
 | Adaptive hybrid Clause Recall@5 | 100% |
 | Adaptive hybrid MRR | ~78% |
 | 无答案强证据拒绝率 | 100% |
+| QA 回答状态准确率（offline 确定性） | 100% |
+| QA 引用一致性（offline 确定性） | 100% |
+| QA 回答忠实度（online LLM judge，均值） | ~4.8 / 5 |
+| QA 拒绝/回答决策正确率（online） | ~90% |
 | Active corpus | 1,984 chunks / 1,984 embeddings |
 
 评测集包含 60 条精确条款、跨页、表格、同义改写、跨 Section 干扰和无答案问题。Raw vector 是消融项（R@5 66.67%），弱向量信号由 keyword guardrail 兜底；hybrid 用 bge-reranker-v2-m3 交叉编码器对融合候选做最终排序（`rerank_model` 分数进入 `score_components`）。当前评测集对 keyword 已偏易，重排的收益主要体现在排序质量而非 Recall；Vector-only 评测在 CI 手动 workflow 的 `hybrid-eval` job 中与 keyword/hybrid 一起进门禁。评测在无 LLM key 下运行以保证确定性。
@@ -140,6 +144,22 @@ uv run python scripts/run_rag_eval.py --mode keyword \
   --min-clause-recall-at-5 0.95 \
   --min-mrr 0.75 \
   --min-rejection-rate 1.0
+uv run python scripts/run_qa_eval.py --mode offline \
+  --min-status-accuracy 0.95 \
+  --min-citation-consistency 1.0
+```
+
+端到端回答质量评测（需配置 LLM key，评估结果也包含 LLM-as-judge 的忠实度/有用性/决策正确率）：
+
+```bash
+uv run python scripts/run_qa_eval.py --mode online \
+  --min-status-accuracy 0.95 \
+  --min-citation-consistency 1.0 \
+  --min-groundedness-score 4.0 \
+  --min-helpfulness-score 3.5 \
+  --min-rejection-correct 0.9 \
+  --json-output docs/evals/qa-online.json \
+  --markdown-output docs/evals/qa-online.md
 ```
 
 ```bash

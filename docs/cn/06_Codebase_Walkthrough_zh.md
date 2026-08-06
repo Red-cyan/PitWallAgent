@@ -297,6 +297,7 @@ uv run ruff check .
 uv run pyright
 uv run python scripts/run_agent_eval.py
 uv run python scripts/run_rag_eval.py --mode keyword
+uv run python scripts/run_qa_eval.py --mode offline
 
 cd frontend
 npm run lint
@@ -305,6 +306,8 @@ npm run test:e2e
 ```
 
 Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型、active corpus 和 pgvector，放在 integration job，避免普通 CI 下载大模型。当前基线为 200 passed、2 skipped；Keyword Recall@5 100%、Section Recall@5 100%、MRR 约 0.80；Hybrid Recall@5 100%；拒绝率 100%。以 `docs/evals/` 最新报告为准。
+
+端到端回答质量（`scripts/run_qa_eval.py`，21 条评测集）：offline 模式禁用 LLM 与重排，校验确定性路径的回答状态准确率与引用一致性（普通 PR 门禁）；online 模式在手动 `qa-eval` job 用真实 LLM 生成回答，再由 LLM-as-judge（`app/services/llm/judge.py`）按忠实度 1-5、有用性 1-5、回答/拒绝决策正确率打分，`response_format=json_object` 强制 JSON 输出并做解析/空响应重试。基线：状态准确率 100%、引用一致 100%、忠实度均值约 4.8、决策正确率约 90%（波动主要来自 `fuel-flow-meter` 这类关键字证据强度弱的保守 partial 回答，以及个别 LLM 生成失败回落到仅引用元数据答案的 case，都是诚实拒答的边界案例）。
 
 ## 19. 常见问题与定位
 

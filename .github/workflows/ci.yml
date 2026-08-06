@@ -45,6 +45,12 @@ jobs:
           --min-clause-recall-at-5 0.95
           --min-mrr 0.75
           --min-rejection-rate 1.0
+      - name: QA answer quality gate (offline deterministic)
+        run: >-
+          uv run python scripts/run_qa_eval.py
+          --mode offline
+          --min-status-accuracy 0.95
+          --min-citation-consistency 1.0
 
   compose-config:
     runs-on: ubuntu-latest
@@ -148,6 +154,32 @@ jobs:
           --min-clause-recall-at-5 0.975
           --min-mrr 0.75
           --min-rejection-rate 1.0
+
+  qa-eval:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: uv sync --dev
+      - name: End-to-end answer quality gate with LLM judge
+        run: >-
+          uv run python scripts/run_qa_eval.py
+          --mode online
+          --min-status-accuracy 0.95
+          --min-citation-consistency 1.0
+          --min-groundedness-score 4.0
+          --min-helpfulness-score 3.5
+          --min-rejection-correct 0.85
+          --json-output docs/evals/qa-online.json
+          --markdown-output docs/evals/qa-online.md
 
   frontend:
     runs-on: ubuntu-latest
