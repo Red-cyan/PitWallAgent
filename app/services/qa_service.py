@@ -134,7 +134,17 @@ class RegulationQAService:
                 "regulation_answer_generated",
                 mode="llm",
                 retrieved_chunk_count=len(chunks),
+                answer_length=len(answer),
             )
+            if not answer:
+                log_structured(
+                    self.logger,
+                    "regulation_answer_fallback_used",
+                    reason="empty_llm_answer",
+                    retrieved_chunk_count=len(chunks),
+                    emitted_tokens=emitted_tokens,
+                )
+                return self._build_fallback_answer(question, chunks)
             return answer
         except StreamCancelled:
             raise

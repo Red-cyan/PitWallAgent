@@ -37,6 +37,23 @@ def test_qa_service_returns_llm_answer() -> None:
     assert response.evidence_count == 1
 
 
+def test_qa_service_falls_back_when_llm_returns_empty_answer() -> None:
+    class EmptyLLMClient:
+        def chat(self, messages: list[dict], temperature: float = 0.2) -> str:
+            return "   "
+
+    service = RegulationQAService(
+        repository=StubRepository(),
+        llm_client=EmptyLLMClient(),
+    )
+
+    response = service.ask(RuleAskRequest(question="What is an unsafe release?"))
+
+    assert response.answer.strip()
+    assert "FIA 2026 F1 Regulations" in response.answer
+    assert response.answer_status == "answered"
+
+
 def test_qa_service_falls_back_when_no_chunks() -> None:
     class EmptyRepository:
         def search_relevant_chunks(self, question: str, top_k: int = 3) -> list[RetrievedChunk]:
