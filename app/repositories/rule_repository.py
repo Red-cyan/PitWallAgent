@@ -100,6 +100,11 @@ class RuleRepository:
             "vsc",
             "virtual safety car",
             "suspension",
+            "track limits",
+            "track limit",
+            "impeding",
+            "impede",
+            "sporting",
         ],
         "Section C": [
             "plank",
@@ -212,7 +217,17 @@ class RuleRepository:
         rewritten_queries = self.query_rewriter.rewrite(question)
         questions = self._deduplicate_queries([normalized_question, *rewritten_queries])
         if mode == "vector":
-            vector_results = self._search_by_vector_queries(questions, top_k=top_k)
+            scoring_question = " ".join(questions)
+            candidate_pool = self._search_by_vector_queries(
+                questions,
+                top_k=max(top_k, settings.regulation_rerank_max_candidates),
+                preferred_sections=self._match_preferred_sections(normalized_question),
+            )
+            vector_results = self._apply_model_rerank(
+                question=scoring_question,
+                chunks=candidate_pool,
+                top_k=top_k,
+            )
             return self._boost_exact_vector_results(
                 vector_results,
                 self._extract_exact_clause_ids(normalized_question),
@@ -350,6 +365,7 @@ class RuleRepository:
         question: str,
         chunks: list[RetrievedChunk],
         top_k: int,
+        max_candidates: int | None = None,
     ) -> list[RetrievedChunk]:
         """使用交叉编码器重排候选，作为最终排序。
 
@@ -359,7 +375,8 @@ class RuleRepository:
         if not chunks or top_k < 1:
             return chunks
 
-        candidates = chunks[: settings.regulation_rerank_max_candidates]
+        limit = max_candidates if max_candidates is not None else settings.regulation_rerank_max_candidates
+        candidates = chunks[:limit]
         try:
             from app.rag.rerank.factory import build_reranker
 
@@ -497,6 +514,7 @@ class RuleRepository:
         vector_chunks = self._search_by_vector_queries(
             questions,
             top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+            preferred_sections=preferred_sections,
         )
         vector_chunks = self._boost_exact_vector_results(
             vector_chunks,
@@ -660,21 +678,42 @@ class RuleRepository:
 
         return selected
 
-    def _search_by_vector_queries(self, questions: list[str], top_k: int) -> list[RetrievedChunk]:
+    def _search_by_vector_queries(
+        self,
+        questions: list[str],
+        top_k: int,
+        preferred_sections: list[str] | None = None,
+    ) -> list[RetrievedChunk]:
         merged_chunks: list[RetrievedChunk] = []
         seen_chunk_ids: set[str] = set()
 
         for question in questions:
-            for chunk in self._search_by_vector(question, top_k):
+            for chunk in self._search_by_vector(
+                question,
+                top_k=max(top_k, self.VECTOR_CANDIDATE_LIMIT),
+                preferred_sections=preferred_sections,
+            ):
                 if chunk.chunk_id in seen_chunk_ids:
                     continue
                 seen_chunk_ids.add(chunk.chunk_id)
                 merged_chunks.append(chunk)
 
-        merged_chunks.sort(key=lambda chunk: chunk.score or 0, reverse=True)
+        merged_chunks.sort(
+            key=lambda chunk: (
+                0
+                if not preferred_sections or self._matches_preferred_section(chunk, preferred_sections)
+                else 1,
+                -(chunk.score or 0),
+            )
+        )
         return merged_chunks[:top_k]
 
-    def _search_by_vector(self, question: str, top_k: int) -> list[RetrievedChunk]:
+    def _search_by_vector(
+        self,
+        question: str,
+        top_k: int,
+        preferred_sections: list[str] | None = None,
+    ) -> list[RetrievedChunk]:
         if not settings.regulation_vector_retrieval_enabled:
             return []
         if not self._has_vector_data():
@@ -688,41 +727,68 @@ class RuleRepository:
         except Exception:
             return []
 
+        pool_size = max(top_k * 8, self.VECTOR_CANDIDATE_LIMIT * 2)
         try:
             with SessionLocal() as session:
-                records = session.execute(
-                    select(RegulationChunkRecord)
+                distance = RegulationChunkRecord.embedding.cosine_distance(question_embedding).label("distance")
+                rows = session.execute(
+                    select(RegulationChunkRecord, distance)
                     .join(RegulationCorpusRecord, RegulationCorpusRecord.corpus_version == RegulationChunkRecord.corpus_version)
                     .where(RegulationChunkRecord.embedding.is_not(None))
                     .where(RegulationCorpusRecord.active.is_(True))
-                    .order_by(RegulationChunkRecord.embedding.cosine_distance(question_embedding))
-                    .limit(top_k)
-                ).scalars().all()
+                    .order_by(distance)
+                    .limit(pool_size)
+                ).all()
         except SQLAlchemyError:
             return []
 
-        return [
-            RetrievedChunk(
-                chunk_id=record.chunk_id,
-                content=record.content,
-                score=None,
-                document_title=record.document_title,
-                article=record.article,
-                section=record.section_code,
-                page=record.page,
-                page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
-                page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
-                heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
-                clause_id=record.clause_id or record.article,
-                article_title=record.article_title,
-                chunk_type=record.chunk_type,
-                corpus_version=record.corpus_version,
-                document_key=record.document_key,
-                breadcrumb=(record.chunk_metadata or {}).get("heading_path") or [],
-                part_ordinal=(record.chunk_metadata or {}).get("part_ordinal") or 1,
+        chunks: list[RetrievedChunk] = []
+        for record, distance in rows:
+            similarity = max(1.0 - float(distance), 0.0)
+            chunks.append(
+                self._chunk_from_record(
+                    record,
+                    score=similarity,
+                    score_components={"vector_cosine": round(similarity, 4)},
+                )
             )
-            for record in records
-        ]
+
+        if preferred_sections:
+            chunks.sort(
+                key=lambda chunk: (
+                    0 if self._matches_preferred_section(chunk, preferred_sections) else 1,
+                    -(chunk.score or 0),
+                )
+            )
+        return chunks[:top_k]
+
+    def _chunk_from_record(
+        self,
+        record,
+        *,
+        score: float | None = None,
+        score_components: dict[str, float] | None = None,
+    ) -> RetrievedChunk:
+        return RetrievedChunk(
+            chunk_id=record.chunk_id,
+            content=record.content,
+            score=score,
+            document_title=record.document_title,
+            article=record.article,
+            section=record.section_code,
+            page=record.page,
+            page_start=(record.chunk_metadata or {}).get("page_start") or record.page,
+            page_end=(record.chunk_metadata or {}).get("page_end") or record.page,
+            heading_path=(record.chunk_metadata or {}).get("heading_path") or [],
+            clause_id=record.clause_id or record.article,
+            article_title=record.article_title,
+            chunk_type=record.chunk_type,
+            corpus_version=record.corpus_version,
+            document_key=record.document_key,
+            breadcrumb=(record.chunk_metadata or {}).get("heading_path") or [],
+            part_ordinal=(record.chunk_metadata or {}).get("part_ordinal") or 1,
+            score_components=score_components or {},
+        )
 
     def _has_vector_data(self) -> bool:
         try:

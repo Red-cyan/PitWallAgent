@@ -227,7 +227,7 @@ uv run python scripts/build_regulation_chunks.py `
 
 Keyword 组合 BM25、短语、条款号、Section、标题和字段信号，再 rerank。精确 `B5.14.2` 查询直接提升对应 `clause_id`；Section 过滤使用结构化字段。同分时按源 corpus 顺序排序，避免集合遍历顺序让评测抖动。
 
-Vector 使用同一 BGE-M3 生成 1,024 维 query embedding，在 pgvector 中取相似项。它擅长同义表达，却可能混淆主题相近但法律约束不同的条款。当前 raw vector Clause Recall@5 为 66.67%，证明 embedding 并不自动优于词法检索。
+Vector 使用同一 BGE-M3 生成 1,024 维 query embedding，在 pgvector 中取相似项。它擅长同义表达，却可能混淆主题相近但法律约束不同的条款。消融显示纯向量 Clause Recall@5 为 66.67%：抽象问法下正确条款的余弦排位常落到 22-67 名。改进后的向量路径加入 Section 感知检索（复用查询的 Section 信号）与交叉编码器重排（bge-reranker-v2-m3），R@5 提升到 73.7%、MRR 0.574，但单检索器仍无法到 100%，详见 `docs/evals/rag-vector-ablation.md`。
 
 Hybrid 使用 Reciprocal Rank Fusion：
 
@@ -339,7 +339,7 @@ Keyword 是普通 PR 的确定性门禁；Vector/Hybrid 需要同一 BGE 模型�
 - 没有 OCR；图片型 PDF 无法解析。
 - FIA 布局变化需要持续维护 parser fixtures。
 - 法规回答不替代 FIA 官方解释和专业审核。
-- Raw vector 较弱，hybrid 仍依赖 keyword guardrail。
+- Raw vector 经 Section 感知检索与重排后 R@5 提升到 73.7%，但单检索器仍弱于 keyword，hybrid 保留 keyword guardrail 兜底。
 - 外部新闻和赛况 API 可能限流、超时或改 schema。
 - 真实 LLM 非确定，CI 不应对措辞做严格字符串断言。
 - SSE producer 使用线程；高并发要评估线程、队列背压和取消传播。

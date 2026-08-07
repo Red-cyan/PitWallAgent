@@ -22,7 +22,7 @@
 | Keyword Section Recall@5 | 100% |
 | Keyword Clause Recall@5 | 100% |
 | Keyword MRR | 79.65% |
-| Vector-only Clause Recall@5 | 66.67%（弱于 keyword，hybrid 用 RRF + 重排补齐） |
+| Vector-only Clause Recall@5 | 73.7%（Section 感知检索 + 交叉编码器重排，基线 66.7%） |
 | Adaptive hybrid Clause Recall@5 | 100% |
 | Adaptive hybrid MRR | ~78% |
 | 无答案强证据拒绝率 | 100% |
@@ -30,9 +30,9 @@
 | QA 引用一致性（offline 确定性） | 100% |
 | QA 回答忠实度（online LLM judge，均值） | ~4.8 / 5 |
 | QA 拒绝/回答决策正确率（online） | ~90% |
-| Active corpus | 1,984 chunks / 1,984 embeddings |
+| Active corpus | 6,198 chunks / 6,198 embeddings |
 
-评测集包含 60 条精确条款、跨页、表格、同义改写、跨 Section 干扰和无答案问题。Raw vector 是消融项（R@5 66.67%），弱向量信号由 keyword guardrail 兜底；hybrid 用 bge-reranker-v2-m3 交叉编码器对融合候选做最终排序（`rerank_model` 分数进入 `score_components`）。当前评测集对 keyword 已偏易，重排的收益主要体现在排序质量而非 Recall；Vector-only 评测在 CI 手动 workflow 的 `hybrid-eval` job 中与 keyword/hybrid 一起进门禁。评测在无 LLM key 下运行以保证确定性。
+评测集包含 60 条精确条款、跨页、表格、同义改写、跨 Section 干扰和无答案问题。纯向量（BGE-M3 dense）在"抽象问法 vs 法律条文"场景下正确条款的余弦排位常落到 22-67 名，因此单检索器无法达到 100%——改进后的向量路径通过 Section 感知检索（复用查询的 Section 信号）和交叉编码器重排（bge-reranker-v2-m3）把 R@5 从 66.7% 提升到 73.7%、MRR 0.504→0.574，消融细节见 `docs/evals/rag-vector-ablation.md`。生产路径为 hybrid：keyword BM25 提供精度兜底、稠密向量召回候选、RRF 融合后由交叉编码器最终排序（`rerank_model` 分数进入 `score_components`），稳定 100%。Vector-only 评测在 CI 手动 workflow 的 `hybrid-eval` job 中与 keyword/hybrid 一起进门禁。评测在无 LLM key 下运行以保证确定性。
 
 ## 架构
 

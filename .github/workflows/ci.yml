@@ -143,8 +143,8 @@ jobs:
         run: >-
           uv run python scripts/run_rag_eval.py
           --mode vector
-          --min-recall-at-5 0.6
-          --min-mrr 0.45
+          --min-recall-at-5 0.7
+          --min-mrr 0.5
           --min-rejection-rate 1.0
       - name: Hybrid quality gate with model rerank
         run: >-

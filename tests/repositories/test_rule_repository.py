@@ -161,7 +161,7 @@ def test_vector_search_promotes_an_exact_clause_identifier(monkeypatch) -> None:
             }
         ],
     )
-    monkeypatch.setattr(repository, "_search_by_vector_queries", lambda questions, top_k: [])
+    monkeypatch.setattr(repository, "_search_by_vector_queries", lambda questions, top_k, preferred_sections=None: [])
 
     results = repository.search("What does C10.7.4 require?", mode="vector", top_k=5)
 
