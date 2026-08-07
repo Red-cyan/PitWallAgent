@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     session_backend: str = "memory"
     session_history_max_turns: int = 20
     session_ttl_seconds: int = 86400
+    stream_buffered_chunk_delay_ms: int = 15
     memory_recent_turns: int = 4
     memory_context_token_budget: int = 1200
     memory_summary_token_budget: int = 260

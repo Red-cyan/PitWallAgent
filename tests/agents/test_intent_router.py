@@ -57,3 +57,21 @@ def test_intent_router_does_not_treat_explicit_rank_query_as_context_follow_up()
 
     assert router.looks_like_follow_up("车手积分榜第4名是哪位") is False
     assert router.route("车手积分榜第4名是哪位", fallback_intent="regulation") == "race"
+
+
+def test_intent_router_routes_pit_lane_phrasings_to_regulation_not_strategy() -> None:
+    router = IntentRouter()
+
+    assert router.route("What is an unsafe release from the pit lane?") == "regulation"
+    assert router.route("pit lane speeding") == "regulation"
+    assert router.route("What is the pit lane speed limit rule?") == "regulation"
+    assert router.route("维修区超速是什么") == "regulation"
+
+
+def test_intent_router_keeps_strategy_phrasings_as_strategy() -> None:
+    router = IntentRouter()
+
+    assert router.route("什么时候该进站") == "strategy"
+    assert router.route("该不该进站") == "strategy"
+    assert router.route("pit stop strategy") == "strategy"
+    assert router.route("什么时候进站换胎") == "strategy"

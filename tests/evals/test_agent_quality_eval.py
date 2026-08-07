@@ -303,7 +303,7 @@ def run_case(service: AgentService, case: EvalCase) -> AgentQueryResponse:
 def test_golden_agent_quality_cases() -> None:
     service = build_service()
 
-    assert len(CASES) == 59
+    assert len(CASES) == 60
     for case in CASES:
         response = run_case(service, case)
         assert response.intent == case.expected_intent, case.name

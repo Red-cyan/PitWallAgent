@@ -5,6 +5,7 @@ import time
 from collections.abc import Iterator
 from typing import Any
 
+from app.config.settings import settings
 from app.core.logging import log_structured
 from app.core.metrics import STREAM_DURATION, STREAM_REQUESTS, STREAM_TTFT
 from app.core.request_context import get_request_id
@@ -184,11 +185,14 @@ class ChatService:
 
             stream_mode = "token" if token_seen else "buffered"
             if not token_seen:
+                chunk_delay = max(settings.stream_buffered_chunk_delay_ms, 0) / 1000
                 for delta in self._chunk_text(response_payload.final_answer):
                     yield {
                         "event": "message_delta",
                         "data": event_data(delta=delta),
                     }
+                    if chunk_delay:
+                        time.sleep(chunk_delay)
 
             total_ms = round((time.perf_counter() - started_at) * 1000, 2)
             response_payload.trace = {

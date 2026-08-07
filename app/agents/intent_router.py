@@ -27,7 +27,6 @@ class IntentRouter:
         "strategy",
         "pit now",
         "pit stop",
-        "pit",
         "tyre",
         "tire",
         "degradation",
