@@ -32,6 +32,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "schedule": [race.model_dump(mode="json") for race in schedule],
+                        "source": schedule[0].source if schedule else None,
+                        "fetched_at": schedule[0].fetched_at if schedule else None,
                     },
                 )
                 log_structured(
@@ -53,6 +55,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "race": race.model_dump(mode="json") if race else None,
+                        "source": race.source if race else None,
+                        "fetched_at": race.fetched_at if race else None,
                     },
                     error=None if race is not None else "No upcoming race found.",
                 )
@@ -68,6 +72,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "race": race.model_dump(mode="json") if race else None,
+                        "source": race.source if race else None,
+                        "fetched_at": race.fetched_at if race else None,
                     },
                     error=None if race is not None else "No previous race found.",
                 )
@@ -83,6 +89,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "standings": [item.model_dump(mode="json") for item in standings],
+                        "source": standings[0].source if standings else None,
+                        "fetched_at": standings[0].fetched_at if standings else None,
                     },
                 )
                 log_structured(
@@ -104,6 +112,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "standings": [item.model_dump(mode="json") for item in standings],
+                        "source": standings[0].source if standings else None,
+                        "fetched_at": standings[0].fetched_at if standings else None,
                     },
                 )
                 log_structured(
@@ -126,6 +136,8 @@ class RaceTool:
                         "action": action,
                         "season": season,
                         "race_result": race_result.model_dump(mode="json") if race_result else None,
+                        "source": race_result.source if race_result else None,
+                        "fetched_at": race_result.fetched_at if race_result else None,
                     },
                     error=None if race_result is not None else "No completed race results found.",
                 )

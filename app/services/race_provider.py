@@ -11,6 +11,7 @@ from app.schemas.race import (
     RaceWeekend,
     SessionInfo,
 )
+from app.services.data_cache import DataCache
 from app.services.http_retry import get_with_retry
 
 
@@ -150,6 +151,8 @@ class JolpicaRaceDataProvider:
     """Jolpica / Ergast-compatible race data provider."""
 
     SOURCE = "jolpica_api"
+    CACHED_SOURCE = "jolpica_cached"
+    STATIC_SOURCE = "local_seed"
     SESSION_KEYS = (
         ("FirstPractice", "Practice 1"),
         ("SecondPractice", "Practice 2"),
@@ -164,75 +167,122 @@ class JolpicaRaceDataProvider:
         base_url: str | None = None,
         fetch_json: Callable[[str], dict[str, Any]] | None = None,
         fallback_provider: RaceDataProvider | None = None,
+        data_cache: DataCache | None = None,
     ) -> None:
         self.base_url = (base_url or settings.race_data_base_url).rstrip("/")
         self.fetch_json = fetch_json or self._fetch_json
         self.fallback_provider = fallback_provider or StaticRaceDataProvider()
+        self.data_cache = data_cache or DataCache()
         self._cache: dict[str, tuple[float, Any]] = {}
 
     def list_schedule(self, season: int | str) -> list[RaceWeekend]:
-        cache_key = f"schedule:{season}"
-        cached = self._get_cached(cache_key)
-        if cached is not None:
-            return cached
-
-        try:
-            payload = self.fetch_json(f"{season}.json")
-            races = payload["MRData"]["RaceTable"]["Races"]
-            schedule = [self._parse_race_weekend(item) for item in races]
-        except Exception:
-            schedule = self.fallback_provider.list_schedule(season)
-
-        self._set_cached(cache_key, schedule)
-        return schedule
+        return self._load_or_fallback(
+            cache_key=f"schedule:{season}",
+            model_cls=RaceWeekend,
+            live=lambda: self.fetch_json(f"{season}.json"),
+            parse=self._parse_schedule_payload,
+            static=lambda: self.fallback_provider.list_schedule(season),
+        )
 
     def list_driver_standings(self, season: int | str) -> list[DriverStandingEntry]:
-        cache_key = f"driver_standings:{season}"
-        cached = self._get_cached(cache_key)
-        if cached is not None:
-            return cached
-
-        try:
-            payload = self.fetch_json(f"{season}/driverstandings.json")
-            standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
-            parsed = [self._parse_driver_standing(item) for item in standings]
-        except Exception:
-            parsed = self.fallback_provider.list_driver_standings(season)
-
-        self._set_cached(cache_key, parsed)
-        return parsed
+        return self._load_or_fallback(
+            cache_key=f"driver_standings:{season}",
+            model_cls=DriverStandingEntry,
+            live=lambda: self.fetch_json(f"{season}/driverstandings.json"),
+            parse=self._parse_driver_standings_payload,
+            static=lambda: self.fallback_provider.list_driver_standings(season),
+        )
 
     def list_constructor_standings(self, season: int | str) -> list[ConstructorStandingEntry]:
-        cache_key = f"constructor_standings:{season}"
-        cached = self._get_cached(cache_key)
-        if cached is not None:
-            return cached
-
-        try:
-            payload = self.fetch_json(f"{season}/constructorstandings.json")
-            standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
-            parsed = [self._parse_constructor_standing(item) for item in standings]
-        except Exception:
-            parsed = self.fallback_provider.list_constructor_standings(season)
-
-        self._set_cached(cache_key, parsed)
-        return parsed
+        return self._load_or_fallback(
+            cache_key=f"constructor_standings:{season}",
+            model_cls=ConstructorStandingEntry,
+            live=lambda: self.fetch_json(f"{season}/constructorstandings.json"),
+            parse=self._parse_constructor_standings_payload,
+            static=lambda: self.fallback_provider.list_constructor_standings(season),
+        )
 
     def get_race_results(self, season: int | str, round_number: int) -> RaceResult:
-        cache_key = f"race_results:{season}:{round_number}"
-        cached = self._get_cached(cache_key)
-        if cached is not None:
-            return cached
+        return self._load_or_fallback(
+            cache_key=f"race_results:{season}:{round_number}",
+            model_cls=RaceResult,
+            live=lambda: self.fetch_json(f"{season}/{round_number}/results.json"),
+            parse=self._parse_results_payload,
+            static=lambda: self.fallback_provider.get_race_results(season, round_number),
+        )
+
+    def _load_or_fallback(
+        self,
+        *,
+        cache_key: str,
+        model_cls: type[Any],
+        live: Callable[[], dict[str, Any]],
+        parse: Callable[[dict[str, Any]], Any],
+        static: Callable[[], Any],
+    ) -> Any:
+        """Return fresh data, else the last-good Redis cache, else the static fallback.
+
+        Live data is stored in the last-good cache so a later upstream outage
+        degrades to real recent data instead of fabricated samples. The returned
+        models carry ``source`` and ``fetched_at`` so callers can disclose the
+        provenance to the end user.
+        """
+        memory = self._get_cached(cache_key)
+        if memory is not None:
+            return memory
 
         try:
-            payload = self.fetch_json(f"{season}/{round_number}/results.json")
-            race_payload = payload["MRData"]["RaceTable"]["Races"][0]
-            parsed = self._parse_race_result(race_payload)
+            data = parse(live())
+            fetched_at = datetime.now(UTC).isoformat()
+            items = self._mark_source(data, self.SOURCE, fetched_at)
+            self.data_cache.set_last_good(cache_key, self._to_json(data), fetched_at)
         except Exception:
-            parsed = self.fallback_provider.get_race_results(season, round_number)
+            last_good = self.data_cache.get_last_good(cache_key)
+            if last_good is not None:
+                data = self._from_json(last_good["data"], model_cls)
+                items = self._mark_source(data, self.CACHED_SOURCE, last_good.get("fetched_at"))
+            else:
+                data = static()
+                items = self._mark_source(data, self.STATIC_SOURCE, None)
 
-        self._set_cached(cache_key, parsed)
-        return parsed
+        self._set_cached(cache_key, items)
+        return items
+
+    @staticmethod
+    def _mark_source(data: Any, source: str, fetched_at: str | None) -> Any:
+        items = data if isinstance(data, list) else [data]
+        for item in items:
+            item.source = source
+            item.fetched_at = fetched_at
+        return data
+
+    @staticmethod
+    def _to_json(data: Any) -> list[dict[str, Any]] | dict[str, Any]:
+        if isinstance(data, list):
+            return [item.model_dump(mode="json") for item in data]
+        return data.model_dump(mode="json")
+
+    @staticmethod
+    def _from_json(raw: Any, model_cls: type[Any]) -> Any:
+        if isinstance(raw, list):
+            return [model_cls.model_validate(item) for item in raw]
+        return model_cls.model_validate(raw)
+
+    def _parse_schedule_payload(self, payload: dict[str, Any]) -> list[RaceWeekend]:
+        races = payload["MRData"]["RaceTable"]["Races"]
+        return [self._parse_race_weekend(item) for item in races]
+
+    def _parse_driver_standings_payload(self, payload: dict[str, Any]) -> list[DriverStandingEntry]:
+        standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
+        return [self._parse_driver_standing(item) for item in standings]
+
+    def _parse_constructor_standings_payload(self, payload: dict[str, Any]) -> list[ConstructorStandingEntry]:
+        standings = payload["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
+        return [self._parse_constructor_standing(item) for item in standings]
+
+    def _parse_results_payload(self, payload: dict[str, Any]) -> RaceResult:
+        race_payload = payload["MRData"]["RaceTable"]["Races"][0]
+        return self._parse_race_result(race_payload)
 
     def _parse_race_result(self, race_payload: dict[str, Any]) -> RaceResult:
         entries: list[RaceResultEntry] = []

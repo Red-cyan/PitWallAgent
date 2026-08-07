@@ -131,6 +131,16 @@ docker compose up -d
 
 工具清单与返回契约见 `docs/rfcs/zh/RFC-007-MCP_zh.md`。
 
+## 数据来源与兜底策略
+
+赛况数据来自 Jolpica/Ergast 实时 API，新闻来自 Formula1.com / Motorsport.com RSS。为保证上游故障时仍可演示且**不把示例数据冒充真实数据**：
+
+- **last-good 缓存**：实时请求成功后把结果写入 Redis（`last_good:*`，默认 24h），上游失败时优先回退到最近一次真实数据，并在回答中标注"数据源：Jolpica API 缓存 · 缓存时间 …"。
+- **本地示例数据**：仅在没有任何真实缓存时使用本地种子数据（`source=local_seed`），回答会明确标注"本地示例数据，仅演示用"。
+- **实时数据**：正常返回时标注"数据源：Jolpica API"。
+
+来源标签由 `app/agents/response_formatter.py` 统一追加，覆盖赛历、下一/上一站、车手/车队积分榜和比赛结果。
+
 ## 开发与质量门禁
 
 ```bash

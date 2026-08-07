@@ -247,3 +247,98 @@ def test_response_formatter_highlights_requested_driver_in_results() -> None:
     )
 
     assert answer == "Charles Leclerc（Ferrari）在 Austrian Grand Prix 获得第 2 名。"
+
+
+def test_response_formatter_appends_live_api_source_label() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="谁赢了",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "source": "jolpica_api",
+            "fetched_at": "2026-08-06T12:00:00+00:00",
+            "race_result": {
+                "grand_prix_name": "Hungarian Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Lando Norris", "team_name": "McLaren", "points": 25},
+                ],
+            },
+        },
+        error=None,
+    )
+
+    assert "Lando Norris" in answer
+    assert "数据源：Jolpica API" in answer
+
+
+def test_response_formatter_discloses_local_seed_source() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="谁赢了",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "source": "local_seed",
+            "race_result": {
+                "grand_prix_name": "British Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 25},
+                ],
+            },
+        },
+        error=None,
+    )
+
+    assert "本地示例数据，仅演示用" in answer
+
+
+def test_response_formatter_discloses_cached_source_with_timestamp() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="谁赢了",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "source": "jolpica_cached",
+            "fetched_at": "2026-08-06T12:00:00+00:00",
+            "race_result": {
+                "grand_prix_name": "Hungarian Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Lando Norris", "team_name": "McLaren", "points": 25},
+                ],
+            },
+        },
+        error=None,
+    )
+
+    assert "Jolpica API 缓存" in answer
+    assert "缓存时间" in answer
+
+
+def test_response_formatter_omits_source_label_for_unknown_source() -> None:
+    formatter = AgentResponseFormatter()
+
+    answer = formatter.build(
+        message="谁赢了",
+        intent="race",
+        tool_name="race_tool",
+        success=True,
+        result={
+            "race_result": {
+                "grand_prix_name": "Austrian Grand Prix",
+                "results": [
+                    {"position": 1, "driver_name": "Andrea Kimi Antonelli", "team_name": "Mercedes", "points": 25},
+                ],
+            }
+        },
+        error=None,
+    )
+
+    assert "数据源：" not in answer

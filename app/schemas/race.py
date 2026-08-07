@@ -22,6 +22,7 @@ class RaceWeekend(BaseModel):
     end_date: datetime
     sessions: list[SessionInfo] = Field(default_factory=list)
     source: str = Field(..., min_length=1)
+    fetched_at: str | None = Field(default=None, description="When the data was last fetched successfully (ISO-8601).")
 
 
 class DriverStandingEntry(BaseModel):
@@ -32,6 +33,7 @@ class DriverStandingEntry(BaseModel):
     team_name: str = Field(..., min_length=1)
     points: int = Field(..., ge=0)
     source: str = Field(..., min_length=1)
+    fetched_at: str | None = Field(default=None, description="When the data was last fetched successfully (ISO-8601).")
 
 
 class ConstructorStandingEntry(BaseModel):
@@ -41,6 +43,7 @@ class ConstructorStandingEntry(BaseModel):
     team_name: str = Field(..., min_length=1)
     points: int = Field(..., ge=0)
     source: str = Field(..., min_length=1)
+    fetched_at: str | None = Field(default=None, description="When the data was last fetched successfully (ISO-8601).")
 
 
 class RaceResultEntry(BaseModel):
@@ -67,3 +70,4 @@ class RaceResult(BaseModel):
     country: str | None = None
     results: list[RaceResultEntry] = Field(default_factory=list)
     source: str = Field(..., min_length=1)
+    fetched_at: str | None = Field(default=None, description="When the data was last fetched successfully (ISO-8601).")

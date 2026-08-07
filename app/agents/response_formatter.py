@@ -244,6 +244,26 @@ class AgentResponseFormatter:
         return None
 
     def _build_race_answer(self, *, message: str, result: dict[str, Any]) -> str:
+        answer = self._build_race_answer_inner(message=message, result=result)
+        label = self._source_label(result)
+        if label:
+            answer = f"{answer}（{label}）"
+        return answer
+
+    def _source_label(self, result: dict[str, Any]) -> str | None:
+        source = result.get("source")
+        if source == "jolpica_cached":
+            fetched_at = result.get("fetched_at")
+            if fetched_at:
+                return f"数据源：Jolpica API 缓存 · 缓存时间 {self._format_datetime(fetched_at)}"
+            return "数据源：Jolpica API 缓存"
+        if source == "local_seed":
+            return "本地示例数据，仅演示用"
+        if source == "jolpica_api":
+            return "数据源：Jolpica API"
+        return None
+
+    def _build_race_answer_inner(self, *, message: str, result: dict[str, Any]) -> str:
         race_result = result.get("race_result")
         if isinstance(race_result, dict) and race_result.get("results"):
             return self._build_race_results_answer(message=message, race_result=race_result)

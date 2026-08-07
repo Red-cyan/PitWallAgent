@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     race_request_timeout_seconds: float = 3.0
     race_cache_ttl_seconds: int = 300
     race_default_season: str = "current"
+    data_cache_enabled: bool = True
+    data_cache_ttl_seconds: int = 86400
     session_backend: str = "memory"
     session_history_max_turns: int = 20
     session_ttl_seconds: int = 86400
