@@ -6,6 +6,7 @@ V1 已形成可运行、可评测、可观测的全栈闭环。实现事实以�
 
 ## Reading Order
 
+0. [从零学透项目（完整学习指南）](cn/07_From_Scratch_zh.md)：不熟悉代码时从这里开始，概念→架构→逐层读代码→动手。
 1. [源码导读与工程实践](cn/06_Codebase_Walkthrough_zh.md)：以当前代码为准，先理解技术、调用链、取舍和故障排查。
 2. [项目总览](cn/00_Project_Overview_zh.md)：理解问题背景和产品定位。
 3. [系统架构](cn/02_System_Architecture_zh.md)：理解完整设计背景，其中包含部分演进目标。
@@ -16,8 +17,9 @@ V1 已形成可运行、可评测、可观测的全栈闭环。实现事实以�
 8. [技术栈 RFC](rfcs/zh/RFC-001-Tech-Stack_zh.md)
 9. [Agent 离线基线](evals/agent-baseline.md)
 10. [Keyword RAG 基线](evals/rag-clause-keyword.md)
-11. [Vector RAG 消融](evals/rag-clause-vector.md)
+11. [Vector RAG 消融](evals/rag-vector-ablation.md)
 12. [Hybrid RAG 基线](evals/rag-clause-hybrid.md)
 13. [RAG 消融协议](evals/rag-ablation.md)
+14. [QA 回答质量评测](evals/qa-baseline.md)
 
 English product and architecture documents are under [`docs/en`](en/).
