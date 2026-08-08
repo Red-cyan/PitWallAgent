@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import Any, cast
 
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 
 from app.config.settings import settings
 from app.core.logging import log_structured
@@ -75,6 +75,57 @@ class LLMClient:
             output_length=len(content),
         )
         return content
+
+    def chat_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        temperature: float = 0,
+        max_tokens: int | None = None,
+        timeout: float | None = None,
+    ) -> ChatCompletionMessage:
+        """原生 function calling：LLM 可能返回 content 和/或 tool_calls。"""
+        log_structured(
+            self.logger,
+            "llm_tools_request_started",
+            model=self.model,
+            message_count=len(messages),
+            tool_count=len(tools),
+        )
+        started_at = time.perf_counter()
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=cast(list[ChatCompletionMessageParam], messages),
+                tools=cast(list[Any], tools),
+                tool_choice="auto",
+                temperature=temperature,
+                max_tokens=max_tokens if max_tokens is not None else settings.llm_max_tokens,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            LLM_CALLS.labels(self.model, "tools_error").inc()
+            LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
+            log_structured(
+                self.logger,
+                "llm_tools_request_failed",
+                model=self.model,
+                message_count=len(messages),
+                error_type=exc.__class__.__name__,
+            )
+            raise
+
+        message = response.choices[0].message
+        LLM_CALLS.labels(self.model, "tools_success").inc()
+        LLM_DURATION.labels(self.model).observe(time.perf_counter() - started_at)
+        log_structured(
+            self.logger,
+            "llm_tools_request_completed",
+            model=self.model,
+            message_count=len(messages),
+            tool_calls=len(message.tool_calls or []),
+        )
+        return message
 
     def stream_chat(
         self,

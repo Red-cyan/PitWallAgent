@@ -31,3 +31,7 @@ frontend/.playwright-server.pid
 .run/
 coverage.xml
 .coverage
+
+# Reasonix local workspace files
+.reasonix/
+reasonix.toml
