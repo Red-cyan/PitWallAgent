@@ -67,6 +67,27 @@ export type AgentTrace = {
   latency_ms_by_stage?: Record<string, number>;
   request_id?: string;
   stream_mode?: "token" | "buffered";
+  plan?: PlanStep[];
+  steps?: ExecutedStep[];
+  judge_outcomes?: string[];
+  judge_outcome?: string;
+};
+
+export type PlanStep = {
+  output_key?: string;
+  intent?: string;
+  tool_name?: string;
+  action?: string;
+};
+
+export type ExecutedStep = {
+  step?: number;
+  intent?: string;
+  tool_name?: string;
+  action?: string;
+  output_key?: string;
+  success?: boolean;
+  error?: string | null;
 };
 
 export type ChatResponse = {

@@ -115,7 +115,7 @@ Next.js
 
 `ChatService` 获取 session、读取历史和 memory context，先保存 user turn，再执行 Agent；只有完整成功后才保存 assistant turn 和长期偏好。用户取消时保留问题便于重试，但不会把半句话当完整回答。
 
-`runtime_graph.py` 将 plan、工具结果和最终回答放在显式 state 中。当前坚持单 Agent、多工具：业务边界用 Tool 已经足够，多 Agent 会增加模型成本和不可预测性。LangGraph 的价值是节点可测，也为将来的审核、重试节点保留结构。
+`runtime_graph.py` 将 plan、工具结果和最终回答放在显式 state 中。当前坚持单 Agent、多工具：业务边界用 Tool 已经足够，多 Agent 会增加模型成本和不可预测性。Agent 性体现在任务分解与推理循环上：Planner 可输出 2-4 步依赖计划（步骤间 `$ref` 传递数据），Judge（reflector）在失败、证据不足或结果不完整时触发重规划，形成「计划 -> 执行 -> 观察 -> 再推理」循环。LangGraph 的价值是节点可测，也为将来的审核、重试节点保留结构。
 
 ## 6. Planner 和五类工具
 

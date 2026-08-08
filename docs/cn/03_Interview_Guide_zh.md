@@ -24,7 +24,7 @@ User
   -> Prometheus metrics / JSON logs / CI eval gates
 ```
 
-面试中可以按这条链路讲一次完整请求：用户提问后，Planner 判断 intent，Tool Dispatcher 选择工具，工具返回结构化 payload，Response Formatter 生成最终回答，trace/citation 面板展示决策和证据。额外的 ReAct 循环在工具失败或 general 回答不足时，由反射器（reflector）决定是否重规划。
+面试中可以按这条链路讲一次完整请求：用户提问后，Planner 判断 intent，Tool Dispatcher 选择工具，工具返回结构化 payload，Response Formatter 生成最终回答，trace/citation 面板展示决策和证据。多步问题时 Planner 会输出 2-4 步依赖计划（如先搜新闻、再对照规则），ReAct 裁判在工具失败、regulation 证据不足（`insufficient_evidence`）、news/race 结果不完整时触发重规划，形成「计划 -> 执行 -> 观察 -> 再推理」的正向循环。
 
 ## RAG 流程
 
@@ -84,12 +84,25 @@ FIA PDF
 
 设计细节见 `docs/rfcs/zh/RFC-007-MCP_zh.md`。
 
+## 多步规划 + ReAct 正向推理（Agent 能力主线）
+
+项目不是「单意图 -> 单工具」的硬编码流水线，而是具备任务分解与自我纠错的 Agent 循环：
+
+- **多步计划**：Planner（LLM + 启发式双路径）对复合问题输出 `{steps: [{intent, action, params, output_key}]}` 依赖链，步骤间通过 `$ref:<output_key>.<field>` 传递上一步输出（例如先 `news:search` 拿到文章，再把标题注入 `regulation:ask`）。单步问题自动退化为 1 步计划，向后兼容。
+- **执行队列**：LangGraph 按序执行步骤，每步产出写入 `step_outputs`，trace 同时暴露「计划序列（plan）」与「执行序列（steps）」供前端逐步骤渲染。
+- **正向推理循环**：Judge（reflector）在**工具失败、regulation 证据不足、news/race 结果不完整**时把结构化 observation（answer_status、证据数、命中条款/文章摘要）回灌给 LLM，让其决定 finish 或给出 `next_plan` 重规划；`max_steps` 可配置（默认 3，可调 5）。无 LLM key 时走确定性路径，行为完全可预测。
+- **评测可证明**：Agent eval 新增 step sequence 断言（`expected_steps` 工具序列 + `expected_plan_len` 计划长度），66 条 golden cases 六项指标 100%，其中 6 条为多步依赖链用例。
+
+面试话术：
+
+> 我的 Agent 不是「带工具的聊天机器人」——它有任务分解（multi-step planning）、观察-再推理（ReAct judge）、步骤间数据传递（$ref）三层能力，并且每一层都有可断言的评测。单步场景它自动退化为确定性路径保证稳定，复合场景它能把问题拆成依赖链逐步求解。
+
 ## 评测体系（四层质量证明）
 
 | 层 | 对象 | 指标 |
 | --- | --- | --- |
-| 单元/API/仓库测试 | 路由、证据、工具契约 | 303 tests，coverage ≥80% |
-| Agent golden eval | 意图/工具/动作/回答/证据 | 59 cases 100% |
+| 单元/API/仓库测试 | 路由、证据、工具契约 | 319 tests，coverage ≥80% |
+| Agent golden eval | 意图/工具/动作/回答/证据 + 多步 step sequence | 66 cases 100%（含 6 条多步依赖链） |
 | RAG eval | Section/Clause Recall@1/5、MRR、拒答率 | keyword/hybrid 100%，vector 73.7%（消融） |
 | 端到端回答质量 eval | LLM 生成答案本身 | offline（确定性）+ online（LLM-as-judge 忠实度/有用性/决策正确率） |
 

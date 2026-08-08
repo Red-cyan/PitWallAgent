@@ -43,10 +43,53 @@ class HeuristicPlanner:
             if "分析" in message or "insight" in lowered:
                 return {"intent": "news", "tool_name": "news_tool", "action": "get_insights", "params": {"article_id": 42}}
             return {"intent": "news", "tool_name": "news_tool", "action": "get_article", "params": {"article_id": 42}}
+        multi_step = self._multi_step_plan(message, lowered)
+        if multi_step is not None:
+            return multi_step
         intent = self.router.route(message, fallback_intent=fallback_intent)
         plan = self.dispatcher.build_plan(intent=intent, message=message)
         plan["intent"] = intent
         return plan
+
+    def _multi_step_plan(self, message: str, lowered: str) -> dict[str, Any] | None:
+        """复合问题（新闻 + 规则/赛况/策略）→ 多步依赖计划。"""
+        news_hit = any(token in message or token in lowered for token in ("新闻", "news", "资讯"))
+        if not news_hit:
+            return None
+        if "规则" in message or "rule" in lowered:
+            return {
+                "intent": "news",
+                "tool_name": "news_tool",
+                "action": "search",
+                "params": {"query": message, "limit": 5},
+                "steps": [
+                    {"intent": "news", "tool_name": "news_tool", "action": "search", "params": {"query": message, "limit": 5}, "output_key": "news_hit"},
+                    {"intent": "regulation", "tool_name": "regulation_tool", "action": "ask", "params": {"question": "$ref:news_hit.articles.0.title"}, "output_key": "rule_check"},
+                ],
+            }
+        if any(token in message or token in lowered for token in ("积分", "积分榜", "standings", "车手")):
+            return {
+                "intent": "news",
+                "tool_name": "news_tool",
+                "action": "search",
+                "params": {"query": message, "limit": 5},
+                "steps": [
+                    {"intent": "news", "tool_name": "news_tool", "action": "search", "params": {"query": message, "limit": 5}, "output_key": "news_hit"},
+                    {"intent": "race", "tool_name": "race_tool", "action": "get_driver_standings", "params": {}, "output_key": "standings"},
+                ],
+            }
+        if any(token in message or token in lowered for token in ("策略", "strategy", "进站")):
+            return {
+                "intent": "news",
+                "tool_name": "news_tool",
+                "action": "search",
+                "params": {"query": message, "limit": 5},
+                "steps": [
+                    {"intent": "news", "tool_name": "news_tool", "action": "search", "params": {"query": message, "limit": 5}, "output_key": "news_hit"},
+                    {"intent": "strategy", "tool_name": "strategy_tool", "action": "analyze", "params": {"question": "$ref:news_hit.articles.0.title"}, "output_key": "strategy"},
+                ],
+            }
+        return None
 
 
 class EvalToolDispatcher(ToolDispatcher):
@@ -228,6 +271,8 @@ class EvalCase:
     must_include: list[str] = field(default_factory=list)
     must_not_include: list[str] = field(default_factory=list)
     expected_status: str | None = None
+    expected_steps: list[str] | None = None
+    expected_plan_len: int | None = None
 
 
 
@@ -253,6 +298,8 @@ def load_cases(path: Path = AGENT_CASES_PATH) -> list[EvalCase]:
                         must_include=payload.get("must_include", []),
                         must_not_include=payload.get("must_not_include", []),
                         expected_status=payload.get("expected_answer_status"),
+                        expected_steps=payload.get("expected_steps"),
+                        expected_plan_len=payload.get("expected_plan_len"),
                     )
                 )
             except KeyError as exc:
@@ -303,7 +350,7 @@ def run_case(service: AgentService, case: EvalCase) -> AgentQueryResponse:
 def test_golden_agent_quality_cases() -> None:
     service = build_service()
 
-    assert len(CASES) == 60
+    assert len(CASES) == 66
     for case in CASES:
         response = run_case(service, case)
         assert response.intent == case.expected_intent, case.name
@@ -315,6 +362,11 @@ def test_golden_agent_quality_cases() -> None:
             assert expected in response.final_answer, case.name
         for forbidden in case.must_not_include:
             assert forbidden not in response.final_answer, case.name
+        if case.expected_steps:
+            actual_steps = [step["action"] for step in response.trace["steps"]]
+            assert actual_steps == case.expected_steps, case.name
+        if case.expected_plan_len:
+            assert len(response.trace["plan"]) == case.expected_plan_len, case.name
 
 
 def test_pasted_calendar_conversation_regression() -> None:

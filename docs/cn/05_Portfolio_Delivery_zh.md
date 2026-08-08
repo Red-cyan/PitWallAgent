@@ -21,7 +21,7 @@
 - 如何证明回答质量：LLM-as-judge 端到端评测（忠实度/有用性/决策正确率），`response_format=json_object` + 重试保证结构化。
 - 如何实现生态互操作：MCP server 暴露 10 个工具，复用领域服务，单一事实来源。
 - 如何保证数据可信：实时 → Redis last-good 缓存 → 本地种子三级回退，回答标注来源，不拿假数据冒充。
-- 如何证明工程质量：60 条 RAG golden set、59 条 Agent eval、QA judge、后端测试、Playwright 双视口、Prometheus/Grafana 和可重复压测。
+- 如何证明工程质量：60 条 RAG golden set、66 条 Agent eval（含 6 条多步依赖链）、QA judge、后端测试、Playwright 双视口、Prometheus/Grafana 和可重复压测。
 
 ## 必须主动说明
 

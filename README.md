@@ -4,7 +4,7 @@
 
 ## 核心能力
 
-- LangGraph 运行图：意图识别、计划生成、工具执行、回答格式化。
+- LangGraph 运行图：意图识别、多步计划分解、按序工具执行、回答格式化；ReAct 裁判在失败、证据不足或结果不完整时触发重规划（正向推理循环）。
 - 五类工具：赛况（赛历、下/上一站、车手/车队积分榜、比赛结果）、新闻（多源 RSS 聚合，启动自动摄入，中英别名检索）、法规、策略和通用 F1 问答。
 - Clause-aware RAG：PDF 结构化解析、跨页条款、表格、确定性 chunk ID、active corpus 原子切换。
 - Hybrid retrieval：keyword/BM25、BGE-M3、pgvector、RRF、交叉编码器重排（bge-reranker-v2-m3）、精确条款提升和 keyword guardrail。
@@ -19,6 +19,7 @@
 | 指标 | 结果 |
 | --- | ---: |
 | Agent intent/tool/action/evidence golden cases | 100% |
+| Agent 多步计划 step sequence（66 cases，含 6 条多步依赖链） | 100% |
 | Keyword Section Recall@5 | 100% |
 | Keyword Clause Recall@5 | 100% |
 | Keyword MRR | 79.65% |
@@ -41,7 +42,8 @@ Next.js Chat / RAG Lab
   -> FastAPI chat + true SSE + retrieval debug API
   -> ChatService + Redis session memory
   -> LangGraph runtime
-  -> Planner -> ToolDispatcher -> domain tools
+  -> Intent classify -> Multi-step Planner -> ToolDispatcher -> domain tools
+  -> Judge (ReAct) 失败/证据不足 -> 重规划 -> 继续执行，直至完成
   -> PostgreSQL + pgvector / FIA corpus / external F1 sources / LLM
   -> Prometheus metrics -> optional Grafana dashboard
 ```

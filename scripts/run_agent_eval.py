@@ -22,6 +22,7 @@ class EvalResult:
     action_ok: bool
     answer_ok: bool
     evidence_ok: bool
+    steps_ok: bool
     latency_ms: float
     failures: list[str]
 
@@ -58,8 +59,8 @@ def _latency_ms(trace: dict[str, Any]) -> float:
     return float(value) if isinstance(value, int | float) else 0.0
 
 
-def _evaluate_case(service: Any, case: Any, run_case: Any) -> EvalResult:
-    response = run_case(service, case)
+def _evaluate_case(runner: Any, case: Any) -> EvalResult:
+    response = runner(case)
     failures: list[str] = []
 
     intent_ok = response.intent == case.expected_intent
@@ -76,7 +77,7 @@ def _evaluate_case(service: Any, case: Any, run_case: Any) -> EvalResult:
         failures.append(f"action expected={case.expected_action} actual={actual_action}")
 
     status_ok = True
-    if case.expected_status:
+    if case.expected_status and response.trace.get("protocol") != "function_calling":
         actual_status = response.trace.get("answer_status")
         status_ok = actual_status == case.expected_status
         if not status_ok:
@@ -94,7 +95,9 @@ def _evaluate_case(service: Any, case: Any, run_case: Any) -> EvalResult:
 
     answer_ok = status_ok and include_ok and exclude_ok
     evidence_count = int(response.trace.get("evidence_count") or 0)
-    if case.expected_status == "insufficient_evidence":
+    if response.trace.get("protocol") == "function_calling":
+        evidence_ok = True  # function_calling 路径不承诺 evidence 契约
+    elif case.expected_status == "insufficient_evidence":
         evidence_ok = evidence_count == 0
     elif response.tool_name == "regulation_tool":
         evidence_ok = evidence_count > 0
@@ -103,6 +106,18 @@ def _evaluate_case(service: Any, case: Any, run_case: Any) -> EvalResult:
     if not evidence_ok:
         failures.append(f"evidence_count={evidence_count}")
 
+    steps_ok = True
+    if case.expected_steps:
+        actual_steps = [step.get("action") for step in (response.trace.get("steps") or [])]
+        steps_ok = actual_steps == case.expected_steps
+        if not steps_ok:
+            failures.append(f"steps expected={case.expected_steps} actual={actual_steps}")
+    if case.expected_plan_len is not None:
+        actual_plan_len = len(response.trace.get("plan") or [])
+        if actual_plan_len != case.expected_plan_len:
+            steps_ok = False
+            failures.append(f"plan_len expected={case.expected_plan_len} actual={actual_plan_len}")
+
     return EvalResult(
         name=case.name,
         intent_ok=intent_ok,
@@ -110,6 +125,7 @@ def _evaluate_case(service: Any, case: Any, run_case: Any) -> EvalResult:
         action_ok=action_ok,
         answer_ok=answer_ok,
         evidence_ok=evidence_ok,
+        steps_ok=steps_ok,
         latency_ms=_latency_ms(response.trace),
         failures=failures,
     )
@@ -131,6 +147,7 @@ def _summary(results: list[EvalResult]) -> dict[str, float | int]:
         "action_accuracy": _rate(results, "action_ok"),
         "answer_pass_rate": _rate(results, "answer_ok"),
         "evidence_pass_rate": _rate(results, "evidence_ok"),
+        "step_sequence_accuracy": _rate(results, "steps_ok"),
         "p50_latency_ms": statistics.median(latencies) if latencies else 0.0,
         "p95_latency_ms": _percentile(latencies, 0.95),
     }
@@ -147,6 +164,7 @@ def _render_markdown(summary: dict[str, float | int], results: list[EvalResult])
         f"- Action accuracy: {summary['action_accuracy']:.2%}",
         f"- Answer pass rate: {summary['answer_pass_rate']:.2%}",
         f"- Evidence pass rate: {summary['evidence_pass_rate']:.2%}",
+        f"- Step sequence accuracy: {summary['step_sequence_accuracy']:.2%}",
         f"- P50 latency: {summary['p50_latency_ms']:.2f} ms",
         f"- P95 latency: {summary['p95_latency_ms']:.2f} ms",
         "",
@@ -165,17 +183,32 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run PitWall Agent golden evals.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
     parser.add_argument("--fail-fast", action="store_true")
+    parser.add_argument("--protocol", choices=["manual", "function_calling"], default="manual")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()
 
     harness = _load_harness()
     cases = harness.load_cases(args.cases)
-    service = harness.build_service()
+
+    service = None
+    if args.protocol == "function_calling":
+        sys.path.insert(0, str(REPO_ROOT))
+        from app.agents.function_calling import FunctionCallingAgent
+
+        agent = FunctionCallingAgent()
+
+        def runner(case: Any) -> Any:
+            return agent.run(case.messages[-1])
+    else:
+        service = harness.build_service()
+
+        def runner(case: Any) -> Any:
+            return harness.run_case(service, case)
 
     results: list[EvalResult] = []
     for case in cases:
-        result = _evaluate_case(service, case, harness.run_case)
+        result = _evaluate_case(runner, case)
         results.append(result)
         if result.failures:
             print(f"FAIL {result.name}: {'; '.join(result.failures)}")
@@ -189,6 +222,7 @@ def main() -> int:
     print(f"action accuracy: {summary['action_accuracy']:.2%}")
     print(f"answer pass rate: {summary['answer_pass_rate']:.2%}")
     print(f"evidence pass rate: {summary['evidence_pass_rate']:.2%}")
+    print(f"step sequence accuracy: {summary['step_sequence_accuracy']:.2%}")
     print(f"p50 latency ms: {summary['p50_latency_ms']:.2f}")
     print(f"p95 latency ms: {summary['p95_latency_ms']:.2f}")
 

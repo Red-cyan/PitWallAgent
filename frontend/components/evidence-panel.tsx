@@ -1,4 +1,4 @@
-import { Activity, BookOpenText, Clock3, Database, X } from "lucide-react";
+import { Activity, BookOpenText, Clock3, Database, GitBranch, ListChecks, X } from "lucide-react";
 
 import { AgentTrace, Citation, RetrievedChunk } from "@/types/chat";
 
@@ -32,6 +32,7 @@ export function EvidencePanel({ trace, citations, openOnMobile = false, onClose 
             <TraceStat icon={<Activity size={14} />} label="Stream" value={trace.stream_mode ?? "n/a"} />
           </div>
           <Metadata trace={trace} />
+          <AgentSteps trace={trace} />
           {resolvedCitations.length > 0 ? (
             <section className="evidence-section">
               <h3>Citations</h3>
@@ -61,6 +62,48 @@ function TraceStat({ icon, label, value }: { icon: React.ReactNode; label: strin
 function Metadata({ trace }: { trace: AgentTrace }) {
   const values = [trace.intent, trace.tool_name, trace.action, trace.query_type, trace.confidence].filter(Boolean);
   return <div className="metadata-row">{values.map((value) => <span key={value}>{value}</span>)}</div>;
+}
+
+function AgentSteps({ trace }: { trace: AgentTrace }) {
+  const plan = trace.plan ?? [];
+  const steps = trace.steps ?? [];
+  if (plan.length === 0 && steps.length === 0) {
+    return null;
+  }
+  return (
+    <section className="evidence-section">
+      <h3><GitBranch size={13} /> Agent steps</h3>
+      {plan.length > 1 ? (
+        <div className="agent-plan">
+          {plan.map((step, index) => (
+            <span key={`${step.output_key ?? index}-${index}`} className="agent-plan-step">
+              {index + 1}. {step.tool_name ?? ""}{step.action ? `:${step.action}` : ""}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {steps.length > 0 ? (
+        <div className="agent-steps">
+          {steps.map((step, index) => (
+            <article key={`${step.output_key ?? index}-${index}`} className={`agent-step-row ${step.success === false ? "is-error" : ""}`}>
+              <span className="agent-step-index">{step.step ?? index + 1}</span>
+              <div className="agent-step-body">
+                <strong>{step.tool_name ?? ""}{step.action ? `:${step.action}` : ""}</strong>
+                <span>{[step.intent, step.output_key].filter(Boolean).join(" · ")}</span>
+                {step.success === false ? <small>{step.error ?? "step failed"}</small> : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      {trace.judge_outcomes?.length ? (
+        <div className="agent-judge">
+          <span><ListChecks size={13} /> Judge</span>
+          <strong>{trace.judge_outcome ?? trace.judge_outcomes[trace.judge_outcomes.length - 1]}</strong>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function CitationItem({ citation }: { citation: Citation }) {
