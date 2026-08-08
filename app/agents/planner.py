@@ -57,6 +57,7 @@ class LLMQueryPlanner:
         if heuristic_plan.get("tool_name") == self._TOOL_NAMES["news"]:
             heuristic_intent = "news"
         heuristic_plan["intent"] = heuristic_intent
+        heuristic_plan = self._with_steps(heuristic_plan)
 
         if not self._should_use_llm_planner(message, heuristic_intent):
             log_structured(
@@ -74,7 +75,7 @@ class LLMQueryPlanner:
             raw_response = llm_client.chat(
                 messages=self._build_messages(message, fallback_intent=fallback_intent),
                 temperature=0,
-                max_tokens=settings.llm_planner_max_tokens,
+                max_tokens=self._planner_max_tokens(message),
                 timeout=settings.llm_planner_timeout_seconds,
             )
             llm_plan = self._parse_and_normalize(raw_response, message)
@@ -134,7 +135,8 @@ class LLMQueryPlanner:
             return False
 
         if heuristic_intent != "general":
-            return False
+            # 非 general 的复合问题（如新闻 + 规则/策略/赛况）也可能需要多步分解
+            return self._has_multi_intent_signal(message)
 
         normalized = message.lower().strip()
         if self._is_casual_general_message(normalized):
@@ -145,6 +147,32 @@ class LLMQueryPlanner:
             return False
 
         return True
+
+    def _planner_max_tokens(self, message: str) -> int:
+        if self._has_multi_intent_signal(message):
+            return settings.llm_planner_multi_max_tokens
+        return settings.llm_planner_max_tokens
+
+    def _has_multi_intent_signal(self, message: str) -> bool:
+        """检测跨能力域的复合问题（如新闻 + 规则），这类问题适合多步分解。"""
+        lowered = message.lower()
+        news_hit = any(
+            token in lowered or token in message
+            for token in ("news", "headline", "新闻", "资讯", "围场")
+        )
+        regulation_hit = any(
+            token in lowered or token in message
+            for token in ("rule", "rules", "regulation", "规则", "条例", "违规")
+        )
+        strategy_hit = any(
+            token in lowered or token in message
+            for token in ("strategy", "pit stop", "策略", "进站")
+        )
+        race_hit = any(
+            token in lowered or token in message
+            for token in ("积分", "积分榜", "车手", "车队", "standings", "下一站", "next race")
+        )
+        return news_hit and (regulation_hit or strategy_hit or race_hit)
 
     def _is_casual_general_message(self, normalized: str) -> bool:
         casual_messages = {
@@ -176,8 +204,14 @@ class LLMQueryPlanner:
                 "role": "system",
                 "content": (
                     "You are the planning module for a Formula 1 assistant. "
-                    "Choose exactly one intent and one action. "
-                    "Return only JSON with keys: intent, action, params. "
+                    "Choose the right intent and action(s) to answer the question. "
+                    "Return only JSON with either {intent, action, params} for a "
+                    "single step, or {steps: [{intent, action, params, output_key}]} "
+                    "with 2-4 ordered dependent steps when the question spans "
+                    "capabilities (e.g. find news first, then analyze it against "
+                    "regulations). Each step needs a unique output_key; later steps "
+                    "may reference a previous step's output with "
+                    "\"$ref:<output_key>.<field_path>\" in params. "
                     "Supported intents and actions: "
                     "news:list_recent|search|get_article|get_insights|get_rules_analysis; "
                     "race:list_schedule|get_next_race|get_previous_race|get_race_results|get_driver_standings|get_constructor_standings; "
@@ -194,7 +228,10 @@ class LLMQueryPlanner:
                     "Use news only when the user explicitly asks for news, headlines, or recent updates. "
                     "Use news:search to find articles about a specific topic, team, driver, or circuit. "
                     "Use news:get_article for a specific article by id, get_insights for article analysis, "
-                    "and get_rules_analysis when the user asks how a news article relates to FIA rules."
+                    "and get_rules_analysis when the user asks how a news article relates to FIA rules. "
+                    "Prefer a multi-step plan when the answer needs two capabilities, "
+                    "for example: news:search first to locate an article, then "
+                    "regulation:ask to check the rules mentioned in it."
                 ),
             },
             {
@@ -202,6 +239,10 @@ class LLMQueryPlanner:
                 "content": (
                     f"Fallback intent from previous turn: {fallback_text}\n"
                     f"User message:\n{message}\n\n"
+                    "If returning a single step, use {intent, action, params}. "
+                    "If returning steps, give each step a unique output_key and keep "
+                    "the steps in execution order; later steps may reference earlier "
+                    "outputs via \"$ref:<output_key>.<field_path>\" in params. "
                     "If regulation/strategy/general is selected, include params.question with the user message. "
                     "If news:list_recent is selected, params should include limit=5. "
                     "If a news article action is selected, params must include article_id as an integer. "
@@ -212,6 +253,46 @@ class LLMQueryPlanner:
 
     def _parse_and_normalize(self, raw_response: str, message: str) -> dict[str, Any]:
         data = self._extract_json_object(raw_response)
+        raw_steps = data.get("steps")
+        if isinstance(raw_steps, list) and raw_steps:
+            steps: list[dict[str, Any]] = []
+            used_keys: set[str] = set()
+            for index, raw_step in enumerate(raw_steps):
+                if not isinstance(raw_step, dict):
+                    raise ValueError("Invalid plan step.")
+                intent = raw_step.get("intent")
+                action = raw_step.get("action")
+                params = raw_step.get("params")
+                if not isinstance(intent, str) or intent not in self._SUPPORTED_ACTIONS:
+                    raise ValueError("Unsupported planner intent in step.")
+                if not isinstance(action, str) or action not in self._SUPPORTED_ACTIONS[intent]:
+                    raise ValueError("Unsupported planner action in step.")
+                if not isinstance(params, dict):
+                    params = {}
+                params = self._normalize_step_params(intent, action, params, message)
+                output_key = raw_step.get("output_key")
+                if not isinstance(output_key, str) or not output_key or output_key in used_keys:
+                    output_key = f"step_{index}"
+                used_keys.add(output_key)
+                steps.append(
+                    {
+                        "intent": intent,
+                        "tool_name": self._TOOL_NAMES[intent],
+                        "action": action,
+                        "params": params,
+                        "output_key": output_key,
+                    }
+                )
+            first = steps[0]
+            return {
+                "intent": first["intent"],
+                "tool_name": first["tool_name"],
+                "action": first["action"],
+                "params": first["params"],
+                "steps": steps,
+            }
+
+        # 单步（向后兼容）
         intent = data.get("intent")
         action = data.get("action")
         params = data.get("params", {})
@@ -223,23 +304,46 @@ class LLMQueryPlanner:
         if not isinstance(params, dict):
             params = {}
 
-        if intent in {"regulation", "strategy", "general"}:
-            params["question"] = message
-        elif intent == "news":
-            if action == "list_recent":
-                params.setdefault("limit", 5)
-            else:
-                try:
-                    params["article_id"] = int(params["article_id"])
-                except (KeyError, TypeError, ValueError) as exc:
-                    raise ValueError("News article actions require integer article_id.") from exc
-
-        return {
+        plan: dict[str, Any] = {
             "intent": intent,
             "tool_name": self._TOOL_NAMES[intent],
             "action": action,
-            "params": params,
+            "params": self._normalize_step_params(intent, action, params, message),
         }
+        return self._with_steps(plan)
+
+    def _normalize_step_params(self, intent: str, action: str, params: dict[str, Any], message: str) -> dict[str, Any]:
+        """规范化单步参数：注入 question、补默认值、校验 news article_id。"""
+        normalized = dict(params)
+        if intent in {"regulation", "strategy", "general"}:
+            normalized.setdefault("question", message)
+        elif intent == "news":
+            if action == "list_recent":
+                normalized.setdefault("limit", 5)
+            elif action in {"get_article", "get_insights", "get_rules_analysis"}:
+                article_id = normalized.get("article_id")
+                if isinstance(article_id, str) and article_id.startswith("$ref:"):
+                    # 运行时才插值的引用，规划期不校验
+                    pass
+                else:
+                    try:
+                        if article_id is None:
+                            raise ValueError("News article actions require integer article_id.")
+                        normalized["article_id"] = int(article_id)
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError("News article actions require integer article_id.") from exc
+        return normalized
+
+    def _with_steps(self, plan: dict[str, Any]) -> dict[str, Any]:
+        """把单步计划包装为统一的多步结构（steps 长度为 1），保持顶层字段兼容。"""
+        step = {
+            "intent": plan["intent"],
+            "tool_name": plan["tool_name"],
+            "action": plan["action"],
+            "params": plan.get("params", {}),
+            "output_key": plan.get("output_key", "step_0"),
+        }
+        return {**plan, "steps": [step]}
 
     def _extract_json_object(self, raw_response: str) -> dict[str, Any]:
         try:

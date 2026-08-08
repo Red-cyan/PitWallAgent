@@ -3,11 +3,13 @@ import time
 from collections.abc import Callable
 
 from app.core.logging import log_structured
+from app.agents.function_calling import FunctionCallingAgent
 from app.agents.intent_router import IntentRouter
 from app.agents.planner import LLMQueryPlanner
 from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.runtime_graph import LangGraphAgentRuntime
 from app.agents.tool_dispatcher import ToolDispatcher
+from app.config.settings import settings
 from app.schemas.agent import AgentQueryResponse
 
 
@@ -78,6 +80,26 @@ class AgentService:
             has_fallback_intent=fallback_intent is not None,
             has_conversation_context=conversation_context is not None,
         )
+        if settings.agent_tool_protocol == "function_calling" and settings.llm_api_key:
+            try:
+                agent = FunctionCallingAgent(tool_dispatcher=self.tool_dispatcher, on_token=on_token)
+                response = agent.run(effective_message, fallback_intent=fallback_intent)
+                response.trace = self._with_latency_trace(response.trace, started_at)
+                log_structured(
+                    self.logger,
+                    "agent_query_completed",
+                    intent=response.intent,
+                    tool_name=response.tool_name,
+                    success=response.success,
+                    runtime_mode="function_calling",
+                )
+                return response
+            except Exception as exc:
+                log_structured(
+                    self.logger,
+                    "function_calling_failed_fallback_manual",
+                    error_type=exc.__class__.__name__,
+                )
         if self.runtime is not None:
             if on_token is None:
                 response = self.runtime.run(
@@ -105,11 +127,27 @@ class AgentService:
             return response
 
         tool_plan = self.planner.plan(effective_message, fallback_intent=fallback_intent)
-        intent = tool_plan["intent"]
+        steps = tool_plan.get("steps") or [tool_plan]
         if on_token is None:
-            result = self.tool_dispatcher.execute_plan(tool_plan)
+            results = self.tool_dispatcher.execute_plan_steps(steps)
         else:
-            result = self.tool_dispatcher.execute_plan(tool_plan, on_token=on_token)
+            results = self.tool_dispatcher.execute_plan_steps(steps, on_token=on_token)
+        result = results[-1]
+        # 统一 intent/action 语义：最终执行的那一步（多步时是链的末端能力）
+        final_step = steps[-1] if steps else tool_plan
+        intent = final_step.get("intent", tool_plan["intent"])
+        if len(results) > 1:
+            result.payload = {
+                **result.payload,
+                "step_results": [
+                    {
+                        "tool_name": r.tool_name,
+                        "success": r.success,
+                        "payload": r.payload,
+                    }
+                    for r in results
+                ],
+            }
         final_answer = self.response_formatter.build(
             message=effective_message,
             intent=intent,
@@ -119,6 +157,18 @@ class AgentService:
             error=result.error,
         )
         response_payload = result.payload.get("response", {})
+        executed_steps = [
+            {
+                "step": index + 1,
+                "intent": step.get("intent", "general"),
+                "tool_name": executed.tool_name,
+                "action": step.get("action"),
+                "output_key": step.get("output_key", f"step_{index}"),
+                "success": executed.success,
+                "error": executed.error,
+            }
+            for index, (step, executed) in enumerate(zip(steps, results))
+        ]
         response = AgentQueryResponse(
             intent=intent,
             tool_name=result.tool_name,
@@ -129,8 +179,8 @@ class AgentService:
             trace={
                 "intent": intent,
                 "tool_name": result.tool_name,
-                "action": result.payload.get("action") or tool_plan.get("action"),
-                "params": tool_plan.get("params", {}),
+                "action": result.payload.get("action") or final_step.get("action") or tool_plan.get("action"),
+                "params": final_step.get("params", {}) or tool_plan.get("params", {}),
                 "success": result.success,
                 "error": result.error,
                 "answer_status": response_payload.get("answer_status")
@@ -142,6 +192,16 @@ class AgentService:
                 "query_type": response_payload.get("query_type") or result.payload.get("query_type"),
                 "citations": response_payload.get("citations") or result.payload.get("citations", []),
                 "retrieved_chunks": response_payload.get("retrieved_chunks") or result.payload.get("retrieved_chunks", []),
+                "plan": [
+                    {
+                        "output_key": step.get("output_key", f"step_{index}"),
+                        "intent": step.get("intent", ""),
+                        "tool_name": step.get("tool_name", ""),
+                        "action": step.get("action", ""),
+                    }
+                    for index, step in enumerate(steps)
+                ],
+                "steps": executed_steps,
             },
         )
         response.trace = self._with_latency_trace(response.trace, started_at)

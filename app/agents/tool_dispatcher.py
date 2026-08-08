@@ -13,6 +13,35 @@ from app.tools.regulation_tool import RegulationTool
 from app.tools.strategy_tool import StrategyTool
 
 
+def interpolate_params(
+    params: dict,
+    step_outputs: dict[str, dict],
+) -> dict:
+    """把 params 中的 $ref:<output_key>.<field_path> 引用替换为前序步骤输出。"""
+    interpolated: dict = {}
+    for key, value in params.items():
+        if isinstance(value, str) and value.startswith("$ref:"):
+            interpolated[key] = resolve_ref(value, step_outputs)
+        else:
+            interpolated[key] = value
+    return interpolated
+
+
+def resolve_ref(ref: str, step_outputs: dict[str, dict]) -> object:
+    path = ref[len("$ref:"):]
+    parts = path.split(".")
+    holder = step_outputs.get(parts[0], {})
+    current = holder.get("payload", holder)
+    for part in parts[1:]:
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        elif isinstance(current, list) and part.isdigit() and int(part) < len(current):
+            current = current[int(part)]
+        else:
+            return None
+    return current
+
+
 class ToolDispatcher:
     def __init__(
         self,
@@ -273,6 +302,37 @@ class ToolDispatcher:
         query = " ".join(tokens)
         return query[:60]
 
+    def execute_plan_steps(
+        self,
+        steps: list[dict],
+        on_token: Callable[[str], None] | None = None,
+    ) -> list[ToolResult]:
+        """按序执行多步计划，支持步骤间 $ref 数据传递；任一步失败即停止。"""
+        step_outputs: dict[str, dict] = {}
+        results: list[ToolResult] = []
+        for index, step in enumerate(steps):
+            params = interpolate_params(step.get("params", {}), step_outputs)
+            plan = {
+                "intent": step.get("intent", "general"),
+                "tool_name": step["tool_name"],
+                "action": step["action"],
+                "params": params,
+            }
+            if on_token is None:
+                result = self.execute_plan(plan)
+            else:
+                result = self.execute_plan(plan, on_token=on_token)
+            output_key = step.get("output_key", f"step_{index}")
+            step_outputs[output_key] = {
+                "success": result.success,
+                "payload": result.payload,
+                "error": result.error,
+            }
+            results.append(result)
+            if not result.success:
+                break
+        return results
+
     def execute_plan(
         self,
         plan: dict,
@@ -282,7 +342,6 @@ class ToolDispatcher:
         action = plan["action"]
         params = plan.get("params", {})
         started_at = time.perf_counter()
-
         log_structured(
             self.logger,
             "tool_plan_executing",

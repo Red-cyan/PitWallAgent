@@ -121,8 +121,8 @@ class ReActReflector:
         tool_plan: dict[str, Any],
         tool_result: ToolResult,
     ) -> list[dict[str, str]]:
-        tool_output = json.dumps(tool_result.payload, ensure_ascii=False)[:2000]
         tool_error = tool_result.error or "none"
+        tool_summary = self._summarize_tool_result(tool_result.payload)
         return [
             {
                 "role": "system",
@@ -139,7 +139,10 @@ class ReActReflector:
                     "get_driver_standings|get_constructor_standings; "
                     "regulation_tool:ask; strategy_tool:analyze; general_tool:answer. "
                     "When the tool failed, propose a corrected next_plan (e.g. fall back to "
-                    "news_tool:list_recent when get_article failed). When the result already "
+                    "news_tool:list_recent when get_article failed). When a regulation answer "
+                    "has answer_status=insufficient_evidence, propose re-asking regulation_tool "
+                    "with a different query. When a news/race result is empty, propose a "
+                    "reasonable alternative tool call. When the result already "
                     "answers the question, set finish=true and next_plan=null. "
                     "For news get_article that failed because the id is invalid, prefer "
                     "list_recent. Never invent tool names or actions outside the whitelist."
@@ -153,10 +156,66 @@ class ReActReflector:
                     f"Executed plan: {json.dumps(tool_plan, ensure_ascii=False)}\n"
                     f"Tool success: {tool_result.success}\n"
                     f"Tool error: {tool_error}\n"
-                    f"Tool output:\n{tool_output}"
+                    f"Tool output summary:\n{json.dumps(tool_summary, ensure_ascii=False)}"
                 ),
             },
         ]
+
+    def _summarize_tool_result(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """把工具输出压缩为结构化摘要，供裁判判断是否需要继续推理。"""
+        response = payload.get("response") or {}
+        summary: dict[str, Any] = {}
+        for key in ("answer_status", "mode", "confidence", "evidence_count", "query_type", "source_mode"):
+            if response.get(key) is not None:
+                summary[key] = response[key]
+        citations = response.get("citations") or payload.get("citations") or []
+        if citations:
+            summary["cited"] = [
+                c.get("clause_id") or c.get("clause_number") or c.get("id") or str(c)[:80]
+                for c in citations[:5]
+            ]
+        articles = payload.get("articles")
+        if isinstance(articles, list):
+            summary["article_count"] = len(articles)
+            summary["article_titles"] = [a.get("title") for a in articles[:5] if a.get("title")]
+        article = payload.get("article")
+        if isinstance(article, dict) and article.get("title"):
+            summary["article"] = (
+                f"{article['title']}: {article.get('summary') or article.get('content') or ''}"
+            )
+        insights = payload.get("insights")
+        if isinstance(insights, dict) and insights.get("summary"):
+            summary["insights"] = insights["summary"]
+        rules_analysis = payload.get("rules_analysis")
+        if isinstance(rules_analysis, dict) and rules_analysis.get("analysis_summary"):
+            summary["rules_analysis"] = rules_analysis["analysis_summary"]
+        race_result = payload.get("race_result")
+        if isinstance(race_result, dict):
+            results = race_result.get("results") or []
+            summary["race_result"] = (
+                f"{race_result.get('grand_prix_name', '')} round {race_result.get('round_number', '')}: "
+                + "; ".join(
+                    f"{entry.get('position')}. {entry.get('driver_name')}" for entry in results[:5] if entry.get("driver_name")
+                )
+            )
+        for standings_key in ("standings", "schedule"):
+            entries = payload.get(standings_key)
+            if isinstance(entries, list) and entries:
+                summary[standings_key] = [
+                    f"{e.get('position')}. {e.get('driver_name') or e.get('team_name') or e.get('grand_prix_name')}"
+                    for e in entries[:5]
+                    if e.get("position") is not None or e.get("driver_name") or e.get("team_name")
+                ]
+        if payload.get("race") is not None:
+            race_info = payload["race"]
+            if isinstance(race_info, dict):
+                summary["race"] = (
+                    f"{race_info.get('grand_prix_name') or race_info.get('race_name') or ''} "
+                    f"round {race_info.get('round_number', '')}".strip()
+                )
+        if not summary:
+            summary["empty"] = True
+        return summary
 
     def _parse_and_normalize(
         self,

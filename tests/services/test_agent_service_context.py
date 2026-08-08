@@ -52,6 +52,20 @@ class StubToolDispatcher:
             payload={"message": plan.get("params", {}).get("question", ""), "action": plan["action"]},
         )
 
+    def execute_plan_steps(self, steps: list[dict]):
+        results = []
+        for step in steps:
+            plan = {
+                "intent": step.get("intent", "general"),
+                "tool_name": step["tool_name"],
+                "action": step["action"],
+                "params": step.get("params", {}),
+            }
+            results.append(self.execute_plan(plan))
+            if not results[-1].success:
+                break
+        return results
+
 
 def test_agent_service_does_not_mix_old_context_into_non_follow_up_queries() -> None:
     planner = CapturingPlanner()

@@ -83,6 +83,75 @@ def test_tool_dispatcher_routes_topic_news_to_search() -> None:
     assert "迈凯伦" in plan["params"]["query"]
 
 
+def test_tool_dispatcher_executes_multi_step_plan_with_ref_interpolation() -> None:
+    dispatcher = build_dispatcher()
+
+    steps = [
+        {
+            "intent": "news",
+            "tool_name": "news_tool",
+            "action": "search",
+            "params": {"query": "norris", "limit": 5},
+            "output_key": "news_hit",
+        },
+        {
+            "intent": "regulation",
+            "tool_name": "regulation_tool",
+            "action": "ask",
+            "params": {"question": "$ref:news_hit.query"},
+            "output_key": "rule_check",
+        },
+    ]
+
+    results = dispatcher.execute_plan_steps(steps)
+
+    assert len(results) == 2
+    assert results[0].tool_name == "news_tool"
+    # 第二步的 $ref 被第一步 payload（kwargs）插值
+    assert results[1].payload["question"] == "norris"
+
+
+def test_tool_dispatcher_execute_plan_steps_stops_on_failure() -> None:
+    class FailingNewsTool(StubNewsTool):
+        def invoke(self, **kwargs):
+            class Result:
+                tool_name = "news_tool"
+                success = False
+                payload = {}
+                error = "boom"
+
+            return Result()
+
+    dispatcher = ToolDispatcher(
+        news_tool=cast(Any, FailingNewsTool()),
+        race_tool=cast(Any, StubRaceTool()),
+        regulation_tool=cast(Any, StubRegulationTool()),
+        general_tool=cast(Any, StubGeneralTool()),
+    )
+
+    steps = [
+        {
+            "intent": "news",
+            "tool_name": "news_tool",
+            "action": "search",
+            "params": {"query": "x"},
+            "output_key": "a",
+        },
+        {
+            "intent": "regulation",
+            "tool_name": "regulation_tool",
+            "action": "ask",
+            "params": {"question": "y"},
+            "output_key": "b",
+        },
+    ]
+
+    results = dispatcher.execute_plan_steps(steps)
+
+    assert len(results) == 1
+    assert results[0].success is False
+
+
 def test_tool_dispatcher_builds_race_plan_for_next_race() -> None:
     dispatcher = build_dispatcher()
 

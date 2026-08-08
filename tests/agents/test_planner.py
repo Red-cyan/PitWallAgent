@@ -164,3 +164,141 @@ def test_planner_rejects_news_article_action_without_id_and_falls_back() -> None
 
     assert plan["intent"] == "general"
     assert plan["tool_name"] == "general_tool"
+
+
+def test_planner_parses_multi_step_plan() -> None:
+    llm_response = (
+        '{"steps":['
+        '{"intent":"news","action":"search","params":{"query":"norris penalty"},"output_key":"news_hit"},'
+        '{"intent":"regulation","action":"ask","params":{"question":"$ref:news_hit.summary"},"output_key":"rule_check"}'
+        "]}"
+    )
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient(llm_response),
+    )
+
+    plan = planner.plan("诺里斯最近的新闻，他上次违反了什么规则")
+
+    assert plan["intent"] == "news"
+    assert plan["tool_name"] == "news_tool"
+    assert plan["action"] == "search"
+    assert len(plan["steps"]) == 2
+
+    first, second = plan["steps"]
+    assert first["output_key"] == "news_hit"
+    assert first["params"]["query"] == "norris penalty"
+    assert second["intent"] == "regulation"
+    assert second["tool_name"] == "regulation_tool"
+    assert second["action"] == "ask"
+    # 显式 $ref 引用不被 question 注入覆盖
+    assert second["params"]["question"] == "$ref:news_hit.summary"
+
+
+def test_planner_multi_step_injects_question_for_ask_steps() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient(
+            '{"steps":['
+            '{"intent":"news","action":"list_recent","params":{},"output_key":"a"},'
+            '{"intent":"regulation","action":"ask","params":{},"output_key":"b"}'
+            "]}"
+        ),
+    )
+
+    plan = planner.plan("最新新闻里有什么规则问题")
+
+    assert len(plan["steps"]) == 2
+    assert plan["steps"][0]["params"]["limit"] == 5
+    assert plan["steps"][1]["params"]["question"] == "最新新闻里有什么规则问题"
+
+
+def test_planner_rejects_invalid_multi_step_and_falls_back() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient(
+            '{"steps":['
+            '{"intent":"news","action":"search","params":{},"output_key":"a"},'
+            '{"intent":"race","action":"unsupported","params":{},"output_key":"b"}'
+            "]}"
+        ),
+    )
+
+    plan = planner.plan("车队积分榜第一是谁")
+
+    # 非法多步计划 → 回退启发式（race 单步）
+    assert plan["intent"] == "race"
+    assert plan["tool_name"] == "race_tool"
+    assert plan["action"] == "get_driver_standings"
+    assert len(plan["steps"]) == 1
+
+
+def test_planner_reassigns_duplicate_output_keys() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient(
+            '{"steps":['
+            '{"intent":"news","action":"list_recent","params":{},"output_key":"dup"},'
+            '{"intent":"news","action":"list_recent","params":{},"output_key":"dup"}'
+            "]}"
+        ),
+    )
+
+    plan = planner.plan("最近有什么新闻，再说一次")
+
+    keys = [step["output_key"] for step in plan["steps"]]
+    assert keys[0] == "dup"
+    assert keys[1] == "step_1"
+    assert len(set(keys)) == 2
+
+
+def test_planner_multi_intent_signal_uses_larger_token_budget() -> None:
+    llm_client = StubLLMClient('{"intent":"general","action":"answer","params":{}}')
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=llm_client,
+    )
+
+    planner.plan("诺里斯最近的新闻，他上次违反了什么规则")
+
+    assert llm_client.last_max_tokens == 320
+
+
+def test_planner_heuristic_plan_always_has_steps() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient('{"intent":"general","action":"answer","params":{}}'),
+    )
+
+    plan = planner.plan("车队积分榜第一是谁")
+
+    assert plan["intent"] == "race"
+    assert len(plan["steps"]) == 1
+    assert plan["steps"][0]["intent"] == "race"
+    assert plan["steps"][0]["tool_name"] == "race_tool"
+    assert plan["steps"][0]["output_key"] == "step_0"
+
+
+def test_planner_accepts_ref_article_id_in_multi_step_plan() -> None:
+    planner = LLMQueryPlanner(
+        intent_router=StubIntentRouter(),
+        tool_dispatcher=StubToolDispatcher(),
+        llm_client=StubLLMClient(
+            '{"steps":['
+            '{"intent":"news","action":"search","params":{"query":"norris"},"output_key":"hit"},'
+            '{"intent":"news","action":"get_article","params":{"article_id":"$ref:hit.articles.0.id"},"output_key":"article"}'
+            "]}"
+        ),
+    )
+
+    # $ref 引用在规划期不校验为整数，避免多步计划整体失败
+    plan = planner.plan("诺里斯最近的新闻")
+
+    assert len(plan["steps"]) == 2
+    assert plan["steps"][1]["params"]["article_id"] == "$ref:hit.articles.0.id"

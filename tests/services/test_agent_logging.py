@@ -35,6 +35,20 @@ class StubToolDispatcher:
 
         return Result()
 
+    def execute_plan_steps(self, steps: list[dict]):
+        results = []
+        for step in steps:
+            plan = {
+                "intent": step.get("intent", "general"),
+                "tool_name": step["tool_name"],
+                "action": step["action"],
+                "params": step.get("params", {}),
+            }
+            results.append(self.execute_plan(plan))
+            if not results[-1].success:
+                break
+        return results
+
 
 class StubRuntime:
     def run(

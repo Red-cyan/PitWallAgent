@@ -124,6 +124,27 @@ class AgentResponseFormatter:
         if not success:
             return error or f"{tool_name} 执行失败。"
 
+        step_results = result.get("step_results")
+        if isinstance(step_results, list) and len(step_results) > 1:
+            main_answer = self._build_main_answer(message=message, intent=intent, result=result)
+            prior_summaries: list[str] = []
+            for step in step_results[:-1]:
+                summary = self._summarize_step_payload(step.get("payload") or {})
+                if summary:
+                    prior_summaries.append(summary)
+            if prior_summaries:
+                return "\n\n".join(prior_summaries + [main_answer])
+            return main_answer
+
+        return self._build_main_answer(message=message, intent=intent, result=result)
+
+    def _build_main_answer(
+        self,
+        *,
+        message: str,
+        intent: str,
+        result: dict[str, Any],
+    ) -> str:
         if intent == "news":
             article = result.get("article")
             if article:
@@ -171,6 +192,26 @@ class AgentResponseFormatter:
             return "已完成通用问答。"
 
         return "已完成请求处理。"
+
+    def _summarize_step_payload(self, payload: dict[str, Any]) -> str:
+        """把多步计划中前置步骤的输出压缩为一段摘要，供最终回答引用。"""
+        parts: list[str] = []
+        articles = payload.get("articles")
+        if isinstance(articles, list) and articles:
+            titles = [a.get("title") for a in articles[:3] if a.get("title")]
+            if titles:
+                parts.append("相关新闻：" + "；".join(titles))
+        article = payload.get("article")
+        if isinstance(article, dict) and article.get("title"):
+            parts.append(f"{article['title']}：{article.get('summary') or article.get('content') or ''}")
+        insights = payload.get("insights")
+        if isinstance(insights, dict) and insights.get("summary"):
+            parts.append(insights["summary"])
+        response = payload.get("response") or {}
+        answer = response.get("answer")
+        if answer:
+            parts.append(answer)
+        return "\n".join(parts)
 
     def _format_news_list(self, articles: list[dict[str, Any]], *, action: str, query: str | None) -> str:
         lines: list[str] = []

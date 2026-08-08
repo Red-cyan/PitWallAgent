@@ -325,6 +325,166 @@ class RaisingReflector(StubReflector):
         raise RuntimeError("llm down")
 
 
+class RegulationPlanner:
+    def plan(self, message: str, fallback_intent: str | None = None) -> dict:
+        return {
+            "intent": "regulation",
+            "tool_name": "regulation_tool",
+            "action": "ask",
+            "params": {"question": message},
+        }
+
+
+class InsufficientEvidenceDispatcher:
+    """首次返回 insufficient_evidence，重规划后返回完整答案。"""
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def build_plan(self, intent: str, message: str) -> dict:
+        return {"intent": intent, "tool_name": "dispatcher", "action": "unsupported", "params": {}}
+
+    def execute_plan(self, plan: dict) -> ToolResult:
+        self.calls.append(plan)
+        if len(self.calls) == 1:
+            return ToolResult(
+                tool_name="regulation_tool",
+                success=True,
+                payload={"response": {"answer_status": "insufficient_evidence", "mode": "offline", "answer": ""}},
+            )
+        return ToolResult(
+            tool_name="regulation_tool",
+            success=True,
+            payload={"response": {"answer_status": "answered", "mode": "llm", "answer": "规则 X 不允许。"}},
+        )
+
+
+class EmptyNewsDispatcher:
+    """首次返回空文章列表，重规划后返回新闻。"""
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def build_plan(self, intent: str, message: str) -> dict:
+        return {"intent": intent, "tool_name": "dispatcher", "action": "unsupported", "params": {}}
+
+    def execute_plan(self, plan: dict) -> ToolResult:
+        self.calls.append(plan)
+        if len(self.calls) == 1:
+            return ToolResult(tool_name="news_tool", success=True, payload={"articles": []})
+        return ToolResult(
+            tool_name="news_tool",
+            success=True,
+            payload={"articles": [{"title": "Headline 1"}]},
+        )
+
+
+def test_insufficient_evidence_triggers_replanning() -> None:
+    dispatcher = InsufficientEvidenceDispatcher()
+    reflector = StubReflector(
+        [
+            {
+                "finish": False,
+                "reason": "evidence missing, re-ask with different query",
+                "next_plan": {
+                    "tool_name": "regulation_tool",
+                    "action": "ask",
+                    "params": {"question": "换个问法"},
+                },
+            }
+        ]
+    )
+    runtime = LangGraphAgentRuntime(
+        planner=cast_any(RegulationPlanner()),
+        tool_dispatcher=dispatcher,  # type: ignore[arg-type]
+        reflector=reflector,  # type: ignore[arg-type]
+        checkpointer=None,
+    )
+
+    response = runtime.run("排位赛有什么规则？")
+
+    assert len(dispatcher.calls) == 2
+    assert dispatcher.calls[1]["params"]["question"] == "换个问法"
+    assert response.success is True
+    assert "规则 X 不允许。" in response.final_answer
+    assert response.trace["judge_outcomes"] == [
+        "evidence missing, re-ask with different query",
+        "no_judge_needed",
+    ]
+
+
+def test_empty_news_result_triggers_replanning() -> None:
+    dispatcher = EmptyNewsDispatcher()
+    reflector = StubReflector(
+        [
+            {
+                "finish": False,
+                "reason": "no articles found, list recent instead",
+                "next_plan": {
+                    "tool_name": "news_tool",
+                    "action": "list_recent",
+                    "params": {"limit": 5},
+                },
+            }
+        ]
+    )
+    runtime = LangGraphAgentRuntime(
+        planner=cast_any(SuccessPlanner()),
+        tool_dispatcher=dispatcher,  # type: ignore[arg-type]
+        reflector=reflector,  # type: ignore[arg-type]
+        checkpointer=None,
+    )
+
+    response = runtime.run("诺里斯有什么新闻")
+
+    assert len(dispatcher.calls) == 2
+    assert dispatcher.calls[0]["action"] == "list_recent"
+    assert dispatcher.calls[1]["action"] == "list_recent"
+    assert "Headline 1" in response.final_answer
+
+
+def test_insufficient_evidence_without_llm_stays_deterministic() -> None:
+    dispatcher = InsufficientEvidenceDispatcher()
+
+    class DisabledReflector(StubReflector):
+        @property
+        def enabled(self) -> bool:
+            return False
+
+    runtime = LangGraphAgentRuntime(
+        planner=cast_any(RegulationPlanner()),
+        tool_dispatcher=dispatcher,  # type: ignore[arg-type]
+        reflector=cast_any(DisabledReflector([])),
+        checkpointer=None,
+    )
+
+    response = runtime.run("排位赛有什么规则？")
+
+    # 无 LLM 时保持确定性：只执行一次，不进入重规划
+    assert len(dispatcher.calls) == 1
+    assert response.trace["judge_outcome"] == "judge_disabled"
+
+
+def test_reflector_builds_structured_observation_summary() -> None:
+    reflector = ReActReflector()
+
+    messages = reflector._build_messages(
+        message="排位赛有什么规则？",
+        intent="regulation",
+        tool_plan={"intent": "regulation", "tool_name": "regulation_tool", "action": "ask", "params": {"question": "排位赛有什么规则？"}},
+        tool_result=ToolResult(
+            tool_name="regulation_tool",
+            success=True,
+            payload={"response": {"answer_status": "insufficient_evidence", "evidence_count": 0}},
+        ),
+    )
+
+    content = messages[1]["content"]
+    assert "answer_status" in content
+    assert "insufficient_evidence" in content
+    assert "Tool output summary" in content
+
+
 def test_planner_failure_falls_back_to_general() -> None:
     reflector = StubReflector([{"finish": True, "reason": "complete", "next_plan": None}])
     runtime = LangGraphAgentRuntime(
