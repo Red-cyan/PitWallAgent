@@ -53,6 +53,7 @@ services:
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
+      AGENT_REACT_MAX_STEPS: ${AGENT_REACT_MAX_STEPS:-5}
       LLM_MODEL: ${LLM_MODEL:-deepseek-v4-flash}
     volumes:
       - ${HF_MODELS_DIR:-./.hf-models}:/models

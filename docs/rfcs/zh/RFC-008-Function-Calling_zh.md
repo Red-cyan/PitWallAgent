@@ -79,7 +79,7 @@ for step in 1..max_steps:
 ```
 
 - 工具结果以 `tool` role 回灌，长度截断 2000 字符（与 reflector observation 同一策略）。
-- 每轮可并行多个 tool_calls；多轮循环受 `AGENT_REACT_MAX_STEPS` 限制。
+- 每轮可并行多个 tool_calls；多轮循环受 `AGENT_REACT_MAX_STEPS` 限制。达到上限时追加一次不携带 tools 的强制总结请求；若总结失败，则回退到最近一个包含明确回答字段的成功工具结果。
 - `LLMClient.chat_tools` 复用同一 OpenAI client 与 metrics/logle。
 
 ---

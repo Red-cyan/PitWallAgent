@@ -90,7 +90,7 @@ FIA PDF
 
 - **多步计划**：Planner（LLM + 启发式双路径）对复合问题输出 `{steps: [{intent, action, params, output_key}]}` 依赖链，步骤间通过 `$ref:<output_key>.<field>` 传递上一步输出（例如先 `news:search` 拿到文章，再把标题注入 `regulation:ask`）。单步问题自动退化为 1 步计划，向后兼容。
 - **执行队列**：LangGraph 按序执行步骤，每步产出写入 `step_outputs`，trace 同时暴露「计划序列（plan）」与「执行序列（steps）」供前端逐步骤渲染。
-- **正向推理循环**：Judge（reflector）在**工具失败、regulation 证据不足、news/race 结果不完整**时把结构化 observation（answer_status、证据数、命中条款/文章摘要）回灌给 LLM，让其决定 finish 或给出 `next_plan` 重规划；`max_steps` 可配置（默认 3，可调 5）。无 LLM key 时走确定性路径，行为完全可预测。
+- **正向推理循环**：Judge（reflector）在**工具失败、regulation 证据不足、news/race 结果不完整**时把结构化 observation（answer_status、证据数、命中条款/文章摘要）回灌给 LLM，让其决定 finish 或给出 `next_plan` 重规划；`max_steps` 可配置（默认 5）。无 LLM key 时走确定性路径，行为完全可预测。
 - **评测可证明**：Agent eval 新增 step sequence 断言（`expected_steps` 工具序列 + `expected_plan_len` 计划长度），66 条 golden cases 六项指标 100%，其中 6 条为多步依赖链用例。
 
 面试话术：

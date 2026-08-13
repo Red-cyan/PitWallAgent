@@ -128,6 +128,9 @@ class FunctionCallingAgent:
         executed: list[dict[str, Any]] = []
         final_content: str | None = None
         last_call: dict[str, Any] | None = None
+        last_tool_answer = ""
+        max_steps_reached = False
+        finalization_mode = "direct"
 
         for step_count in range(1, self.max_steps + 1):
             reply = self._chat(messages, tools)
@@ -147,6 +150,8 @@ class FunctionCallingAgent:
                         }
                     )
                     last_call = plan
+                    if result.success:
+                        last_tool_answer = self._extract_tool_answer(result.payload) or last_tool_answer
                     messages.append(
                         {
                             "role": "tool",
@@ -154,6 +159,8 @@ class FunctionCallingAgent:
                             "content": json.dumps(result.payload, ensure_ascii=False)[:2000],
                         }
                     )
+                if step_count == self.max_steps:
+                    max_steps_reached = True
                 continue
 
             final_content = reply.content or ""
@@ -161,8 +168,16 @@ class FunctionCallingAgent:
                 break
             break
 
+        if not final_content and max_steps_reached:
+            final_content = self._force_final_answer(messages)
+            finalization_mode = "forced_summary"
+            if not final_content:
+                final_content = last_tool_answer
+                finalization_mode = "tool_result_fallback" if final_content else "empty_fallback"
+
         if not final_content:
             final_content = "未能生成回答。"
+            finalization_mode = "empty_fallback"
 
         tool_name = (last_call or {}).get("tool_name") or "general_tool"
         intent = (last_call or {}).get("intent") or "general"
@@ -174,6 +189,8 @@ class FunctionCallingAgent:
             "action": action,
             "success": True,
             "protocol": "function_calling",
+            "max_steps_reached": max_steps_reached,
+            "finalization_mode": finalization_mode,
             "steps": executed,
             "latency_ms_by_stage": {"agent_total": latency_ms},
         }
@@ -184,6 +201,8 @@ class FunctionCallingAgent:
             intent=intent,
             tool_calls=len(executed),
             steps=max(1, len(executed)),
+            max_steps_reached=max_steps_reached,
+            finalization_mode=finalization_mode,
         )
         return AgentQueryResponse(
             intent=intent,
@@ -203,6 +222,60 @@ class FunctionCallingAgent:
             max_tokens=settings.llm_max_tokens,
             timeout=settings.llm_timeout_seconds,
         )
+
+    def _force_final_answer(self, messages: list[dict[str, Any]]) -> str:
+        finalization_messages = [
+            *messages,
+            {
+                "role": "user",
+                "content": (
+                    "The tool-call limit has been reached. Do not call any more tools. "
+                    "Using only the tool results above, answer the original user question now. "
+                    "Answer in the user's language, cite available evidence where relevant, "
+                    "and state any remaining uncertainty briefly. Keep the complete answer under "
+                    "350 Chinese characters or 220 English words so it does not end mid-sentence."
+                ),
+            },
+        ]
+        llm_client = self.llm_client or LLMClient()
+        try:
+            content = llm_client.chat(
+                messages=finalization_messages,
+                temperature=0,
+                max_tokens=settings.llm_max_tokens,
+                timeout=settings.llm_timeout_seconds,
+            )
+        except Exception as exc:
+            log_structured(
+                self.logger,
+                "function_calling_forced_summary_failed",
+                error_type=exc.__class__.__name__,
+            )
+            return ""
+
+        content = content.strip()
+        log_structured(
+            self.logger,
+            "function_calling_forced_summary_completed",
+            output_length=len(content),
+        )
+        return content
+
+    def _extract_tool_answer(self, payload: dict[str, Any] | None) -> str:
+        if not payload:
+            return ""
+
+        response = payload.get("response")
+        if isinstance(response, str):
+            return response.strip()
+        if not isinstance(response, dict):
+            return ""
+
+        for key in ("answer", "final_answer", "summary", "analysis"):
+            value = response.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return ""
 
     def _assistant_tool_message(self, reply: ChatCompletionMessage) -> dict[str, Any]:
         return {
