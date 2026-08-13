@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import json
 import logging
 import operator
 import threading
@@ -5,6 +8,11 @@ import uuid
 from collections.abc import Callable
 from typing import Annotated, Any, TypeVar, TypedDict, cast
 
+from app.agents.function_calling import (
+    SYSTEM_PROMPT,
+    ToolCallingModelAdapter,
+    invalid_tool_result,
+)
 from app.agents.intent_router import IntentRouter
 from app.agents.planner import LLMQueryPlanner
 from app.agents.reflector import ReActReflector
@@ -12,25 +20,37 @@ from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.tool_dispatcher import ToolDispatcher, interpolate_params
 from app.config.settings import settings
 from app.schemas.agent import AgentQueryResponse
+from app.tools.base import ToolResult
 
 T = TypeVar("T")
 
 
 class AgentState(TypedDict, total=False):
-    """Agent 状态。可 JSON 序列化，on_token 不进入 state（见 run 的线程局部持有）。"""
+    """Serializable state shared by both planner modes."""
 
     message: str
     fallback_intent: str | None
-    intent: str
+    planner_mode: str
+    requested_planner_mode: str
+    planner_fallback: str | None
+    messages: list[dict[str, Any]]
+    pending_tool_calls: list[dict[str, Any]]
+    current_batch_plans: list[dict[str, Any]]
+    batch_results: list[dict[str, Any]]
+    model_content: str
     tool_plan: dict[str, Any]
     plan_steps: list[dict[str, Any]]
     step_index: int
     step_outputs: dict[str, dict[str, Any]]
+    intent: str
     tool_name: str
     success: bool
     result: dict[str, Any]
     error: str | None
+    last_tool_answer: str
     final_answer: str
+    finalization_mode: str
+    max_steps_reached: bool
     trace: dict[str, Any]
     judgement: dict[str, Any]
     judge_reasons: Annotated[list[str], operator.add]
@@ -40,14 +60,16 @@ class AgentState(TypedDict, total=False):
 
 
 class LangGraphAgentRuntime:
-    """基于 LangGraph 的 Agent Runtime，带 ReAct 循环与失败修复。
+    """The single orchestration runtime for structured and native tool-calling planners."""
 
-    图结构：
-        START -> classify_intent -> plan_tool -> execute_tool -> judge_result
-        judge_result -> route_after_judge（条件边）
-            finish / 无需判断 / 超步数 -> format_response -> END
-            否则（裁判给出 next_plan）  -> plan_tool（循环）
-    """
+    _token_holder = threading.local()
+    _TOOL_TO_INTENT = {
+        "news_tool": "news",
+        "race_tool": "race",
+        "regulation_tool": "regulation",
+        "strategy_tool": "strategy",
+        "general_tool": "general",
+    }
 
     def __init__(
         self,
@@ -56,6 +78,8 @@ class LangGraphAgentRuntime:
         tool_dispatcher: ToolDispatcher | None = None,
         response_formatter: AgentResponseFormatter | None = None,
         reflector: ReActReflector | None = None,
+        tool_calling_adapter: ToolCallingModelAdapter | None = None,
+        planner_mode: str | None = None,
         checkpointer: Any = None,
         max_steps: int | None = None,
     ) -> None:
@@ -68,11 +92,13 @@ class LangGraphAgentRuntime:
         )
         self.response_formatter = response_formatter or AgentResponseFormatter()
         self.reflector = reflector or ReActReflector()
+        self.tool_calling_adapter = tool_calling_adapter or ToolCallingModelAdapter()
+        configured_mode = planner_mode or settings.agent_planner_mode
+        self.planner_mode = configured_mode if configured_mode in {"structured", "tool_calling"} else "tool_calling"
         self.checkpointer = checkpointer if checkpointer is not None else self._build_default_checkpointer()
         self.max_steps = max_steps if max_steps is not None else settings.agent_react_max_steps
+        self.max_parallel_tool_calls = 5
         self.graph = self._build_graph()
-
-    _token_holder = threading.local()
 
     def run(
         self,
@@ -86,16 +112,16 @@ class LangGraphAgentRuntime:
             if self.checkpointer is not None:
                 from langchain_core.runnables import RunnableConfig
 
-                config = cast(
-                    RunnableConfig,
-                    {"configurable": {"thread_id": uuid.uuid4().hex}},
-                )
+                config = cast(RunnableConfig, {"configurable": {"thread_id": uuid.uuid4().hex}})
             state = self.graph.invoke(
                 {
                     "message": message,
                     "fallback_intent": fallback_intent,
-                    "step_count": 1,
+                    "planner_mode": self.planner_mode,
+                    "step_count": 0 if self.planner_mode == "tool_calling" else 1,
                     "max_steps": self.max_steps,
+                    "judge_reasons": [],
+                    "steps": [],
                 },
                 config=config,
             )
@@ -103,9 +129,9 @@ class LangGraphAgentRuntime:
             self._set_current_on_token(None)
 
         return AgentQueryResponse(
-            intent=state["intent"],
-            tool_name=state["tool_name"],
-            success=state["success"],
+            intent=state.get("intent", "general"),
+            tool_name=state.get("tool_name", "general_tool"),
+            success=state.get("success", True),
             final_answer=state["final_answer"],
             result=state.get("result", {}),
             error=state.get("error"),
@@ -119,232 +145,506 @@ class LangGraphAgentRuntime:
             raise ImportError("langgraph is required to build LangGraphAgentRuntime.") from exc
 
         graph = StateGraph(AgentState)
-        graph.add_node("classify_intent", self._classify_intent_node)
-        graph.add_node("plan_tool", self._plan_tool_node)
-        graph.add_node("execute_tool", self._execute_tool_node)
-        graph.add_node("judge_result", self._judge_result_node)
-        graph.add_node("format_response", self._format_response_node)
+        graph.add_node("initialize", self._initialize_node)
+        graph.add_node("model", self._model_node)
+        graph.add_node("structured_plan", self._structured_plan_node)
+        graph.add_node("tool_batch", self._tool_batch_node)
+        graph.add_node("normalize_observation", self._normalize_observation_node)
+        graph.add_node("judge", self._judge_node)
+        graph.add_node("finalize", self._finalize_node)
+        graph.add_node("forced_summary", self._forced_summary_node)
 
-        graph.add_edge(START, "classify_intent")
-        graph.add_edge("classify_intent", "plan_tool")
-        graph.add_edge("plan_tool", "execute_tool")
-        graph.add_edge("execute_tool", "judge_result")
+        graph.add_edge(START, "initialize")
         graph.add_conditional_edges(
-            "judge_result",
+            "initialize",
+            self._route_planner,
+            {"model": "model", "structured_plan": "structured_plan"},
+        )
+        graph.add_conditional_edges(
+            "model",
+            self._route_after_model,
+            {"tool_batch": "tool_batch", "structured_plan": "structured_plan", "finalize": "finalize"},
+        )
+        graph.add_edge("structured_plan", "tool_batch")
+        graph.add_edge("tool_batch", "normalize_observation")
+        graph.add_edge("normalize_observation", "judge")
+        graph.add_conditional_edges(
+            "judge",
             self._route_after_judge,
             {
-                "format_response": "format_response",
-                "plan_tool": "plan_tool",
+                "tool_batch": "tool_batch",
+                "structured_plan": "structured_plan",
+                "model": "model",
+                "finalize": "finalize",
+                "forced_summary": "forced_summary",
             },
         )
-        graph.add_edge("format_response", END)
-
+        graph.add_edge("forced_summary", "finalize")
+        graph.add_edge("finalize", END)
         return graph.compile(checkpointer=self.checkpointer)
 
-    def _classify_intent_node(self, state: AgentState) -> AgentState:
+    def _initialize_node(self, state: AgentState) -> AgentState:
         message = self._require(state, "message", str)
-        fallback_intent = state.get("fallback_intent")
-        try:
-            tool_plan = self.planner.plan(message, fallback_intent=fallback_intent)
-        except Exception as exc:
-            log = logging.getLogger("pitwall.runtime")
-            log.error("classify_intent_failed", extra={"error_type": exc.__class__.__name__})
-            tool_plan = {
-                "intent": "general",
-                "tool_name": "general_tool",
-                "action": "answer",
-                "params": {"question": message},
-            }
+        mode = state.get("planner_mode", self.planner_mode)
         return {
             "message": message,
-            "fallback_intent": fallback_intent,
-            "intent": tool_plan["intent"],
-            "tool_plan": tool_plan,
-            "plan_steps": tool_plan.get("steps") or [self._to_step(tool_plan)],
-            "step_index": 0,
+            "fallback_intent": state.get("fallback_intent"),
+            "planner_mode": mode,
+            "requested_planner_mode": mode,
+            "planner_fallback": None,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": message},
+            ],
+            "pending_tool_calls": [],
+            "current_batch_plans": [],
+            "batch_results": [],
             "step_outputs": {},
-            "step_count": state.get("step_count", 1),
+            "step_count": state.get("step_count", 0 if mode == "tool_calling" else 1),
             "max_steps": state.get("max_steps", self.max_steps),
+            "max_steps_reached": False,
+            "finalization_mode": "direct",
         }
 
-    def _plan_tool_node(self, state: AgentState) -> AgentState:
+    def _route_planner(self, state: AgentState) -> str:
+        return "model" if state.get("planner_mode") == "tool_calling" else "structured_plan"
+
+    def _model_node(self, state: AgentState) -> AgentState:
+        try:
+            reply = self.tool_calling_adapter.invoke(state.get("messages", []))
+        except Exception as exc:
+            self.logger.error("tool_calling_model_failed", extra={"error_type": exc.__class__.__name__})
+            return {
+                "planner_mode": "structured",
+                "planner_fallback": f"tool_calling_error:{exc.__class__.__name__}",
+                "pending_tool_calls": [],
+                "model_content": "",
+                "step_count": 1,
+            }
+
+        tool_calls = list(reply.tool_calls or [])[: self.max_parallel_tool_calls]
+        if not tool_calls:
+            return {
+                "model_content": reply.content or "",
+                "pending_tool_calls": [],
+                "judge_reasons": ["complete"],
+            }
+
+        pending: list[dict[str, Any]] = []
+        plans: list[dict[str, Any]] = []
+        for raw_call in tool_calls:
+            call = cast(Any, raw_call)
+            plan, validation_error = self.tool_calling_adapter.tool_call_to_plan(call)
+            pending.append(
+                {
+                    "id": call.id,
+                    "name": call.function.name,
+                    "arguments": call.function.arguments or "{}",
+                    "validation_error": validation_error,
+                }
+            )
+            plans.append(plan)
+        return {
+            "messages": [*state.get("messages", []), self.tool_calling_adapter.assistant_message(reply)],
+            "pending_tool_calls": pending,
+            "current_batch_plans": plans,
+            "model_content": "",
+        }
+
+    def _route_after_model(self, state: AgentState) -> str:
+        if state.get("planner_mode") == "structured":
+            return "structured_plan"
+        if state.get("pending_tool_calls"):
+            return "tool_batch"
+        return "finalize"
+
+    def _structured_plan_node(self, state: AgentState) -> AgentState:
         message = self._require(state, "message", str)
-        intent = self._require(state, "intent", str)
-        judgement = state.get("judgement") or {}
-        next_plan = judgement.get("next_plan")
         plan_steps = state.get("plan_steps") or []
         step_index = state.get("step_index", 0)
-        step_outputs = state.get("step_outputs", {})
+        judgement = state.get("judgement") or {}
+        next_plan = judgement.get("next_plan")
+        state_update: AgentState = {}
 
         if isinstance(next_plan, dict) and next_plan.get("_continue"):
-            # 多步计划继续执行下一步
-            step_index = step_index + 1
+            step_index += 1
         elif isinstance(next_plan, dict):
-            # 裁判给出的修复计划：替换剩余计划，保留已有 step_outputs 供 $ref 引用
             plan_steps = [self._to_step(next_plan)]
             step_index = 0
         elif not plan_steps:
-            tool_plan = state.get("tool_plan") or self.tool_dispatcher.build_plan(intent=intent, message=message)
+            try:
+                tool_plan = self.planner.plan(message, fallback_intent=state.get("fallback_intent"))
+            except Exception as exc:
+                self.logger.error("structured_planner_failed", extra={"error_type": exc.__class__.__name__})
+                tool_plan = {
+                    "intent": "general",
+                    "tool_name": "general_tool",
+                    "action": "answer",
+                    "params": {"question": message},
+                }
             plan_steps = tool_plan.get("steps") or [self._to_step(tool_plan)]
             step_index = 0
+            state_update = {"tool_plan": tool_plan, "intent": tool_plan.get("intent", "general")}
 
-        return {
-            "message": message,
-            "fallback_intent": state.get("fallback_intent"),
-            "intent": intent,
-            "tool_plan": state.get("tool_plan", {}),
-            "plan_steps": plan_steps,
-            "step_index": step_index,
-            "step_outputs": step_outputs,
-            "step_count": state.get("step_count", 1),
-            "max_steps": state.get("max_steps", self.max_steps),
-        }
-
-    def _execute_tool_node(self, state: AgentState) -> AgentState:
-        message = self._require(state, "message", str)
-        intent = self._require(state, "intent", str)
-        plan_steps = state.get("plan_steps") or []
-        step_index = state.get("step_index", 0)
-        step_outputs = dict(state.get("step_outputs") or {})
-        step = plan_steps[step_index] if plan_steps else self._to_step(state.get("tool_plan", {}))
-        params = interpolate_params(step.get("params", {}), step_outputs)
+        step = plan_steps[step_index]
+        params = interpolate_params(step.get("params", {}), state.get("step_outputs", {}))
         plan = {
-            "intent": step.get("intent", intent),
+            "intent": step.get("intent", state.get("intent", "general")),
             "tool_name": step["tool_name"],
             "action": step["action"],
             "params": params,
-        }
-        on_token = self._current_on_token()
-        if on_token is None:
-            result = self.tool_dispatcher.execute_plan(plan)
-        else:
-            result = self.tool_dispatcher.execute_plan(plan, on_token=on_token)
-
-        output_key = step.get("output_key", f"step_{step_index}")
-        step_outputs[output_key] = {
-            "success": result.success,
-            "payload": result.payload,
-            "error": result.error,
-        }
-
-        record = {
-            "step": max(state.get("step_count", 1), state.get("step_index", 0) + 1),
-            "intent": step.get("intent", intent),
-            "tool_name": result.tool_name,
-            "action": step.get("action"),
-            "output_key": output_key,
-            "success": result.success,
-            "error": result.error,
+            "output_key": step.get("output_key", f"step_{step_index}"),
         }
         return {
-            "message": message,
-            "fallback_intent": state.get("fallback_intent"),
-            "intent": step.get("intent", intent),
-            "tool_plan": state.get("tool_plan", {}),
+            **state_update,
             "plan_steps": plan_steps,
             "step_index": step_index,
-            "step_outputs": step_outputs,
-            "tool_name": result.tool_name,
-            "success": result.success,
-            "result": result.payload,
-            "error": result.error,
-            "step_count": state.get("step_count", 1),
-            "max_steps": state.get("max_steps", self.max_steps),
-            "steps": [record],
+            "current_batch_plans": [plan],
+            "pending_tool_calls": [],
         }
 
-    def _judge_result_node(self, state: AgentState) -> AgentState:
-        step_count = state.get("step_count", 1)
-        max_steps = state.get("max_steps", self.max_steps)
+    def _tool_batch_node(self, state: AgentState) -> AgentState:
+        plans = state.get("current_batch_plans", [])
+        pending = state.get("pending_tool_calls", [])
+        is_native = state.get("planner_mode") == "tool_calling"
+        step_count = state.get("step_count", 0)
+        if is_native:
+            step_count += 1
+
+        results: list[ToolResult] = []
+        result_records: list[dict[str, Any]] = []
+        step_outputs = dict(state.get("step_outputs", {}))
+        messages = list(state.get("messages", []))
+        last_tool_answer = state.get("last_tool_answer", "")
+        step_records: list[dict[str, Any]] = []
+
+        for index, plan in enumerate(plans):
+            validation_error = pending[index].get("validation_error") if index < len(pending) else None
+            if validation_error:
+                result = invalid_tool_result(plan, validation_error)
+            else:
+                allow_tool_streaming = state.get("requested_planner_mode") == "structured"
+                on_token = self._current_on_token() if allow_tool_streaming else None
+                if on_token is None:
+                    result = self.tool_dispatcher.execute_plan(plan)
+                else:
+                    result = self.tool_dispatcher.execute_plan(plan, on_token=on_token)
+            results.append(result)
+            output_key = plan.get("output_key") or plan.get("tool_call_id") or f"step_{len(state.get('steps', [])) + index}"
+            step_outputs[output_key] = {
+                "success": result.success,
+                "payload": result.payload,
+                "error": result.error,
+            }
+            answer = self._extract_tool_answer(result.payload) if result.success else ""
+            if answer:
+                last_tool_answer = answer
+            step_records.append(
+                {
+                    "step": step_count if is_native else max(step_count, state.get("step_index", 0) + 1),
+                    "intent": plan.get("intent", "general"),
+                    "tool_name": result.tool_name,
+                    "action": plan.get("action"),
+                    "output_key": output_key,
+                    "success": result.success,
+                    "error": result.error,
+                }
+            )
+            result_records.append(
+                {"tool_name": result.tool_name, "success": result.success, "payload": result.payload, "error": result.error}
+            )
+            if is_native:
+                call_id = plan.get("tool_call_id") or (pending[index].get("id") if index < len(pending) else output_key)
+                content = {"success": result.success, "payload": result.payload, "error": result.error}
+                messages.append(
+                    {"role": "tool", "tool_call_id": call_id, "content": json.dumps(content, ensure_ascii=False)[:4000]}
+                )
+
+        last_result = results[-1] if results else ToolResult(tool_name="unknown", success=False, error="No tool calls.")
+        last_plan = plans[-1] if plans else {}
+        return {
+            "messages": messages,
+            "pending_tool_calls": [],
+            "batch_results": result_records,
+            "step_outputs": step_outputs,
+            "intent": last_plan.get("intent", state.get("intent", "general")),
+            "tool_name": last_result.tool_name,
+            "success": all(result.success for result in results) if results else False,
+            "result": last_result.payload,
+            "error": next((result.error for result in results if not result.success), None),
+            "last_tool_answer": last_tool_answer,
+            "step_count": step_count,
+            "steps": step_records,
+        }
+
+    def _normalize_observation_node(self, state: AgentState) -> AgentState:
+        result = dict(state.get("result", {}))
+        batch_results = state.get("batch_results", [])
+        if len(batch_results) > 1:
+            result["batch_results"] = batch_results
+            citations: list[Any] = []
+            retrieved_chunks: list[Any] = []
+            evidence_count = 0
+            for item in batch_results:
+                payload = item.get("payload") or {}
+                response = payload.get("response") or {}
+                item_citations = response.get("citations") or payload.get("citations") or []
+                item_chunks = response.get("retrieved_chunks") or payload.get("retrieved_chunks") or []
+                if isinstance(item_citations, list):
+                    citations.extend(item_citations)
+                if isinstance(item_chunks, list):
+                    retrieved_chunks.extend(item_chunks)
+                count = response.get("evidence_count") or payload.get("evidence_count") or 0
+                if isinstance(count, int):
+                    evidence_count += count
+            result["citations"] = citations
+            result["retrieved_chunks"] = retrieved_chunks
+            result["evidence_count"] = evidence_count
+        return {"result": result}
+
+    def _judge_node(self, state: AgentState) -> AgentState:
         plan_steps = state.get("plan_steps") or []
         step_index = state.get("step_index", 0)
-        has_remaining = step_index + 1 < len(plan_steps)
+        has_remaining = state.get("planner_mode") == "structured" and step_index + 1 < len(plan_steps)
+        step_count = state.get("step_count", 0)
+        max_steps = state.get("max_steps", self.max_steps)
 
         if has_remaining and state.get("success") is True:
-            # 多步计划还有剩余步骤：正向推理继续，不消耗修复轮次
             judgement = {"finish": False, "reason": "continue_plan", "next_plan": {"_continue": True}}
         elif step_count >= max_steps:
             judgement = {"finish": True, "reason": "max_steps_reached", "next_plan": None}
-        elif not self.reflector.enabled:
-            judgement = {"finish": True, "reason": "judge_disabled", "next_plan": None}
-        elif state.get("success") is False or self._result_needs_more_info(state) or (
-            state.get("intent") == "general"
-            and state.get("success") is True
-            and settings.agent_judge_on_success_general
-        ):
-            try:
-                judgement = self.reflector.judge(
-                    message=self._require(state, "message", str),
-                    intent=state.get("intent", "general"),
-                    tool_plan=state.get("tool_plan", {}),
-                    tool_result=self._build_tool_result(state),
-                    step_count=step_count,
-                    max_steps=max_steps,
-                )
-            except Exception as exc:
-                log = logging.getLogger("pitwall.runtime")
-                log.error("judge_result_failed", extra={"error_type": exc.__class__.__name__})
-                judgement = {"finish": True, "reason": "judge_error", "next_plan": None}
+        elif self._should_judge(state):
+            if not self.reflector.enabled:
+                judgement = {"finish": True, "reason": "judge_disabled", "next_plan": None}
+            else:
+                try:
+                    judgement = self.reflector.judge(
+                        message=self._require(state, "message", str),
+                        intent=state.get("intent", "general"),
+                        tool_plan=(state.get("current_batch_plans") or [state.get("tool_plan", {})])[-1],
+                        tool_result=self._build_tool_result(state),
+                        step_count=step_count,
+                        max_steps=max_steps,
+                    )
+                except Exception as exc:
+                    self.logger.error("judge_result_failed", extra={"error_type": exc.__class__.__name__})
+                    judgement = {"finish": True, "reason": "judge_error", "next_plan": None}
         else:
-            judgement = {"finish": True, "reason": "no_judge_needed", "next_plan": None}
+            judgement = {
+                "finish": state.get("planner_mode") != "tool_calling",
+                "reason": "continue" if state.get("planner_mode") == "tool_calling" else "no_judge_needed",
+                "next_plan": None,
+            }
 
-        next_state: AgentState = {"judgement": judgement, "judge_reasons": [judgement["reason"]]}
+        update: AgentState = {"judgement": judgement, "judge_reasons": [judgement["reason"]]}
         next_plan = judgement.get("next_plan")
-        if next_plan is not None and not (isinstance(next_plan, dict) and next_plan.get("_continue")):
-            # 只有裁判修复轮次消耗 max_steps 预算；多步计划的计划内步骤不消耗
-            next_state["step_count"] = step_count + 1
-        return next_state
+        if (
+            state.get("planner_mode") == "structured"
+            and isinstance(next_plan, dict)
+            and not next_plan.get("_continue")
+        ):
+            update["step_count"] = step_count + 1
+        if isinstance(next_plan, dict) and not next_plan.get("_continue"):
+            update["current_batch_plans"] = [
+                {**next_plan, "output_key": f"repair_{step_count + 1}"}
+            ]
+        if judgement["reason"] == "max_steps_reached":
+            update["max_steps_reached"] = True
+        return update
 
     def _route_after_judge(self, state: AgentState) -> str:
         judgement = state.get("judgement") or {}
-        if not judgement.get("finish", True) and judgement.get("next_plan") is not None:
-            return "plan_tool"
-        return "format_response"
+        next_plan = judgement.get("next_plan")
+        if judgement.get("reason") == "max_steps_reached":
+            return "forced_summary"
+        if isinstance(next_plan, dict) and not judgement.get("finish", True):
+            if next_plan.get("_continue"):
+                return "structured_plan"
+            return "tool_batch"
+        if state.get("planner_mode") == "tool_calling" and not judgement.get("finish", True):
+            return "model"
+        return "finalize"
 
-    def _format_response_node(self, state: AgentState) -> AgentState:
-        formatted_result = {
-            **state.get("result", {}),
-            "tool_plan": state.get("tool_plan", {}),
-        }
-        plan_steps = state.get("plan_steps") or []
-        if len(plan_steps) > 1:
-            step_outputs = state.get("step_outputs") or {}
-            formatted_result["step_results"] = [
-                {
-                    "tool_name": step.get("tool_name"),
-                    "success": bool((step_outputs.get(step.get("output_key", "")) or {}).get("success")),
-                    "payload": (step_outputs.get(step.get("output_key", "")) or {}).get("payload", {}),
-                }
-                for step in plan_steps
-            ]
-        final_answer = self.response_formatter.build(
-            message=self._require(state, "message", str),
-            intent=self._require(state, "intent", str),
-            tool_name=self._require(state, "tool_name", str),
-            success=self._require(state, "success", bool),
-            result=formatted_result,
-            error=state.get("error"),
-        )
+    def _forced_summary_node(self, state: AgentState) -> AgentState:
+        final_answer = ""
+        mode = "forced_summary"
+        if state.get("planner_mode") == "tool_calling":
+            try:
+                final_answer = self.tool_calling_adapter.summarize(state.get("messages", []))
+            except Exception as exc:
+                self.logger.error("forced_summary_failed", extra={"error_type": exc.__class__.__name__})
+        if not final_answer:
+            final_answer = state.get("last_tool_answer", "")
+            mode = "tool_result_fallback" if final_answer else "empty_fallback"
+        return {"final_answer": final_answer, "finalization_mode": mode, "max_steps_reached": True}
+
+    def _finalize_node(self, state: AgentState) -> AgentState:
+        final_answer = state.get("final_answer", "")
+        mode = state.get("finalization_mode", "direct")
+        result = dict(state.get("result", {}))
+        tool_plan = state.get("tool_plan", {})
+
+        if not final_answer and state.get("planner_mode") == "tool_calling":
+            final_answer = state.get("model_content", "").strip()
+        if not final_answer and state.get("planner_mode") == "structured":
+            result["tool_plan"] = tool_plan
+            if len(state.get("plan_steps", [])) > 1:
+                result["step_results"] = self._structured_step_results(state)
+            final_answer = self.response_formatter.build(
+                message=self._require(state, "message", str),
+                intent=state.get("intent", "general"),
+                tool_name=state.get("tool_name", "general_tool"),
+                success=state.get("success", False),
+                result=result,
+                error=state.get("error"),
+            )
+        if not final_answer and state.get("tool_name"):
+            final_answer = state.get("last_tool_answer", "") or self.response_formatter.build(
+                message=self._require(state, "message", str),
+                intent=state.get("intent", "general"),
+                tool_name=state.get("tool_name", "general_tool"),
+                success=state.get("success", False),
+                result=result,
+                error=state.get("error"),
+            )
+        if not final_answer:
+            final_answer = state.get("last_tool_answer", "") or "未能生成回答。"
+            mode = "tool_result_fallback" if state.get("last_tool_answer") else "empty_fallback"
+
+        on_token = self._current_on_token()
+        if state.get("planner_mode") == "tool_calling" and on_token is not None and final_answer:
+            on_token(final_answer)
+
         trace = self._build_trace(
-            intent=self._require(state, "intent", str),
-            tool_name=self._require(state, "tool_name", str),
-            success=self._require(state, "success", bool),
-            result=formatted_result,
-            error=state.get("error"),
-            judge_reasons=state.get("judge_reasons", []),
-            steps=state.get("steps", []),
-            plan_steps=state.get("plan_steps"),
+            {**state, "finalization_mode": mode, "final_answer": final_answer},
+            result,
         )
         return {
-            "message": self._require(state, "message", str),
-            "fallback_intent": state.get("fallback_intent"),
-            "intent": self._require(state, "intent", str),
-            "tool_name": self._require(state, "tool_name", str),
-            "success": self._require(state, "success", bool),
-            "result": formatted_result,
-            "error": state.get("error"),
             "final_answer": final_answer,
+            "finalization_mode": mode,
+            "result": result,
             "trace": trace,
+            "success": state.get("success", True),
+        }
+
+    def _build_trace(self, state: AgentState, result: dict[str, Any]) -> dict[str, Any]:
+        response = result.get("response", {})
+        plans = state.get("current_batch_plans") or []
+        last_plan = plans[-1] if plans else state.get("tool_plan", {})
+        reasons = state.get("judge_reasons", [])
+        trace: dict[str, Any] = {
+            "runtime": "langgraph",
+            "planner_mode": state.get("requested_planner_mode", state.get("planner_mode", self.planner_mode)),
+            "planner_fallback": state.get("planner_fallback"),
+            "judge_outcome": reasons[-1] if reasons else "complete",
+            "max_steps_reached": state.get("max_steps_reached", False),
+            "finalization_mode": state.get("finalization_mode", "direct"),
+            "intent": state.get("intent", "general"),
+            "tool_name": state.get("tool_name", "general_tool"),
+            "action": result.get("action") or last_plan.get("action"),
+            "params": last_plan.get("params", {}),
+            "success": state.get("success", True),
+            "error": state.get("error"),
+            "answer_status": response.get("answer_status") or result.get("answer_status") or ("answered" if state.get("success", True) else "error"),
+            "confidence": response.get("confidence") or result.get("confidence"),
+            "evidence_count": response.get("evidence_count") or result.get("evidence_count", 0),
+            "source_mode": response.get("source_mode") or result.get("source_mode"),
+            "query_type": response.get("query_type") or result.get("query_type"),
+            "citations": response.get("citations") or result.get("citations", []),
+            "retrieved_chunks": response.get("retrieved_chunks") or result.get("retrieved_chunks", []),
+            "steps": state.get("steps", []),
+        }
+        if reasons:
+            trace["judge_outcomes"] = reasons
+        plan_steps = state.get("plan_steps")
+        if plan_steps:
+            trace["plan"] = [
+                {
+                    "output_key": step.get("output_key", f"step_{index}"),
+                    "intent": step.get("intent", ""),
+                    "tool_name": step.get("tool_name", ""),
+                    "action": step.get("action", ""),
+                }
+                for index, step in enumerate(plan_steps)
+            ]
+        return trace
+
+    def _should_judge(self, state: AgentState) -> bool:
+        return (
+            state.get("success") is False
+            or self._result_needs_more_info(state)
+            or (
+                state.get("intent") == "general"
+                and state.get("success") is True
+                and settings.agent_judge_on_success_general
+            )
+        )
+
+    def _result_needs_more_info(self, state: AgentState) -> bool:
+        intent = state.get("intent")
+        result = state.get("result") or {}
+        if state.get("success") is not True:
+            return False
+        if intent == "regulation":
+            response = result.get("response") or {}
+            return response.get("answer_status") == "insufficient_evidence" or (
+                response.get("mode") == "fallback" and not response.get("answer")
+            )
+        if intent == "news":
+            plans = state.get("current_batch_plans") or []
+            action = plans[-1].get("action") if plans else None
+            if action in {"get_article", "get_insights", "get_rules_analysis"}:
+                return False
+            return result.get("articles") in ([], None)
+        if intent == "race":
+            return not any(result.get(key) for key in ("standings", "schedule", "race", "race_result", "season"))
+        return False
+
+    def _structured_step_results(self, state: AgentState) -> list[dict[str, Any]]:
+        outputs = state.get("step_outputs", {})
+        return [
+            {
+                "tool_name": step.get("tool_name"),
+                "success": bool((outputs.get(step.get("output_key", f"step_{index}")) or {}).get("success")),
+                "payload": (outputs.get(step.get("output_key", f"step_{index}")) or {}).get("payload", {}),
+            }
+            for index, step in enumerate(state.get("plan_steps", []))
+        ]
+
+    @staticmethod
+    def _extract_tool_answer(payload: dict[str, Any] | None) -> str:
+        if not payload:
+            return ""
+        response = payload.get("response")
+        if isinstance(response, str):
+            return response.strip()
+        containers = [response, payload]
+        for container in containers:
+            if not isinstance(container, dict):
+                continue
+            for key in ("answer", "final_answer", "summary", "analysis"):
+                value = container.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+        return ""
+
+    def _build_tool_result(self, state: AgentState) -> ToolResult:
+        return ToolResult(
+            tool_name=state.get("tool_name", ""),
+            success=state.get("success", False),
+            payload=state.get("result", {}),
+            error=state.get("error"),
+        )
+
+    def _to_step(self, plan: dict[str, Any]) -> dict[str, Any]:
+        tool_name = plan.get("tool_name")
+        mapped_intent = self._TOOL_TO_INTENT.get(tool_name, "general") if isinstance(tool_name, str) else "general"
+        return {
+            "intent": plan.get("intent") or mapped_intent,
+            "tool_name": tool_name,
+            "action": plan.get("action"),
+            "params": plan.get("params", {}),
+            "output_key": plan.get("output_key", "step_0"),
         }
 
     def _require(self, state: AgentState, key: str, expected_type: type[T]) -> T:
@@ -353,116 +653,11 @@ class LangGraphAgentRuntime:
             raise ValueError(f"Agent state is missing required key: {key}")
         return cast(T, value)
 
-    def _build_trace(
-        self,
-        *,
-        intent: str,
-        tool_name: str,
-        success: bool,
-        result: dict[str, Any],
-        error: str | None,
-        judge_reasons: list[str],
-        steps: list[dict[str, Any]],
-        plan_steps: list[dict[str, Any]] | None = None,
-    ) -> dict[str, Any]:
-        tool_plan = result.get("tool_plan", {})
-        response = result.get("response", {})
-        trace: dict[str, Any] = {
-            "intent": intent,
-            "tool_name": tool_name,
-            "action": result.get("action") or tool_plan.get("action"),
-            "params": tool_plan.get("params", {}),
-            "success": success,
-            "error": error,
-            "answer_status": response.get("answer_status") or result.get("answer_status") or ("answered" if success else "error"),
-            "confidence": response.get("confidence") or result.get("confidence"),
-            "evidence_count": response.get("evidence_count") or result.get("evidence_count", 0),
-            "source_mode": response.get("source_mode") or result.get("source_mode"),
-            "query_type": response.get("query_type") or result.get("query_type"),
-            "citations": response.get("citations") or result.get("citations", []),
-            "retrieved_chunks": response.get("retrieved_chunks") or result.get("retrieved_chunks", []),
-        }
-        if isinstance(plan_steps, list) and plan_steps:
-            trace["plan"] = [
-                {
-                    "output_key": step.get("output_key", ""),
-                    "intent": step.get("intent", ""),
-                    "tool_name": step.get("tool_name", ""),
-                    "action": step.get("action", ""),
-                }
-                for step in plan_steps
-            ]
-        if judge_reasons:
-            trace["judge_outcomes"] = judge_reasons
-            trace["judge_outcome"] = judge_reasons[-1]
-        if steps:
-            trace["steps"] = steps
-        return trace
-
-    def _build_tool_result(self, state: AgentState):
-        from app.tools.base import ToolResult
-
-        return ToolResult(
-            tool_name=state.get("tool_name", ""),
-            success=state.get("success", False),
-            payload=state.get("result", {}),
-            error=state.get("error"),
-        )
-
-    _TOOL_TO_INTENT = {
-        "news_tool": "news",
-        "race_tool": "race",
-        "regulation_tool": "regulation",
-        "strategy_tool": "strategy",
-        "general_tool": "general",
-    }
-
-    def _result_needs_more_info(self, state: AgentState) -> bool:
-        """结果不完整信号：regulation 证据不足 / news 无文章 / race 无数据。"""
-        intent = state.get("intent")
-        result = state.get("result") or {}
-        if state.get("success") is not True:
-            return False
-        if intent == "regulation":
-            response = result.get("response") or {}
-            if response.get("answer_status") == "insufficient_evidence":
-                return True
-            if response.get("mode") == "fallback" and not response.get("answer"):
-                return True
-            return False
-        if intent == "news":
-            # 按动作区分：article/insights/rules_analysis 类动作有结构化 payload 即视为完整
-            plan_steps = state.get("plan_steps") or []
-            step_index = state.get("step_index", 0)
-            action = plan_steps[step_index].get("action") if plan_steps else None
-            if action in {"get_article", "get_insights", "get_rules_analysis"}:
-                return False
-            if result.get("articles") == [] or result.get("articles") is None:
-                return True
-            return False
-        if intent == "race":
-            if not any(result.get(key) for key in ("standings", "schedule", "race", "race_result", "season")):
-                return True
-            return False
-        return False
-
-    def _to_step(self, plan: dict[str, Any]) -> dict[str, Any]:
-        """把单步计划（顶层字段）转为统一 step 结构。"""
-        tool_name = plan.get("tool_name")
-        intent = plan.get("intent") or self._TOOL_TO_INTENT.get(tool_name if isinstance(tool_name, str) else "", "general")
-        return {
-            "intent": intent,
-            "tool_name": tool_name,
-            "action": plan.get("action"),
-            "params": plan.get("params", {}),
-            "output_key": plan.get("output_key", "step_0"),
-        }
+    def _set_current_on_token(self, callback: Callable[[str], None] | None) -> None:
+        self._token_holder.callback = callback
 
     def _current_on_token(self) -> Callable[[str], None] | None:
-        return getattr(self._token_holder, "on_token", None)
-
-    def _set_current_on_token(self, on_token: Callable[[str], None] | None) -> None:
-        self._token_holder.on_token = on_token
+        return cast(Callable[[str], None] | None, getattr(self._token_holder, "callback", None))
 
     def _build_default_checkpointer(self) -> Any:
         try:

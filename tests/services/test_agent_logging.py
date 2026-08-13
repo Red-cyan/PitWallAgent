@@ -82,7 +82,7 @@ def test_agent_service_emits_structured_logs_for_fallback_path(caplog) -> None:
     payloads = [json.loads(record.message) for record in caplog.records if record.name == "pitwall.agent"]
     assert payloads[0]["event"] == "agent_query_received"
     assert payloads[-1]["event"] == "agent_query_completed"
-    assert payloads[-1]["runtime_mode"] == "fallback"
+    assert payloads[-1]["runtime_mode"] == "langgraph"
 
 
 def test_agent_service_emits_structured_logs_for_runtime_path(caplog) -> None:

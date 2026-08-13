@@ -1,30 +1,24 @@
 from __future__ import annotations
 
 import json
-import logging
-from collections.abc import Callable
 from typing import Any
 
 from openai.types.chat import ChatCompletionMessage
 
-from app.agents.tool_dispatcher import ToolDispatcher
 from app.config.settings import settings
-from app.core.logging import log_structured
-from app.schemas.agent import AgentQueryResponse
 from app.services.llm.client import LLMClient
+from app.tools.base import ToolResult
 
 SYSTEM_PROMPT = (
     "You are a Formula 1 assistant. Answer in the user's language. "
     "Use the provided tools to fetch live race data, news, FIA regulations, or strategy "
     "analysis when the question needs structured information. You may call multiple tools "
-    "in one turn when the question spans capabilities (e.g. search news first, then check "
-    "the regulations mentioned). Never invent data that a tool should provide. "
-    "When the tool result is insufficient, try a different query before giving up. "
-    "After gathering information, reply with a grounded answer and cite the evidence where relevant."
+    "in one turn when the question spans capabilities. Never invent data that a tool should "
+    "provide. When a tool result is insufficient, try a different query before giving up. "
+    "After gathering information, reply with a grounded answer and cite evidence where relevant."
 )
 
-# action -> (intent, tool_name)
-_ACTION_TO_TOOL: dict[str, tuple[str, str]] = {
+ACTION_TO_TOOL: dict[str, tuple[str, str]] = {
     "list_recent": ("news", "news_tool"),
     "search": ("news", "news_tool"),
     "get_article": ("news", "news_tool"),
@@ -41,45 +35,45 @@ _ACTION_TO_TOOL: dict[str, tuple[str, str]] = {
     "answer": ("general", "general_tool"),
 }
 
-_TOOL_DESCRIPTIONS: dict[str, str] = {
+_TOOL_DESCRIPTIONS = {
     "list_recent": "List the most recent Formula 1 news articles.",
     "search": "Search F1 news articles by topic, team, driver, or circuit.",
     "get_article": "Fetch a single news article by its numeric id.",
     "get_insights": "Summarize and analyze a news article by id.",
     "get_rules_analysis": "Analyze how a news article relates to FIA regulations.",
     "list_schedule": "List the current F1 race calendar.",
-    "get_next_race": "Get details of the next F1 race (location, date, sessions).",
+    "get_next_race": "Get details of the next F1 race.",
     "get_previous_race": "Get details of the previous F1 race.",
     "get_race_results": "Get the results of the latest F1 race.",
     "get_driver_standings": "Get the current F1 drivers championship standings.",
     "get_constructor_standings": "Get the current F1 constructors championship standings.",
-    "ask": "Answer a question grounded in the FIA Formula 1 regulations (RAG with citations).",
+    "ask": "Answer a question grounded in the FIA Formula 1 regulations.",
     "analyze": "Provide pit-stop or tyre strategy analysis.",
     "answer": "Answer general Formula 1 knowledge questions.",
 }
 
 _PARAM_SCHEMAS: dict[str, tuple[dict[str, Any], list[str]]] = {
-    "list_recent": ({"limit": {"type": "integer", "description": "Max number of articles (default 5)"}}, []),
-    "search": ({"query": {"type": "string", "description": "Search topic, team, driver, or circuit"}, "limit": {"type": "integer"}}, ["query"]),
-    "get_article": ({"article_id": {"type": "integer", "description": "News article numeric id"}}, ["article_id"]),
-    "get_insights": ({"article_id": {"type": "integer", "description": "News article numeric id"}}, ["article_id"]),
-    "get_rules_analysis": ({"article_id": {"type": "integer", "description": "News article numeric id"}}, ["article_id"]),
+    "list_recent": ({"limit": {"type": "integer", "description": "Maximum number of articles"}}, []),
+    "search": ({"query": {"type": "string"}, "limit": {"type": "integer"}}, ["query"]),
+    "get_article": ({"article_id": {"type": "integer"}}, ["article_id"]),
+    "get_insights": ({"article_id": {"type": "integer"}}, ["article_id"]),
+    "get_rules_analysis": ({"article_id": {"type": "integer"}}, ["article_id"]),
     "list_schedule": ({}, []),
     "get_next_race": ({}, []),
     "get_previous_race": ({}, []),
     "get_race_results": ({}, []),
     "get_driver_standings": ({}, []),
     "get_constructor_standings": ({}, []),
-    "ask": ({"question": {"type": "string", "description": "Regulation question"}}, ["question"]),
-    "analyze": ({"question": {"type": "string", "description": "Strategy question"}}, ["question"]),
-    "answer": ({"question": {"type": "string", "description": "General F1 question"}}, ["question"]),
+    "ask": ({"question": {"type": "string"}}, ["question"]),
+    "analyze": ({"question": {"type": "string"}}, ["question"]),
+    "answer": ({"question": {"type": "string"}}, ["question"]),
 }
 
 
 def build_tool_functions() -> list[dict[str, Any]]:
-    """把全部工具动作暴露为 OpenAI-compatible function schemas。"""
+    """Return OpenAI-compatible schemas for all dispatcher actions."""
     functions: list[dict[str, Any]] = []
-    for action, (intent, tool_name) in _ACTION_TO_TOOL.items():
+    for action, (intent, tool_name) in ACTION_TO_TOOL.items():
         properties, required = _PARAM_SCHEMAS[action]
         functions.append(
             {
@@ -98,133 +92,25 @@ def build_tool_functions() -> list[dict[str, Any]]:
     return functions
 
 
-class FunctionCallingAgent:
-    """原生 function calling 路径：LLM 自主选择/并行调用工具，观察结果后继续或作答。
+class ToolCallingModelAdapter:
+    """One OpenAI-compatible tool-calling model invocation, with no orchestration loop."""
 
-    与手写 planner + judge 的 manual 路径并存，用于对比灵活性与确定性。
-    """
+    def __init__(self, llm_client: LLMClient | None = None) -> None:
+        self._llm_client = llm_client
 
-    def __init__(
-        self,
-        tool_dispatcher: ToolDispatcher | None = None,
-        llm_client: LLMClient | None = None,
-        max_steps: int | None = None,
-        on_token: Callable[[str], None] | None = None,
-    ) -> None:
-        self.logger = logging.getLogger("pitwall.function_calling")
-        self.tool_dispatcher = tool_dispatcher or ToolDispatcher()
-        self.llm_client = llm_client
-        self.max_steps = max_steps if max_steps is not None else settings.agent_react_max_steps
-        self.max_parallel_tool_calls = 5
-        self.on_token = on_token
-
-    def run(self, message: str, fallback_intent: str | None = None) -> AgentQueryResponse:
-        started_at = __import__("time").perf_counter()
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": message},
-        ]
-        tools = build_tool_functions()
-        executed: list[dict[str, Any]] = []
-        final_content: str | None = None
-        last_call: dict[str, Any] | None = None
-        last_tool_answer = ""
-        max_steps_reached = False
-        finalization_mode = "direct"
-
-        for step_count in range(1, self.max_steps + 1):
-            reply = self._chat(messages, tools)
-            if reply.tool_calls:
-                messages.append(self._assistant_tool_message(reply))
-                for tool_call in reply.tool_calls[: self.max_parallel_tool_calls]:
-                    result, plan = self._execute_tool_call(tool_call)
-                    executed.append(
-                        {
-                            "step": step_count,
-                            "intent": plan["intent"],
-                            "tool_name": plan["tool_name"],
-                            "action": plan["action"],
-                            "output_key": tool_call.id,
-                            "success": result.success,
-                            "error": result.error,
-                        }
-                    )
-                    last_call = plan
-                    if result.success:
-                        last_tool_answer = self._extract_tool_answer(result.payload) or last_tool_answer
-                    messages.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": json.dumps(result.payload, ensure_ascii=False)[:2000],
-                        }
-                    )
-                if step_count == self.max_steps:
-                    max_steps_reached = True
-                continue
-
-            final_content = reply.content or ""
-            if final_content:
-                break
-            break
-
-        if not final_content and max_steps_reached:
-            final_content = self._force_final_answer(messages)
-            finalization_mode = "forced_summary"
-            if not final_content:
-                final_content = last_tool_answer
-                finalization_mode = "tool_result_fallback" if final_content else "empty_fallback"
-
-        if not final_content:
-            final_content = "未能生成回答。"
-            finalization_mode = "empty_fallback"
-
-        tool_name = (last_call or {}).get("tool_name") or "general_tool"
-        intent = (last_call or {}).get("intent") or "general"
-        action = (last_call or {}).get("action")
-        latency_ms = round((__import__("time").perf_counter() - started_at) * 1000, 2)
-        trace: dict[str, Any] = {
-            "intent": intent,
-            "tool_name": tool_name,
-            "action": action,
-            "success": True,
-            "protocol": "function_calling",
-            "max_steps_reached": max_steps_reached,
-            "finalization_mode": finalization_mode,
-            "steps": executed,
-            "latency_ms_by_stage": {"agent_total": latency_ms},
-        }
-
-        log_structured(
-            self.logger,
-            "function_calling_completed",
-            intent=intent,
-            tool_calls=len(executed),
-            steps=max(1, len(executed)),
-            max_steps_reached=max_steps_reached,
-            finalization_mode=finalization_mode,
-        )
-        return AgentQueryResponse(
-            intent=intent,
-            tool_name=tool_name,
-            success=True,
-            final_answer=final_content,
-            result={"action": action, "tool_plan": last_call or {}},
-            trace=trace,
-        )
-
-    def _chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> ChatCompletionMessage:
-        llm_client = self.llm_client or LLMClient()
-        return llm_client.chat_tools(
+    def invoke(self, messages: list[dict[str, Any]]) -> ChatCompletionMessage:
+        client = self._llm_client or LLMClient()
+        return client.chat_tools(
             messages=messages,
-            tools=tools,
+            tools=build_tool_functions(),
             temperature=0,
             max_tokens=settings.llm_max_tokens,
             timeout=settings.llm_timeout_seconds,
         )
 
-    def _force_final_answer(self, messages: list[dict[str, Any]]) -> str:
-        finalization_messages = [
+    def summarize(self, messages: list[dict[str, Any]]) -> str:
+        client = self._llm_client or LLMClient()
+        summary_messages = [
             *messages,
             {
                 "role": "user",
@@ -232,75 +118,56 @@ class FunctionCallingAgent:
                     "The tool-call limit has been reached. Do not call any more tools. "
                     "Using only the tool results above, answer the original user question now. "
                     "Answer in the user's language, cite available evidence where relevant, "
-                    "and state any remaining uncertainty briefly. Keep the complete answer under "
+                    "and state remaining uncertainty briefly. Keep the complete answer under "
                     "350 Chinese characters or 220 English words so it does not end mid-sentence."
                 ),
             },
         ]
-        llm_client = self.llm_client or LLMClient()
-        try:
-            content = llm_client.chat(
-                messages=finalization_messages,
-                temperature=0,
-                max_tokens=settings.llm_max_tokens,
-                timeout=settings.llm_timeout_seconds,
-            )
-        except Exception as exc:
-            log_structured(
-                self.logger,
-                "function_calling_forced_summary_failed",
-                error_type=exc.__class__.__name__,
-            )
-            return ""
+        return client.chat(
+            messages=summary_messages,
+            temperature=0,
+            max_tokens=settings.llm_max_tokens,
+            timeout=settings.llm_timeout_seconds,
+        ).strip()
 
-        content = content.strip()
-        log_structured(
-            self.logger,
-            "function_calling_forced_summary_completed",
-            output_length=len(content),
-        )
-        return content
-
-    def _extract_tool_answer(self, payload: dict[str, Any] | None) -> str:
-        if not payload:
-            return ""
-
-        response = payload.get("response")
-        if isinstance(response, str):
-            return response.strip()
-        if not isinstance(response, dict):
-            return ""
-
-        for key in ("answer", "final_answer", "summary", "analysis"):
-            value = response.get(key)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-        return ""
-
-    def _assistant_tool_message(self, reply: ChatCompletionMessage) -> dict[str, Any]:
+    @staticmethod
+    def assistant_message(reply: ChatCompletionMessage) -> dict[str, Any]:
         return {
             "role": "assistant",
             "content": reply.content or "",
-            "tool_calls": [tool_call.model_dump() for tool_call in (reply.tool_calls or [])],
+            "tool_calls": [call.model_dump() for call in (reply.tool_calls or [])],
         }
 
-    def _execute_tool_call(self, tool_call: Any) -> tuple[Any, dict[str, Any]]:
+    @staticmethod
+    def tool_call_to_plan(tool_call: Any) -> tuple[dict[str, Any], str | None]:
         action = tool_call.function.name
+        parse_error: str | None = None
         try:
             params = json.loads(tool_call.function.arguments or "{}")
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             params = {}
+            parse_error = "Invalid JSON tool arguments."
         if not isinstance(params, dict):
             params = {}
-        if action not in _ACTION_TO_TOOL:
-            return (
-                type("Result", (), {"tool_name": "unknown", "success": False, "payload": {}, "error": f"Unknown tool: {action}"})(),
-                {"intent": "general", "tool_name": "unknown", "action": action, "params": params},
-            )
-        intent, tool_name = _ACTION_TO_TOOL[action]
-        plan = {"intent": intent, "tool_name": tool_name, "action": action, "params": params}
-        if self.on_token is None:
-            result = self.tool_dispatcher.execute_plan(plan)
-        else:
-            result = self.tool_dispatcher.execute_plan(plan, on_token=self.on_token)
-        return result, plan
+            parse_error = "Tool arguments must be a JSON object."
+        mapping = ACTION_TO_TOOL.get(action)
+        if mapping is None:
+            return {
+                "intent": "general",
+                "tool_name": "unknown",
+                "action": action,
+                "params": params,
+                "tool_call_id": tool_call.id,
+            }, f"Unknown tool: {action}"
+        intent, tool_name = mapping
+        return {
+            "intent": intent,
+            "tool_name": tool_name,
+            "action": action,
+            "params": params,
+            "tool_call_id": tool_call.id,
+        }, parse_error
+
+
+def invalid_tool_result(plan: dict[str, Any], error: str) -> ToolResult:
+    return ToolResult(tool_name=plan.get("tool_name", "unknown"), success=False, error=error)

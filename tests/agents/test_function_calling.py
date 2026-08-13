@@ -1,7 +1,11 @@
 from types import SimpleNamespace
 from typing import Any, cast
 
-from app.agents.function_calling import FunctionCallingAgent, build_tool_functions
+from app.agents.function_calling import (
+    ToolCallingModelAdapter,
+    build_tool_functions,
+)
+from app.agents.runtime_graph import LangGraphAgentRuntime
 from app.agents.tool_dispatcher import ToolDispatcher
 
 
@@ -75,12 +79,18 @@ class StubLLMClient:
         return summary
 
 
-def build_agent(llm: StubLLMClient, *, max_steps: int | None = None) -> FunctionCallingAgent:
+def build_agent(llm: StubLLMClient, *, max_steps: int | None = None) -> LangGraphAgentRuntime:
     dispatcher = ToolDispatcher(
         news_tool=cast(Any, StubNewsTool()),
         race_tool=cast(Any, StubRaceTool()),
     )
-    return FunctionCallingAgent(tool_dispatcher=dispatcher, llm_client=cast(Any, llm), max_steps=max_steps)
+    return LangGraphAgentRuntime(
+        tool_dispatcher=dispatcher,
+        tool_calling_adapter=ToolCallingModelAdapter(cast(Any, llm)),
+        planner_mode="tool_calling",
+        max_steps=max_steps,
+        checkpointer=None,
+    )
 
 
 def test_function_calling_single_tool_loop() -> None:
@@ -103,7 +113,8 @@ def test_function_calling_single_tool_loop() -> None:
     assert response.tool_name == "news_tool"
     assert len(response.trace["steps"]) == 1
     assert response.trace["steps"][0]["action"] == "list_recent"
-    assert response.trace["protocol"] == "function_calling"
+    assert response.trace["runtime"] == "langgraph"
+    assert response.trace["planner_mode"] == "tool_calling"
     # 工具结果以 tool role 回灌
     tool_messages = [m for m in llm.sent_messages[-1] if m["role"] == "tool"]
     assert len(tool_messages) == 1
@@ -224,10 +235,95 @@ def test_function_calling_uses_tool_answer_when_forced_summary_fails() -> None:
             )
 
     dispatcher = ToolDispatcher(general_tool=cast(Any, StubGeneralTool()))
-    agent = FunctionCallingAgent(tool_dispatcher=dispatcher, llm_client=cast(Any, llm), max_steps=1)
+    agent = LangGraphAgentRuntime(
+        tool_dispatcher=dispatcher,
+        tool_calling_adapter=ToolCallingModelAdapter(cast(Any, llm)),
+        planner_mode="tool_calling",
+        max_steps=1,
+        checkpointer=None,
+    )
 
     response = agent.run("介绍 F1")
 
     assert response.final_answer == "工具已经生成的可用回答。"
     assert response.trace["max_steps_reached"] is True
     assert response.trace["finalization_mode"] == "tool_result_fallback"
+
+
+def test_tool_calling_model_error_falls_back_inside_langgraph() -> None:
+    class RaisingAdapter:
+        def invoke(self, messages: list[dict[str, Any]]) -> None:
+            raise RuntimeError("model unavailable")
+
+    class StructuredPlanner:
+        def plan(self, message: str, fallback_intent: str | None = None) -> dict[str, Any]:
+            return {
+                "intent": "news",
+                "tool_name": "news_tool",
+                "action": "list_recent",
+                "params": {"limit": 5},
+            }
+
+    dispatcher = ToolDispatcher(news_tool=cast(Any, StubNewsTool()))
+    runtime = LangGraphAgentRuntime(
+        planner=cast(Any, StructuredPlanner()),
+        tool_dispatcher=dispatcher,
+        tool_calling_adapter=cast(Any, RaisingAdapter()),
+        planner_mode="tool_calling",
+        checkpointer=None,
+    )
+
+    tokens: list[str] = []
+    response = runtime.run("latest news", on_token=tokens.append)
+
+    assert response.trace["runtime"] == "langgraph"
+    assert response.trace["planner_mode"] == "tool_calling"
+    assert response.trace["planner_fallback"] == "tool_calling_error:RuntimeError"
+    assert response.trace["steps"][0]["action"] == "list_recent"
+    assert tokens == []
+
+
+def test_invalid_tool_arguments_are_recorded_without_dispatch() -> None:
+    llm = StubLLMClient(
+        [
+            FakeMessage(
+                content=None,
+                tool_calls=[FakeToolCall("call_1", "search", "not-json")],
+            )
+        ]
+    )
+    runtime = LangGraphAgentRuntime(
+        tool_dispatcher=ToolDispatcher(news_tool=cast(Any, StubNewsTool())),
+        tool_calling_adapter=ToolCallingModelAdapter(cast(Any, llm)),
+        planner_mode="tool_calling",
+        max_steps=1,
+        checkpointer=None,
+    )
+
+    response = runtime.run("search news")
+
+    assert response.success is False
+    assert response.trace["steps"][0]["success"] is False
+    assert response.trace["steps"][0]["error"] == "Invalid JSON tool arguments."
+    assert response.trace["max_steps_reached"] is True
+
+
+def test_tool_calling_only_streams_final_answer() -> None:
+    llm = StubLLMClient(
+        [
+            FakeMessage(content="intermediate", tool_calls=[FakeToolCall("call_1", "list_recent", "{}")]),
+            FakeMessage(content="final answer"),
+        ]
+    )
+    tokens: list[str] = []
+    runtime = LangGraphAgentRuntime(
+        tool_dispatcher=ToolDispatcher(news_tool=cast(Any, StubNewsTool())),
+        tool_calling_adapter=ToolCallingModelAdapter(cast(Any, llm)),
+        planner_mode="tool_calling",
+        checkpointer=None,
+    )
+
+    response = runtime.run("latest news", on_token=tokens.append)
+
+    assert response.final_answer == "final answer"
+    assert tokens == ["final answer"]

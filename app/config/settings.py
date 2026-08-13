@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     llm_planner_multi_max_tokens: int = 320
     llm_planner_timeout_seconds: float = 4.0
     agent_react_max_steps: int = 5
-    agent_tool_protocol: str = "manual"  # manual | function_calling
+    agent_planner_mode: str = "tool_calling"  # tool_calling | structured
     agent_judge_enabled: bool = True
     agent_judge_on_success_general: bool = True
     agent_judge_max_tokens: int = 160

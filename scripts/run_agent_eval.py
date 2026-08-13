@@ -77,7 +77,7 @@ def _evaluate_case(runner: Any, case: Any) -> EvalResult:
         failures.append(f"action expected={case.expected_action} actual={actual_action}")
 
     status_ok = True
-    if case.expected_status and response.trace.get("protocol") != "function_calling":
+    if case.expected_status:
         actual_status = response.trace.get("answer_status")
         status_ok = actual_status == case.expected_status
         if not status_ok:
@@ -95,9 +95,7 @@ def _evaluate_case(runner: Any, case: Any) -> EvalResult:
 
     answer_ok = status_ok and include_ok and exclude_ok
     evidence_count = int(response.trace.get("evidence_count") or 0)
-    if response.trace.get("protocol") == "function_calling":
-        evidence_ok = True  # function_calling 路径不承诺 evidence 契约
-    elif case.expected_status == "insufficient_evidence":
+    if case.expected_status == "insufficient_evidence":
         evidence_ok = evidence_count == 0
     elif response.tool_name == "regulation_tool":
         evidence_ok = evidence_count > 0
@@ -183,7 +181,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run PitWall Agent golden evals.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
     parser.add_argument("--fail-fast", action="store_true")
-    parser.add_argument("--protocol", choices=["manual", "function_calling"], default="manual")
+    parser.add_argument(
+        "--planner-mode",
+        choices=["structured", "tool_calling"],
+        default="structured",
+    )
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()
@@ -191,20 +193,33 @@ def main() -> int:
     harness = _load_harness()
     cases = harness.load_cases(args.cases)
 
-    service = None
-    if args.protocol == "function_calling":
-        sys.path.insert(0, str(REPO_ROOT))
-        from app.agents.function_calling import FunctionCallingAgent
+    service = harness.build_service()
+    sys.path.insert(0, str(REPO_ROOT))
+    from app.agents.runtime_graph import LangGraphAgentRuntime
 
-        agent = FunctionCallingAgent()
+    reflector = None
+    if args.planner_mode == "structured":
+        from app.agents.reflector import ReActReflector
 
-        def runner(case: Any) -> Any:
-            return agent.run(case.messages[-1])
-    else:
-        service = harness.build_service()
+        class OfflineReflector(ReActReflector):
+            @property
+            def enabled(self) -> bool:
+                return False
 
-        def runner(case: Any) -> Any:
-            return harness.run_case(service, case)
+        reflector = OfflineReflector()
+
+    service.runtime = LangGraphAgentRuntime(
+        intent_router=service.intent_router,
+        planner=service.planner,
+        tool_dispatcher=service.tool_dispatcher,
+        response_formatter=service.response_formatter,
+        reflector=reflector,
+        planner_mode=args.planner_mode,
+        checkpointer=None,
+    )
+
+    def runner(case: Any) -> Any:
+        return harness.run_case(service, case)
 
     results: list[EvalResult] = []
     for case in cases:

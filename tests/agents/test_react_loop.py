@@ -267,6 +267,7 @@ def test_on_token_is_passed_through_loop() -> None:
         planner=cast_any(StubPlanner()),
         tool_dispatcher=RecordingDispatcher(),  # type: ignore[arg-type]
         reflector=reflector,  # type: ignore[arg-type]
+        planner_mode="structured",
         checkpointer=None,
     )
 
@@ -296,6 +297,22 @@ def test_reflector_normalizes_next_plan_question_param() -> None:
         "action": "ask",
         "params": {"question": "排位赛有什么规则？"},
     }
+
+
+def test_reflector_preserves_non_empty_rewritten_question() -> None:
+    reflector = ReActReflector()
+
+    normalized = reflector._normalize_next_plan(
+        {
+            "tool_name": "regulation_tool",
+            "action": "ask",
+            "params": {"question": "rewritten query"},
+        },
+        "original query",
+    )
+
+    assert normalized is not None
+    assert normalized["params"]["question"] == "rewritten query"
 
 
 def test_reflector_rejects_unknown_tool() -> None:

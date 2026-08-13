@@ -259,7 +259,9 @@ class ReActReflector:
             params = {}
 
         if intent in {"regulation", "strategy", "general"}:
-            params["question"] = message
+            question = params.get("question")
+            if not isinstance(question, str) or not question.strip():
+                params["question"] = message
         elif intent == "news" and action == "list_recent":
             params.setdefault("limit", 5)
         elif intent == "news":

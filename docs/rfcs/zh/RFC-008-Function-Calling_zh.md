@@ -40,11 +40,11 @@
 ## 3.1 配置开关
 
 ```env
-AGENT_TOOL_PROTOCOL=manual        # manual | function_calling
+AGENT_PLANNER_MODE=tool_calling   # tool_calling | structured
 ```
 
-- `manual`：走 `LangGraphAgentRuntime`（planner -> dispatcher -> judge）。
-- `function_calling`：`AgentService` 改走 `FunctionCallingAgent`；无 LLM key 或调用失败时自动回退 manual。
+- `structured`：LangGraph 内执行结构化 planner、dispatcher 和 judge。
+- `tool_calling`：LangGraph 内执行单次原生工具规划节点；模型失败时在同一张图内回退 `structured`。
 
 ## 3.2 工具 schema（`app/agents/function_calling.py`）
 
@@ -63,7 +63,7 @@ AGENT_TOOL_PROTOCOL=manual        # manual | function_calling
 
 动作名全局唯一（`list_recent`/`search`/`get_article`/...），每个动作描述标注所属工具与 intent，便于 LLM 选择。
 
-## 3.3 调用循环（`FunctionCallingAgent.run`）
+## 3.3 调用循环（`LangGraphAgentRuntime`）
 
 ```
 messages = [system, user]
@@ -86,7 +86,7 @@ for step in 1..max_steps:
 
 # 4. 权衡对比
 
-| 维度 | manual（默认） | function_calling |
+| 维度 | structured | tool_calling（默认） |
 | --- | --- | --- |
 | 规划确定性 | 高：JSON 计划 + 白名单校验，非法计划回退启发式 | 低：LLM 自主，行为随模型变化 |
 | 离线评测 | golden eval 全离线（66 cases 六指标 100%） | 需 LLM key，模型间不可复现 |
@@ -107,14 +107,14 @@ for step in 1..max_steps:
 
 # 5. 评测方法
 
-- `scripts/run_agent_eval.py --protocol manual`：离线确定性门禁（默认）。
-- `scripts/run_agent_eval.py --protocol function_calling --json-output docs/evals/function-calling.json`：真实 LLM 跑同一 66 条 golden cases，输出 intent/tool/action/answer/step_sequence 指标与 manual 基线对比（需 `LLM_API_KEY`）。
+- `scripts/run_agent_eval.py --planner-mode structured`：离线确定性门禁（默认）。
+- `scripts/run_agent_eval.py --planner-mode tool_calling --json-output docs/evals/tool-calling.json`：通过统一 LangGraph runtime 跑同一 66 条 golden cases（需 `LLM_API_KEY`）。
 - 对比关注点：同一问题下 function_calling 是否产生等价或更优的工具序列；并行 tool_calls 是否降低轮次；失败场景是否被 LLM 自主修复。
 
 ---
 
 # 6. 已知边界
 
-- `FunctionCallingAgent` 暂不接入 LangGraph 图（独立循环），未共享 checkpointer/会话持久化；多轮记忆仍由 `ChatService` 层提供。
+- 两种 planner mode 共享 LangGraph state、Judge、步骤上限、trace 和会话上层契约。
 - function_calling 的 tool 结果截断可能丢失长 payload 细节，后续可接入与 reflector 相同的结构化摘要。
 - 对比评测结果依赖所选 LLM 与版本，不作为 CI 门禁。
