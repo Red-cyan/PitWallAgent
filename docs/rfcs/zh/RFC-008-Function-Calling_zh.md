@@ -4,7 +4,7 @@
 **作者**：Red Cyan
 **状态**：已通过
 **创建日期**：2026-08-08
-**最后更新**：2026-08-08
+**最后更新**：2026-08-14
 
 ---
 
@@ -73,12 +73,14 @@ for step in 1..max_steps:
         messages += [assistant(tool_calls)]          # 原样回灌
         for tc in reply.tool_calls:                  # 支持单轮并行
             result = dispatcher.execute_plan(action, params)
-            messages += [tool(tool_call_id, result.payload)]
+            messages += [tool(tool_call_id, summarize(result.payload))]
         continue
     return reply.content                             # 无工具调用 -> 最终回答
 ```
 
-- 工具结果以 `tool` role 回灌，长度截断 2000 字符（与 reflector observation 同一策略）。
+- 工具结果以 `tool` role 回灌确定性的结构化 observation，不发送完整 payload。`app/agents/tool_observation.py` 复用于 tool-calling planner 与 Judge，不调用额外 LLM；每条 observation 固定不超过 2400 字符，且始终是合法 JSON。
+- 完整 payload 仍保存在 `step_outputs`、`batch_results`、最终 HTTP response、trace 与 evidence panel 中，因此不影响 structured planner 的 `$ref`、证据展示和响应契约。
+- 每次再次调用 tool-calling 模型前，system prompt、原始 user message 和当前 assistant/tool 批次原样保留；更早批次折叠为单条 `Previous tool observations`，并限制在同一 2400 字符预算内。
 - 每轮可并行多个 tool_calls；多轮循环受 `AGENT_REACT_MAX_STEPS` 限制。达到上限时追加一次不携带 tools 的强制总结请求；若总结失败，则回退到最近一个包含明确回答字段的成功工具结果。
 - `LLMClient.chat_tools` 复用同一 OpenAI client 与 metrics/logle。
 
@@ -93,8 +95,8 @@ for step in 1..max_steps:
 | 多工具并行 | 需 planner 显式编排（依赖链串行） | 原生支持单轮多 tool_calls |
 | 参数生成 | 规则 + LLM JSON，白名单约束 | LLM 自由生成，需 schema 约束 |
 | 失败修复 | reflector 结构化 observation + next_plan | LLM 观察 tool 结果自行决定 |
-| 成本/延迟 | 可预测（planner + judge 小 token） | 每轮全量上下文回灌，token 更高 |
-| 可观测性 | trace 暴露 plan/steps/judge_outcomes | trace 暴露 tool_calls 序列 |
+| 成本/延迟 | 可预测（planner + judge 小 token） | 每轮模型调用；工具 observation 与历史摘要有界，不再累积完整 payload |
+| 可观测性 | trace 暴露 plan/steps/judge_outcomes | trace 增加 observation 原始/摘要字符数、消息历史字符数与压缩次数 |
 | 适用 | 生产稳定路径、离线演示、CI 门禁 | 探索复杂多步问题、验证灵活性 |
 
 ## 4.1 决策规则
@@ -116,5 +118,6 @@ for step in 1..max_steps:
 # 6. 已知边界
 
 - 两种 planner mode 共享 LangGraph state、Judge、步骤上限、trace 和会话上层契约。
-- function_calling 的 tool 结果截断可能丢失长 payload 细节，后续可接入与 reflector 相同的结构化摘要。
+- 2400 字符是代码常量而非环境变量；摘要按答案、状态、citation/evidence 元数据和领域关键条目优先保留，低优先级细节可能被裁剪。
+- context compaction 只作用于发送给 tool-calling 模型的消息，不删除 Agent state 中的计划、步骤输出或完整结果。
 - 对比评测结果依赖所选 LLM 与版本，不作为 CI 门禁。

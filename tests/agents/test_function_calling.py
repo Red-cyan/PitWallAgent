@@ -162,6 +162,29 @@ def test_function_calling_multi_round_reasoning() -> None:
     assert response.final_answer == "最终回答。"
 
 
+def test_function_calling_compacts_previous_batches() -> None:
+    llm = StubLLMClient(
+        [
+            FakeMessage(content=None, tool_calls=[FakeToolCall("call_1", "list_recent", "{}")]),
+            FakeMessage(content=None, tool_calls=[FakeToolCall("call_2", "get_driver_standings", "{}")]),
+            FakeMessage(content="done"),
+        ]
+    )
+
+    response = build_agent(llm).run("news and standings")
+
+    third_call_messages = llm.sent_messages[2]
+    assert [message["role"] for message in third_call_messages[-2:]] == ["assistant", "tool"]
+    assert any(
+        message["role"] == "user" and message["content"].startswith("Previous tool observations")
+        for message in third_call_messages
+    )
+    assert sum(message["role"] == "assistant" for message in third_call_messages) == 1
+    assert response.trace["message_history_compacted"] is True
+    assert response.trace["context_compaction_count"] == 1
+    assert response.trace["tool_observation_chars"] < response.trace["tool_observation_original_chars"]
+
+
 def test_tool_functions_cover_all_actions() -> None:
     functions = build_tool_functions()
 

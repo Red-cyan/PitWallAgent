@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import operator
 import threading
@@ -18,6 +17,11 @@ from app.agents.planner import LLMQueryPlanner
 from app.agents.reflector import ReActReflector
 from app.agents.response_formatter import AgentResponseFormatter
 from app.agents.tool_dispatcher import ToolDispatcher, interpolate_params
+from app.agents.tool_observation import (
+    PREVIOUS_OBSERVATIONS_PREFIX,
+    observation_json,
+    previous_observations_message,
+)
 from app.config.settings import settings
 from app.schemas.agent import AgentQueryResponse
 from app.tools.base import ToolResult
@@ -57,6 +61,11 @@ class AgentState(TypedDict, total=False):
     steps: Annotated[list[dict[str, Any]], operator.add]
     step_count: int
     max_steps: int
+    tool_observation_chars: int
+    tool_observation_original_chars: int
+    message_history_chars: int
+    message_history_compacted: bool
+    context_compaction_count: int
 
 
 class LangGraphAgentRuntime:
@@ -204,14 +213,21 @@ class LangGraphAgentRuntime:
             "max_steps": state.get("max_steps", self.max_steps),
             "max_steps_reached": False,
             "finalization_mode": "direct",
+            "tool_observation_chars": 0,
+            "tool_observation_original_chars": 0,
+            "message_history_chars": 0,
+            "message_history_compacted": False,
+            "context_compaction_count": 0,
         }
 
     def _route_planner(self, state: AgentState) -> str:
         return "model" if state.get("planner_mode") == "tool_calling" else "structured_plan"
 
     def _model_node(self, state: AgentState) -> AgentState:
+        messages, compacted, compaction_count = self._compact_messages(state.get("messages", []), state)
+        history_chars = self._messages_chars(messages)
         try:
-            reply = self.tool_calling_adapter.invoke(state.get("messages", []))
+            reply = self.tool_calling_adapter.invoke(messages)
         except Exception as exc:
             self.logger.error("tool_calling_model_failed", extra={"error_type": exc.__class__.__name__})
             return {
@@ -220,14 +236,22 @@ class LangGraphAgentRuntime:
                 "pending_tool_calls": [],
                 "model_content": "",
                 "step_count": 1,
+                "messages": messages,
+                "message_history_chars": history_chars,
+                "message_history_compacted": compacted,
+                "context_compaction_count": compaction_count,
             }
 
         tool_calls = list(reply.tool_calls or [])[: self.max_parallel_tool_calls]
         if not tool_calls:
             return {
+                "messages": messages,
                 "model_content": reply.content or "",
                 "pending_tool_calls": [],
                 "judge_reasons": ["complete"],
+                "message_history_chars": history_chars,
+                "message_history_compacted": compacted,
+                "context_compaction_count": compaction_count,
             }
 
         pending: list[dict[str, Any]] = []
@@ -245,10 +269,13 @@ class LangGraphAgentRuntime:
             )
             plans.append(plan)
         return {
-            "messages": [*state.get("messages", []), self.tool_calling_adapter.assistant_message(reply)],
+            "messages": [*messages, self.tool_calling_adapter.assistant_message(reply)],
             "pending_tool_calls": pending,
             "current_batch_plans": plans,
             "model_content": "",
+            "message_history_chars": history_chars,
+            "message_history_compacted": compacted,
+            "context_compaction_count": compaction_count,
         }
 
     def _route_after_model(self, state: AgentState) -> str:
@@ -317,6 +344,8 @@ class LangGraphAgentRuntime:
         messages = list(state.get("messages", []))
         last_tool_answer = state.get("last_tool_answer", "")
         step_records: list[dict[str, Any]] = []
+        observation_chars_total = state.get("tool_observation_chars", 0)
+        observation_original_chars_total = state.get("tool_observation_original_chars", 0)
 
         for index, plan in enumerate(plans):
             validation_error = pending[index].get("validation_error") if index < len(pending) else None
@@ -355,10 +384,16 @@ class LangGraphAgentRuntime:
             )
             if is_native:
                 call_id = plan.get("tool_call_id") or (pending[index].get("id") if index < len(pending) else output_key)
-                content = {"success": result.success, "payload": result.payload, "error": result.error}
-                messages.append(
-                    {"role": "tool", "tool_call_id": call_id, "content": json.dumps(content, ensure_ascii=False)[:4000]}
+                content, observation_chars, original_chars = observation_json(
+                    result.payload,
+                    success=result.success,
+                    error=result.error,
                 )
+                messages.append(
+                    {"role": "tool", "tool_call_id": call_id, "content": content}
+                )
+                observation_chars_total += observation_chars
+                observation_original_chars_total += original_chars
 
         last_result = results[-1] if results else ToolResult(tool_name="unknown", success=False, error="No tool calls.")
         last_plan = plans[-1] if plans else {}
@@ -375,6 +410,8 @@ class LangGraphAgentRuntime:
             "last_tool_answer": last_tool_answer,
             "step_count": step_count,
             "steps": step_records,
+            "tool_observation_chars": observation_chars_total,
+            "tool_observation_original_chars": observation_original_chars_total,
         }
 
     def _normalize_observation_node(self, state: AgentState) -> AgentState:
@@ -553,6 +590,11 @@ class LangGraphAgentRuntime:
             "citations": response.get("citations") or result.get("citations", []),
             "retrieved_chunks": response.get("retrieved_chunks") or result.get("retrieved_chunks", []),
             "steps": state.get("steps", []),
+            "tool_observation_chars": state.get("tool_observation_chars", 0),
+            "tool_observation_original_chars": state.get("tool_observation_original_chars", 0),
+            "message_history_chars": state.get("message_history_chars", self._messages_chars(state.get("messages", []))),
+            "message_history_compacted": state.get("message_history_compacted", False),
+            "context_compaction_count": state.get("context_compaction_count", 0),
         }
         if reasons:
             trace["judge_outcomes"] = reasons
@@ -568,6 +610,38 @@ class LangGraphAgentRuntime:
                 for index, step in enumerate(plan_steps)
             ]
         return trace
+
+    @staticmethod
+    def _messages_chars(messages: list[dict[str, Any]]) -> int:
+        return sum(len(str(message.get("content", ""))) for message in messages)
+
+    def _compact_messages(
+        self,
+        messages: list[dict[str, Any]],
+        state: AgentState,
+    ) -> tuple[list[dict[str, Any]], bool, int]:
+        """Preserve the protocol-critical current batch and fold older observations."""
+        if len(messages) <= 4:
+            return messages, False, state.get("context_compaction_count", 0)
+        system = next((item for item in messages if item.get("role") == "system"), None)
+        user = next((item for item in messages if item.get("role") == "user"), None)
+        assistant_indexes = [index for index, item in enumerate(messages) if item.get("role") == "assistant"]
+        if not assistant_indexes:
+            return messages, False, state.get("context_compaction_count", 0)
+        current_start = assistant_indexes[-1]
+        current = messages[current_start:]
+        older = messages[1:current_start] if user is not None else messages[:current_start]
+        observation_lines: list[str] = []
+        for item in older:
+            if item.get("role") == "tool":
+                observation_lines.append(str(item.get("content", "")))
+            elif item.get("role") == "user" and str(item.get("content", "")).startswith(PREVIOUS_OBSERVATIONS_PREFIX):
+                observation_lines.append(str(item["content"]))
+        compacted: list[dict[str, Any]] = [item for item in (system, user) if item is not None]
+        if observation_lines:
+            compacted.append({"role": "user", "content": previous_observations_message(observation_lines)})
+        compacted.extend(current)
+        return compacted, True, state.get("context_compaction_count", 0) + 1
 
     def _should_judge(self, state: AgentState) -> bool:
         return (

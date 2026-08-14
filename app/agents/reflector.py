@@ -8,6 +8,7 @@ from app.config.settings import settings
 from app.core.logging import log_structured
 from app.services.llm.client import LLMClient
 from app.tools.base import ToolResult
+from app.agents.tool_observation import summarize_tool_result
 
 
 class ReActReflector:
@@ -122,7 +123,11 @@ class ReActReflector:
         tool_result: ToolResult,
     ) -> list[dict[str, str]]:
         tool_error = tool_result.error or "none"
-        tool_summary = self._summarize_tool_result(tool_result.payload)
+        tool_summary = self._summarize_tool_result(
+            tool_result.payload,
+            success=tool_result.success,
+            error=tool_result.error,
+        )
         return [
             {
                 "role": "system",
@@ -161,61 +166,15 @@ class ReActReflector:
             },
         ]
 
-    def _summarize_tool_result(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """把工具输出压缩为结构化摘要，供裁判判断是否需要继续推理。"""
-        response = payload.get("response") or {}
-        summary: dict[str, Any] = {}
-        for key in ("answer_status", "mode", "confidence", "evidence_count", "query_type", "source_mode"):
-            if response.get(key) is not None:
-                summary[key] = response[key]
-        citations = response.get("citations") or payload.get("citations") or []
-        if citations:
-            summary["cited"] = [
-                c.get("clause_id") or c.get("clause_number") or c.get("id") or str(c)[:80]
-                for c in citations[:5]
-            ]
-        articles = payload.get("articles")
-        if isinstance(articles, list):
-            summary["article_count"] = len(articles)
-            summary["article_titles"] = [a.get("title") for a in articles[:5] if a.get("title")]
-        article = payload.get("article")
-        if isinstance(article, dict) and article.get("title"):
-            summary["article"] = (
-                f"{article['title']}: {article.get('summary') or article.get('content') or ''}"
-            )
-        insights = payload.get("insights")
-        if isinstance(insights, dict) and insights.get("summary"):
-            summary["insights"] = insights["summary"]
-        rules_analysis = payload.get("rules_analysis")
-        if isinstance(rules_analysis, dict) and rules_analysis.get("analysis_summary"):
-            summary["rules_analysis"] = rules_analysis["analysis_summary"]
-        race_result = payload.get("race_result")
-        if isinstance(race_result, dict):
-            results = race_result.get("results") or []
-            summary["race_result"] = (
-                f"{race_result.get('grand_prix_name', '')} round {race_result.get('round_number', '')}: "
-                + "; ".join(
-                    f"{entry.get('position')}. {entry.get('driver_name')}" for entry in results[:5] if entry.get("driver_name")
-                )
-            )
-        for standings_key in ("standings", "schedule"):
-            entries = payload.get(standings_key)
-            if isinstance(entries, list) and entries:
-                summary[standings_key] = [
-                    f"{e.get('position')}. {e.get('driver_name') or e.get('team_name') or e.get('grand_prix_name')}"
-                    for e in entries[:5]
-                    if e.get("position") is not None or e.get("driver_name") or e.get("team_name")
-                ]
-        if payload.get("race") is not None:
-            race_info = payload["race"]
-            if isinstance(race_info, dict):
-                summary["race"] = (
-                    f"{race_info.get('grand_prix_name') or race_info.get('race_name') or ''} "
-                    f"round {race_info.get('round_number', '')}".strip()
-                )
-        if not summary:
-            summary["empty"] = True
-        return summary
+    def _summarize_tool_result(
+        self,
+        payload: dict[str, Any],
+        *,
+        success: bool = True,
+        error: str | None = None,
+    ) -> dict[str, Any]:
+        """Compatibility wrapper around the shared deterministic observation."""
+        return summarize_tool_result(payload, success=success, error=error)
 
     def _parse_and_normalize(
         self,
