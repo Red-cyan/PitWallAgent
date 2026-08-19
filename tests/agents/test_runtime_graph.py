@@ -250,7 +250,7 @@ class FourStepPlanner:
         return {**steps[0], "steps": steps}
 
 
-def test_multi_step_plan_exceeds_max_steps_but_completes() -> None:
+def test_multi_step_plan_stops_at_max_steps() -> None:
     dispatcher = RecordingDispatcher()
     runtime = LangGraphAgentRuntime(
         planner=cast(Any, FourStepPlanner()),
@@ -261,7 +261,9 @@ def test_multi_step_plan_exceeds_max_steps_but_completes() -> None:
 
     response = runtime.run("诺里斯相关新闻")
 
-    # 计划内步骤不消耗修复轮次预算：4 步计划在 max_steps=2 下仍全部执行
-    assert len(dispatcher.calls) == 4
+    # max_steps 严格生效：4 步计划只执行 2 步即触发强制收尾，
+    # 不再绕过步数上限全部执行。
+    assert len(dispatcher.calls) == 2
+    assert len(response.trace["steps"]) == 2
+    assert response.trace["max_steps_reached"] is True
     assert response.success is True
-    assert len(response.trace["steps"]) == 4

@@ -30,6 +30,17 @@ describe("extractCitations", () => {
     expect(extractCitations(null)).toEqual([]);
   });
 
+  it("returns an empty array when the result is null", () => {
+    const response: ChatResponse = {
+      ...buildResponse({}),
+      response: {
+        ...buildResponse({}).response,
+        result: null as unknown as Record<string, unknown>,
+      },
+    };
+    expect(extractCitations(response)).toEqual([]);
+  });
+
   it("returns an empty array when no citations are present", () => {
     expect(extractCitations(buildResponse(undefined))).toEqual([]);
   });

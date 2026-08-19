@@ -121,7 +121,15 @@ class LangGraphAgentRuntime:
             if self.checkpointer is not None:
                 from langchain_core.runnables import RunnableConfig
 
-                config = cast(RunnableConfig, {"configurable": {"thread_id": uuid.uuid4().hex}})
+                config = cast(
+                    RunnableConfig,
+                    {
+                        "configurable": {"thread_id": uuid.uuid4().hex},
+                        # 结构化模式每步消耗多个 superstep（plan→tool→normalize→judge），
+                        # 默认 25 的 recursion_limit 在长计划下会提前抛 GraphRecursionError。
+                        "recursion_limit": max(25, (self.max_steps + 2) * 8),
+                    },
+                )
             state = self.graph.invoke(
                 {
                     "message": message,
@@ -133,6 +141,21 @@ class LangGraphAgentRuntime:
                     "steps": [],
                 },
                 config=config,
+            )
+        except Exception as exc:
+            # 节点内任何未预期异常都不应穿透成裸 500；记录后返回降级响应。
+            self.logger.error(
+                "graph_invoke_failed",
+                extra={"error_type": exc.__class__.__name__},
+            )
+            return AgentQueryResponse(
+                intent="general",
+                tool_name="general_tool",
+                success=False,
+                final_answer="抱歉，处理你的请求时出现了内部错误，请稍后重试。",
+                result={},
+                error=f"graph_invoke_error:{exc.__class__.__name__}",
+                trace={"runtime": "langgraph", "graph_error": exc.__class__.__name__},
             )
         finally:
             self._set_current_on_token(None)
@@ -268,8 +291,15 @@ class LangGraphAgentRuntime:
                 }
             )
             plans.append(plan)
+        # assistant 消息只保留实际执行的 tool_calls（截断后的子集），
+        # 避免出现无对应 tool 响应的孤儿 tool_call 污染对话协议。
+        assistant_msg = {
+            "role": "assistant",
+            "content": reply.content or "",
+            "tool_calls": [call.model_dump() for call in tool_calls],
+        }
         return {
-            "messages": [*messages, self.tool_calling_adapter.assistant_message(reply)],
+            "messages": [*messages, assistant_msg],
             "pending_tool_calls": pending,
             "current_batch_plans": plans,
             "model_content": "",
@@ -446,10 +476,11 @@ class LangGraphAgentRuntime:
         step_count = state.get("step_count", 0)
         max_steps = state.get("max_steps", self.max_steps)
 
-        if has_remaining and state.get("success") is True:
-            judgement = {"finish": False, "reason": "continue_plan", "next_plan": {"_continue": True}}
-        elif step_count >= max_steps:
+        # max_steps 优先于继续计划：多步计划不得绕过步数上限。
+        if step_count >= max_steps:
             judgement = {"finish": True, "reason": "max_steps_reached", "next_plan": None}
+        elif has_remaining and state.get("success") is True:
+            judgement = {"finish": False, "reason": "continue_plan", "next_plan": {"_continue": True}}
         elif self._should_judge(state):
             if not self.reflector.enabled:
                 judgement = {"finish": True, "reason": "judge_disabled", "next_plan": None}
@@ -475,16 +506,13 @@ class LangGraphAgentRuntime:
 
         update: AgentState = {"judgement": judgement, "judge_reasons": [judgement["reason"]]}
         next_plan = judgement.get("next_plan")
-        if (
-            state.get("planner_mode") == "structured"
-            and isinstance(next_plan, dict)
-            and not next_plan.get("_continue")
-        ):
+        if state.get("planner_mode") == "structured" and isinstance(next_plan, dict):
+            # 结构化模式下继续执行或修复都会消耗一个步数预算，防止长计划绕过上限。
             update["step_count"] = step_count + 1
-        if isinstance(next_plan, dict) and not next_plan.get("_continue"):
-            update["current_batch_plans"] = [
-                {**next_plan, "output_key": f"repair_{step_count + 1}"}
-            ]
+            if not next_plan.get("_continue"):
+                update["current_batch_plans"] = [
+                    {**next_plan, "output_key": f"repair_{step_count + 1}"}
+                ]
         if judgement["reason"] == "max_steps_reached":
             update["max_steps_reached"] = True
         return update
@@ -494,12 +522,14 @@ class LangGraphAgentRuntime:
         next_plan = judgement.get("next_plan")
         if judgement.get("reason") == "max_steps_reached":
             return "forced_summary"
+        # tool_calling 模式：任何未完成的继续/修复都回到模型，由 LLM 重新生成
+        # 工具调用，避免用假 tool_call_id 追加孤儿 tool 消息破坏对话协议。
+        if state.get("planner_mode") == "tool_calling" and not judgement.get("finish", True):
+            return "model"
         if isinstance(next_plan, dict) and not judgement.get("finish", True):
             if next_plan.get("_continue"):
                 return "structured_plan"
             return "tool_batch"
-        if state.get("planner_mode") == "tool_calling" and not judgement.get("finish", True):
-            return "model"
         return "finalize"
 
     def _forced_summary_node(self, state: AgentState) -> AgentState:

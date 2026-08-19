@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import re
 from pathlib import Path
@@ -12,6 +13,10 @@ from app.db.engine import SessionLocal
 from app.db.models import RegulationChunkRecord, RegulationCorpusRecord
 from app.rag.retrieval.query_rewriter import QueryRewriter
 from app.schemas.rules import ActiveCorpusResponse, RetrievalDebugResponse, RetrievedChunk
+
+# 默认 chunks 文件基于项目根目录解析，而不是当前工作目录，
+# 避免从任意目录启动 uvicorn 时 FileNotFoundError 导致 500。
+_DEFAULT_CHUNKS_FILE = Path(__file__).resolve().parents[2] / "data" / "regulations" / "processed" / "chunks.json"
 
 
 class RuleRepository:
@@ -132,7 +137,7 @@ class RuleRepository:
         chunks_file: str | Path | None = None,
         chunks_data: list[dict] | None = None,
     ) -> None:
-        self.chunks_file = Path(chunks_file or "data/regulations/processed/chunks.json")
+        self.chunks_file = Path(chunks_file or _DEFAULT_CHUNKS_FILE)
         self._chunk_data = chunks_data
         self.prefer_database = (
             settings.regulation_prefer_database
@@ -614,8 +619,16 @@ class RuleRepository:
         if self._chunk_data is not None:
             chunk_data = self._chunk_data
         else:
-            with self.chunks_file.open("r", encoding="utf-8") as file:
-                chunk_data = json.load(file)
+            try:
+                with self.chunks_file.open("r", encoding="utf-8") as file:
+                    chunk_data = json.load(file)
+            except (FileNotFoundError, json.JSONDecodeError) as exc:
+                logger = logging.getLogger("pitwall.rule_repository")
+                logger.warning(
+                    "chunks file unavailable; falling back to empty corpus",
+                    extra={"error_type": exc.__class__.__name__, "path": str(self.chunks_file)},
+                )
+                return []
 
         return [
             RetrievedChunk(

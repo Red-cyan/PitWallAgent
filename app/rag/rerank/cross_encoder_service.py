@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from typing import Protocol, cast
 
 from app.config.settings import settings
@@ -25,6 +26,7 @@ class CrossEncoderReranker(Reranker):
     """
 
     _model_cache: dict[str, CrossEncoderModel] = {}
+    _load_lock = threading.Lock()
 
     def __init__(self, model_name: str | None = None) -> None:
         if settings.hf_token:
@@ -42,11 +44,13 @@ class CrossEncoderReranker(Reranker):
         from sentence_transformers import CrossEncoder
 
         self.model_name = model_name or settings.regulation_rerank_model
-        if self.model_name not in self._model_cache:
-            self._model_cache[self.model_name] = cast(
-                CrossEncoderModel,
-                CrossEncoder(self.model_name, trust_remote_code=True),
-            )
+        # 与 embedding 服务一致：加锁避免首个并发请求双重加载大模型。
+        with self._load_lock:
+            if self.model_name not in self._model_cache:
+                self._model_cache[self.model_name] = cast(
+                    CrossEncoderModel,
+                    CrossEncoder(self.model_name, trust_remote_code=True),
+                )
         self.model = self._model_cache[self.model_name]
         self.logger = logging.getLogger("pitwall.rerank")
 

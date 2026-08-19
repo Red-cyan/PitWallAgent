@@ -1,4 +1,5 @@
 from sqlalchemy import Select, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import NewsArticleRecord
@@ -27,10 +28,24 @@ class NewsRepository:
                 raw_payload=article.raw_payload,
             )
             self.session.add(record)
-            self.session.commit()
+            try:
+                self.session.commit()
+            except IntegrityError:
+                # 启动抓取线程与手动 refresh 并发时，唯一约束（source_article_id /
+                # article_url）可能先被另一方插入；回滚后按已存在记录走更新路径。
+                self.session.rollback()
+                existing = self._find_existing(article)
+                if existing is None:
+                    raise
+                return self._update_article(existing, article)
             self.session.refresh(record)
             return NewsArticleRead.from_record(record)
 
+        return self._update_article(existing, article)
+
+    def _update_article(
+        self, existing: NewsArticleRecord, article: NewsArticleCreate
+    ) -> NewsArticleRead:
         existing.title = article.title
         if article.summary is not None:
             existing.summary = article.summary

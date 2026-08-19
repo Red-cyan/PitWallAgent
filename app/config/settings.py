@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     app_name: str = "PitWall Agent"
     app_log_level: str = "INFO"
     cors_allow_origins: str = "*"
+    # 可选的 API 访问令牌（Bearer token）。为空时所有端点匿名可访问（默认，
+    # 便于本地开发）；生产环境建议设置后仅受信任客户端可调用。
+    api_access_token: str | None = Field(default=None)
     llm_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("LLM_API_KEY", "DEEPSEEK_API_KEY"),
@@ -50,6 +53,9 @@ class Settings(BaseSettings):
     regulation_rerank_max_candidates: int = 15
     regulation_rerank_batch_size: int = 8
     regulation_embedding_query_instruction: str = ""
+    # 法规问答灌入 LLM 的片段预算（token）；0 表示不限制。用于防止
+    # 检索片段全量拼接导致上下文溢出，按字符估算保留高分段。
+    regulation_context_token_budget: int = 1800
     formula1_feed_url: str = "https://www.formula1.com/en/latest/all.xml"
     motorsport_feed_url: str = "https://www.motorsport.com/rss/f1/news/"
     news_ingest_on_startup: bool = True

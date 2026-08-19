@@ -3,6 +3,7 @@ import re
 import time
 from collections.abc import Callable
 
+from app.config.settings import settings
 from app.core.logging import log_structured
 from app.core.metrics import RAG_DURATION, RAG_RETRIEVALS
 from app.repositories.rule_repository import RuleRepository
@@ -59,13 +60,17 @@ class RegulationQAService:
         )
 
     def _format_context(self, chunks: list[RetrievedChunk]) -> str:
+        # 控制灌入 LLM 的片段总量：按字符估算（中文约占 1 token/字），
+        # 超过预算时优先保留高分段，防止上下文无限膨胀撑爆模型输入。
+        budget = settings.regulation_context_token_budget * 2
         context_parts: list[str] = []
+        used = 0
 
         for index, chunk in enumerate(chunks, start=1):
             article_text = chunk.article or "未识别条款"
             page_text = f"第 {chunk.page} 页" if chunk.page else "页码未知"
             score_text = f"{chunk.score:.2f}" if chunk.score is not None else "N/A"
-            context_parts.append(
+            part = (
                 f"[片段 {index}]\n"
                 f"文档: {chunk.document_title}\n"
                 f"条款: {article_text}\n"
@@ -73,6 +78,10 @@ class RegulationQAService:
                 f"检索分数: {score_text}\n"
                 f"内容:\n{chunk.content}"
             )
+            if budget > 0 and used + len(part) > budget:
+                continue
+            context_parts.append(part)
+            used += len(part)
 
         return "\n\n".join(context_parts)
 

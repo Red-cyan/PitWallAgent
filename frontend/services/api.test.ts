@@ -25,4 +25,8 @@ describe("parseSseEvent", () => {
     const event = parseSseEvent("event: error\ndata: {\"message\":\"boom\"}");
     expect(event).toEqual({ event: "error", data: { message: "boom" } });
   });
+
+  it("returns null for malformed JSON instead of crashing", () => {
+    expect(parseSseEvent("event: status\ndata: {not-json")).toBeNull();
+  });
 });

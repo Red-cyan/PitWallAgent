@@ -10,6 +10,7 @@ from app.config.settings import settings
 from app.core.logging import configure_logging, log_structured
 from app.mcp.pitwall_server import PitWallServer
 from app.middleware.access_log import AccessLogMiddleware
+from app.middleware.api_auth import ApiAuthMiddleware
 from app.middleware.request_context import RequestContextMiddleware
 
 configure_logging()
@@ -51,6 +52,7 @@ app = FastAPI(
 
 app.add_middleware(AccessLogMiddleware)
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(ApiAuthMiddleware)
 
 resolved_origins = settings.resolved_cors_allow_origins
 if "*" in resolved_origins:

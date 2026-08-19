@@ -1,4 +1,5 @@
 import os
+import threading
 from typing import Any, Protocol, cast
 
 from app.config.settings import settings
@@ -22,6 +23,7 @@ class BgeEmbeddingService(EmbeddingService):
     """基于 BGE-M3 的本地向量服务。"""
 
     _model_cache: dict[tuple[str, str], SentenceTransformerModel] = {}
+    _load_lock = threading.Lock()
 
     def __init__(self, model_name: str | None = None, device: str | None = None) -> None:
         if settings.hf_token:
@@ -42,11 +44,14 @@ class BgeEmbeddingService(EmbeddingService):
         self.device = device or settings.regulation_embedding_device
         cache_key = (self.model_name, self.device)
 
-        if cache_key not in self._model_cache:
-            self._model_cache[cache_key] = cast(
-                SentenceTransformerModel,
-                SentenceTransformer(self.model_name, device=self.device),
-            )
+        # 加锁避免首个并发请求同时加载大模型（BGE-M3 约 2.3GB），
+        # check-then-set 无锁会让内存翻倍甚至 OOM。
+        with self._load_lock:
+            if cache_key not in self._model_cache:
+                self._model_cache[cache_key] = cast(
+                    SentenceTransformerModel,
+                    SentenceTransformer(self.model_name, device=self.device),
+                )
 
         self.model = self._model_cache[cache_key]
 
