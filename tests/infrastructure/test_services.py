@@ -14,6 +14,12 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_postgres_migration_is_at_head() -> None:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    script = ScriptDirectory.from_config(Config("alembic.ini"))
+    expected_head = script.get_current_head()
+
     engine = create_engine(os.environ["DATABASE_URL"])
     try:
         with engine.connect() as connection:
@@ -23,7 +29,9 @@ def test_postgres_migration_is_at_head() -> None:
                     text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
                 )
             )
-        assert revision == "20260727_0001"
+        assert revision == expected_head, (
+            f"database revision {revision!r} is not at head {expected_head!r}"
+        )
         assert {"regulation_chunks", "news_articles"} <= tables
     finally:
         engine.dispose()
