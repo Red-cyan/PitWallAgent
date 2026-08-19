@@ -96,11 +96,17 @@ class LLMJudge:
         )
         parse_failures = 0
         for attempt in range(6):
+            # First two attempts require strict JSON. After an empty or malformed
+            # response, fall back to plain text generation with a retry hint so a
+            # transient formatting issue does not discard the whole verdict.
+            use_json_response_format = attempt < 2
             raw = self.llm_client.chat(
                 messages=messages,
-                temperature=0,
+                temperature=0 if use_json_response_format else 0.2,
                 max_tokens=self.max_tokens,
-                response_format={"type": "json_object"},
+                response_format=(
+                    {"type": "json_object"} if use_json_response_format else None
+                ),
             )
             if not raw.strip():
                 log_structured(self.logger, "judge_empty_response", attempt=attempt)
@@ -172,12 +178,49 @@ class LLMJudge:
         ]
 
     @staticmethod
+    def _extract_json_object(text: str) -> str | None:
+        """Extract the first balanced JSON object from model output.
+
+        Scanning brace depth (instead of a greedy regex) avoids pulling
+        trailing prose into the payload when the model appends explanations.
+        """
+        start = text.find("{")
+        if start < 0:
+            return None
+        depth = 0
+        in_string = False
+        escaped = False
+        for index in range(start, len(text)):
+            char = text[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : index + 1]
+        return None
+
+    @staticmethod
     def _parse(raw: str) -> AnswerVerdict:
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.MULTILINE).strip()
-        object_match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
-        if not object_match:
+        payload_text = LLMJudge._extract_json_object(cleaned)
+        if payload_text is None:
             raise LLMJudgeParseError("No JSON object found in judge output.")
-        payload = json.loads(object_match.group(0))
+        try:
+            payload = json.loads(payload_text)
+        except json.JSONDecodeError:
+            repaired = re.sub(r",\s*([}\]])", r"\1", payload_text)
+            payload = json.loads(repaired)
         return AnswerVerdict.model_validate(payload)

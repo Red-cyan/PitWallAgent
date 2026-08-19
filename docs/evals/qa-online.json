@@ -4,35 +4,33 @@
     "cases": 21,
     "answer_status_accuracy": 1.0,
     "citation_consistency_rate": 1.0,
-    "mean_evidence_supported_fraction": 0.015873015873015872,
-    "mean_groundedness_score": 4.75,
-    "groundedness_pass_rate": 0.9,
-    "mean_helpfulness_score": 4.15,
-    "rejection_correct_rate": 0.95
+    "mean_evidence_supported_fraction": 0.027777777777777773,
+    "mean_groundedness_score": 4.904761904761905,
+    "groundedness_pass_rate": 1.0,
+    "mean_helpfulness_score": 4.571428571428571,
+    "rejection_correct_rate": 1.0
   },
   "results": [
     {
       "name": "general-principles",
       "question": "What general principles govern the Formula 1 regulations?",
-      "answer": "根据提供的规则片段，F1 规章的一般原则主要包括：FIA 负责锦标赛的体育组织和监管；锦标赛是 FIA 的专有财产，商业权利已授权；Section A（一般监管规定）及其附录适用于 F1 规章所有其他章节，除非另有说明；锦标赛、各项赛事及所有 F1 活动均在 FIA 框架下受相应法规管辖，并涉及适用法律与 FIA F1 文件；同时明确除非特别规定，个人不承担规章下的责任，且每位相关人员有责任知悉并遵守规定。由于片段内容不完整，部分条款细节未能呈现。最关键的文档与条款为 FIA 2026 F1 Regulations - Section A 的 A1 条款。",
+      "answer": "根据检索到的规则片段，F1 规则的一般原则主要包括：FIA 负责一级方程式世界锦标赛的体育组织与规则制定；该锦标赛为 FIA 独家财产；FIA 已授予相关商业权利；Section A（通用监管规定）及其附录包含适用于锦标赛的一般性条款，除非另有明确说明，否则对所有其他 FIA F1 规则章节均适用。此外还涉及适用法规、FIA F1 文件、适用法律以及个人责任等原则。证据仅来自片段，具体细节如 A1.2 之后内容未完整呈现。最关键的来源是 FIA 2026 F1 Regulations - Section A [General Provisions] - Iss 03 - 2026-06-25，条款 A1 和 A1.1.3，第 5 页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 3,
       "status_correct": true,
       "citations_consistent": true,
-      "evidence_supported_fraction": 0.3333333333333333,
-      "groundedness_score": 4,
+      "evidence_supported_fraction": 0.25,
+      "groundedness_score": 5,
       "helpfulness_score": 4,
       "rejection_correct": true,
-      "violations": [
-        "FIA 2026 F1 Regulations（证据中未提及年份 2026）"
-      ],
+      "violations": [],
       "failures": []
     },
     {
       "name": "unsafe-release",
       "question": "What is an unsafe release from the pit lane?",
-      "answer": "根据规则片段，不安全释放是指：在维修区或指定维修停车位释放赛车时，以任何可能危及维修区人员或其他车手、或可能导致其他车辆损坏的方式释放；或者以不安全的状态释放赛车。具体条款为B1.6.2的a和b项。相关处罚参见B1.6.2后续条款。关键来源：FIA 2026 F1 Regulations - Section B [Sporting]，条款B1.6.2，第9页。",
+      "answer": "根据规则，不安全释放指从车库或指定维修停车位释放赛车时，其方式可能危及维修道人员或其他车手，或可能对他人车辆造成损坏；也包括赛车本身处于不安全状态下被释放。释放时机以赛车驶离车库，或进站后后轴越过前轴原静止位置为准。此外，若车手在知情后仍继续驾驶被认定不安全释放的赛车，还会被追加处罚。\n\n关键依据：FIA 2026 F1 Regulations - Section B [Sporting] 第 B1.6.2 条，第 9 页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 5,
@@ -48,7 +46,7 @@
     {
       "name": "parc-ferme",
       "question": "When do parc ferme restrictions apply?",
-      "answer": "根据检索到的规则片段，parc fermé 限制的适用时间包括：标准赛制下，FP2结束后三小时内，除特定例外外，赛车必须覆盖并准备接受FIA封条；三小时后至FP3开始前三小时可移除封条。此外，每辆赛车从冲刺排位赛首次离开维修站直至冲刺赛开始，以及从排位赛首次离开维修站直至正赛开始，均视为处于parc fermé；若未离开维修站，则分别在SQ1或Q1结束时视为进入parc fermé。赛后，赛车收到结束信号后必须直接驶入parc fermé。最关键的来源为《FIA 2026 F1 Regulations - Section B [Sporting]》条款B3.4.1、B3.5和B5.16.3。",
+      "answer": "根据检索到的规则片段，parc fermé限制的适用时间如下：在标准赛制比赛中，除使用受限时段3的允许例外外，FP2结束后三小时内，所有使用过或原定使用但未离开维修道的F1赛车必须被覆盖并准备接受FIA封条。此外，每辆赛车从冲刺排位赛首次离开维修道时起至冲刺赛开始，以及从排位赛首次离开维修道时起至正赛开始，均视为处于parc fermé状态；如果赛车未能在相应排位赛中离开维修道，则分别在SQ1或Q1结束时视为处于parc fermé。赛后，赛车在收到结束信号后也必须直接前往parc fermé。最关键的条款是FIA 2026 F1 Regulations Section B中的B3.4.1（标准赛制封车时点）和B3.5（赛前parc fermé适用时点）。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 3,
@@ -64,7 +62,7 @@
     {
       "name": "red-flag",
       "question": "What happens when a race is suspended with a red flag?",
-      "answer": "根据规则，当赛事总监决定以红旗暂停比赛（TTSC）时，会向所有参赛者发送“RED FLAG - RACE SUSPENDED”消息，并在所有裁判点和发车线展示红旗，发车架橙色灯亮起。此后禁止超车，维修区出口关闭，所有F1赛车必须缓慢进入维修区。第一辆到达维修区的赛车直接驶向维修区出口（除非赛事总监指定其他位置），并留在快车道；其余赛车按进入维修区的顺序在其后排队，全部必须留在快车道。若因安全原因在赛车返回维修区前关闭维修区入口，则所有赛车缓慢驶向发车格，第一辆到达的赛车占据杆位，其余按到达顺序占据后续位置。暂停期间不会停止计时，但暂停时长会按相关条款加入最长比赛时间。若无法恢复，成绩将取暂停信号发出前一圈的倒数第二圈结束时的结果。关键来源：FIA 2026 F1 Regulations - Section B [Sporting]，条款B5.14.2，第47页。",
+      "answer": "根据FIA 2026 F1规则片段B5.14.2，当比赛因红旗暂停时，赛事总监会向所有参赛者发送“RED FLAG - RACE SUSPENDED”信号，所有观察哨和发车线显示红旗，发车架橙色灯亮起。此时禁止超车，维修站出口关闭，所有F1赛车必须缓慢进入维修站。第一辆到达维修站的赛车应直接驶向维修站出口（除非赛事总监指定其他位置），并保持在快车道上；其他赛车按进入维修站的顺序在其后排队，全部必须停留在快车道。在特殊安全情况下，维修站入口可能在赛车返回前关闭，此时所有赛车必须缓慢驶向发车格，第一辆到达的赛车占据杆位，其余按到达顺序占据剩余发车位置。比赛暂停期间计时系统和TTCS不会停止，暂停时长将按规则B2.5.3b添加到最大时间期限中。\n\n最关键的文档和条款：FIA 2026 F1 Regulations Section B [Sporting]，B5.14.2，第47页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 4,
@@ -80,7 +78,7 @@
     {
       "name": "safety-car",
       "question": "How does the safety car procedure work?",
-      "answer": "根据提供的规则片段，无法完整说明安全车（Safety Car）程序，因为片段主要涉及虚拟安全车（VSC）部署和处罚执行，并未直接给出安全车出动、领跑、进站等具体流程。现有片段中，VSC程序由赛事总监下令启动，会向所有参赛者发送“VSC DEPLOYED”并点亮FIA灯光面板；所有赛车必须避免不必要的慢行或危险驾驶，并在每个执勤扇区及安全车线保持高于FIA ECU设定的最低时间；除特定例外（如进出维修站、明显故障等）外禁止超车。此外，片段还涉及处罚在VSC或安全车期间如何执行，但未说明安全车本身的运行规则。\n\n证据不足，无法准确回答安全车程序。最关键的来源是文档“FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4)”中的条款B5.12.1（第42页）和B1.9.6（第14页）。",
+      "answer": "根据提供的规则片段，没有直接描述实体安全车（Safety Car）的程序，只有虚拟安全车（VSC）的部署规则。片段1和片段2来自《FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4)》第42页，条款B5.12.1，内容为：VSC程序可由赛事总监下令启动，以中立化赛道状况；部署时向所有参赛者发送“VSC DEPLOYED”并显示“VSC”。在VSC期间，所有赛车不得无故缓慢、 erratic 或危险驾驶；必须在每个管制区段及两条安全车线处保持不低于FIA ECU设定的最小时间；除规则列出的例外（如进出维修区、明显故障减速等）外，禁止超车。片段4提及的是违反规定的处罚方式，但并未说明完整的安全车程序。因此，对于实体安全车如何运作，现有片段证据不足。关键来源为条款B5.12.1，第42页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 6,
@@ -96,7 +94,23 @@
     {
       "name": "pit-lane-speed",
       "question": "What is the pit lane speed limit rule?",
-      "answer": "根据检索到的规则，赛道上的维修道限速规定为：当车手离开发车位后，必须遵守维修道限速，直至通过杆位位置。这一要求出现在多个条款中，包括正常起步程序（B5.6.2）、额外暖胎圈情况（B5.9.1）以及类似的起步相关程序（B5.10.3）。需要注意的是，片段中并未给出具体限速数值，只规定了限速区段。最关键的来源是《FIA 2026 F1 Regulations - Section B [Sporting]》中的条款B5.6.2、B5.9.1及B5.10.3，其中B5.6.2为直接规定。",
+      "answer": "根据提供的规则片段，维修道（Pit Lane）速度限制的规则是：当赛车离开发车格时，所有车手必须遵守维修道限速，直到通过杆位位置为止。这一规定在多个条款中出现，包括额外暖胎圈后离开发车格的情况，以及从维修区出发参与比赛时的相关场景。但片段中未给出具体的限速数值，因此无法确认具体速度是多少。最关键的来源是 FIA 2026 F1 Regulations - Section B [Sporting]，条款 B5.9.1、B5.6.2 和 B5.10.3（均涉及该限制）。",
+      "answer_status": "answered",
+      "expected_answer_status": "answered",
+      "evidence_count": 3,
+      "status_correct": true,
+      "citations_consistent": true,
+      "evidence_supported_fraction": 0.0,
+      "groundedness_score": 5,
+      "helpfulness_score": 4,
+      "rejection_correct": true,
+      "violations": [],
+      "failures": []
+    },
+    {
+      "name": "stewards-investigation",
+      "question": "How do the stewards investigate an on-track incident?",
+      "answer": "根据规则片段，赛道事故的调查由干事酌情决定是否启动，干事也可以自行对事故发起调查。若调查启动，会向所有参赛者发送消息，告知涉及的车手；若该消息在 TTCS（计时赛段）结束信号后不超过 60 分钟内显示，相关车手未经干事同意不得离开赛道。对于 LTCS（圈速计时赛段）中的事故，除非完全清楚是驾驶违规，否则通常会在相关赛段结束后进行调查。处罚是否施加及如何施加，同样由干事酌情决定。\n\n关键依据：FIA 2026 F1 Regulations - Section B [Sporting] 第 13 页，条款 B1.9.2 与 B1.9.4。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 3,
@@ -110,29 +124,9 @@
       "failures": []
     },
     {
-      "name": "stewards-investigation",
-      "question": "How do the stewards investigate an on-track incident?",
-      "answer": "根据规则，赛会干事有权自行决定是否对赛道事件进行调查，也可以主动调查其注意到的事件。若某事件正在调查中，会向所有参赛者发送消息，说明涉及哪位或哪几位车手。只要该消息在 TTCS 结束信号后六十分钟内显示，相关车手未经赛会干事同意不得离开赛道。此外，处罚是否施加也由赛会干事裁量，除非能明确判断车手对事件负全部或主要责任，否则不处罚。最关键的规则依据是《FIA 2026 F1 Regulations - Section B [Sporting]》第 B1.9.2 条，第 13 页。",
-      "answer_status": "answered",
-      "expected_answer_status": "answered",
-      "evidence_count": 3,
-      "status_correct": true,
-      "citations_consistent": true,
-      "evidence_supported_fraction": 0.0,
-      "groundedness_score": 3,
-      "helpfulness_score": 5,
-      "rejection_correct": true,
-      "violations": [
-        "回答中引用了条款页码“第 13 页”，但证据片段中未包含该页码信息"
-      ],
-      "failures": [
-        "groundedness=3"
-      ]
-    },
-    {
       "name": "dangerous-driving",
       "question": "What penalty applies to dangerous driving?",
-      "answer": "根据提供的规则片段，没有直接针对“危险驾驶”这一具体行为的专门处罚条款。规则规定，在事件中是否处罚由干事酌情决定，并可施加规则中列明的处罚。在LTCS（低牵引力控制系统？原文为LTCS/TTCS，但按片段理解）期间，干事可删除圈速或罚退发车位（B1.9.4）。在TTCS期间，干事可施加五秒或十秒时间处罚、通过维修区处罚、停车加油处罚、时间处罚、车手训诫、车队训诫、罚退发车位、取消资格，以及暂停下一场比赛（B1.9.5及片段4）。因此，具体处罚取决于事件发生的场景和干事裁量。证据不足时无法指定唯一处罚。关键文档条款为：FIA 2026 F1 Regulations - Section B [Sporting]，条款B1.9.3、B1.9.4、B1.9.5。",
+      "answer": "根据提供的规则片段，没有直接针对“危险驾驶”这一具体行为的处罚规定。规则仅说明在LTCS（长距离比赛）或TTCS（短距离比赛）期间发生事故时，赛会干事可酌情施加处罚。其中B1.9.5列出了TTCS事故可施加的处罚，包括五秒或十秒时间处罚、通过维修区处罚、停车罚停处罚、时间处罚、车手训诫、车队训诫、罚退发车位置、取消成绩、以及暂停下一场比赛资格等。B1.9.3也强调由赛会干事决定是否处罚，且通常只在司机完全或主要对事故负责时才施加。由于片段没有明确定义“危险驾驶”及其对应处罚，无法给出唯一确定的答案。\n\n关键来源：FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07，条款B1.9.5及B1.9.3，第13至14页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 4,
@@ -148,7 +142,25 @@
     {
       "name": "plank-wear",
       "question": "What technical rule limits plank wear?",
-      "answer": "限制 plank 磨损的技术规则是 FIA 2026 F1 Regulations Section C 第 C3.6.1 条 d 款。该款规定 Plank Assembly 的厚度在全新时必须为 10mm ±0.2mm 且均匀，因磨损允许的最小厚度为 8mm，此合规性检查将在 C3.6.1 条 c 款所要求的三个孔洞的周边进行。此外，Skid 磨损的评估需将 Skid 从赛车上拆下，用带 6.35mm 直径测砧的千分尺进行物理测量，每个孔洞的整个周边都必须满足规定公差。\n\n最关键的来源是 FIA 2026 F1 Regulations - Section C [Technical] - Iss 19 - 2026-06-25，条款 C3.6.1，第 24 页。",
+      "answer": "根据规则片段，限制Plank磨损的技术规则是：Plank Assembly的厚度在全新时必须为10mm ± 0.2mm且均匀，因磨损可接受的厚度下限为8mm。该符合性检查将在C3.6.1.c所要求孔的周边进行。最关键的来源是FIA 2026 F1 Regulations Section C [Technical] 中的条款C3.6.1，第24页。",
+      "answer_status": "answered",
+      "expected_answer_status": "answered",
+      "evidence_count": 5,
+      "status_correct": true,
+      "citations_consistent": true,
+      "evidence_supported_fraction": 0.0,
+      "groundedness_score": 4,
+      "helpfulness_score": 5,
+      "rejection_correct": true,
+      "violations": [
+        "“第24页”这一页码信息在证据片段中无法找到依据"
+      ],
+      "failures": []
+    },
+    {
+      "name": "floor-geometry",
+      "question": "What requirements apply to floor geometry?",
+      "answer": "根据提供的规则片段，对地板几何的要求包括：C3.19.4 条款规定，在 RV-BIB-STAY 区域内、位于 RV-FLOOR-BIB 平面投影范围内且低于 Z=150 的地板车身或几何，可包含隔离的柔性材料或薄层压板片段，以适应地板车身在 plank 组件与地面接触时产生的运动，具体见 C3.18.6。C3.6.3 条款涉及 plank 下表面滑板几何，要求滑板必须嵌入 plank 材料中，仅可安装在 C3.6.2.c 规定的三个孔周围，并符合相应参考体积定义的几何形状；前部孔周围必须安装金属滑板，中后部孔可选，且每个金属滑板需分成三个独立部分，前部滑板需直接固定在前地板结构上且零自由度，金属滑板材料需符合指定钛合金或不锈钢要求，仅允许为紧固件去除最少材料。C3.3.2 条款本身不是直接的地板几何要求，而是列举了气动组件上允许的例外，如最小修复、胶带、车身板件接缝和局部固定细节。\n\n关键文档和条款为：FIA 2026 F1 Regulations Section C，C3.19.4（第59页）、C3.6.3（第25页）以及 C3.3.2（第16页）。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 5,
@@ -162,46 +174,27 @@
       "failures": []
     },
     {
-      "name": "floor-geometry",
-      "question": "What requirements apply to floor geometry?",
-      "answer": "根据提供的FIA 2026 F1技术规则片段，地板几何的要求包括以下内容。C3.19.4条款规定，位于RV-BIB-STAY区域内、且处于RV-FLOOR-BIB平面视图范围内、高度低于Z=150的地板车身或几何结构，可以包含隔离的合规材料或薄层压板，以适应因Plank组件与地面接触而产生的地板车身运动。C3.6.3条款对Plank下表面安装的Skid材料作出几何限制，Skid只能安装在Plank材料对应位置，围绕C3.6.2.c中定义的三个孔，且必须符合RV-SKID-FWD、RV-SKID-MID、RV-SKID-REAR及相关图纸规定的几何，前部孔必须使用金属Skid，中部和后部孔可选金属Skid，若不用金属则需替换为独立的Plank材料或集成到Plank中，最终几何必须包含相应的孔和沉孔细节。C3.3.2条款涉及地板几何的测量与公差：一般制造公差为±3毫米，但不得超出参考体积；对于XR=-335之后的地板车身，位置公差为±2毫米；对于XR=-335之前的地板车身及Plank组件从下方可见部分，Z方向公差为±2毫米；此外还允许最小修复、胶带、车身板接缝和局部固定细节等微小偏差。最关键的文档是FIA 2026 F1 Regulations -",
-      "answer_status": "answered",
-      "expected_answer_status": "answered",
-      "evidence_count": 5,
-      "status_correct": true,
-      "citations_consistent": true,
-      "evidence_supported_fraction": 0.0,
-      "groundedness_score": 5,
-      "helpfulness_score": 4,
-      "rejection_correct": true,
-      "violations": [],
-      "failures": []
-    },
-    {
       "name": "fuel-flow-meter",
       "question": "Where must the fuel flow meter be fitted?",
-      "answer": "我在当前 FIA 规则索引中找到了可能相关的章节，但证据还不够精确，不能直接下确定结论。 最接近的依据来自 FIA 2026 F1 Regulations - Section C [Technical] - Iss 19 - 2026-06-25，C5.9.3，p.73。 建议把问题再具体到场景、处罚类型或涉及的赛段，我可以继续收窄到更明确的条款。",
-      "answer_status": "partial_evidence",
-      "expected_answer_status": "partial_evidence",
-      "evidence_count": 3,
+      "answer": "根据规则片段，燃油流量计（Fuel Flow Meter）必须完全安装在燃油箱内，且所有供应给动力单元的燃料都必须通过该传感器。此要求来自FIA 2026 F1技术规则C5.9.3，第73页。",
+      "answer_status": "answered",
+      "expected_answer_status": "answered",
+      "evidence_count": 4,
       "status_correct": true,
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
-      "groundedness_score": 3,
-      "helpfulness_score": 1,
-      "rejection_correct": false,
+      "groundedness_score": 4,
+      "helpfulness_score": 5,
+      "rejection_correct": true,
       "violations": [
-        "证据还不够精确，不能直接下确定结论"
+        "第73页"
       ],
-      "failures": [
-        "groundedness=3",
-        "rejection decision incorrect"
-      ]
+      "failures": []
     },
     {
       "name": "team-cost-cap",
       "question": "What cost cap applies to F1 teams in Section D?",
-      "answer": "根据提供的规则片段，没有给出Section D中适用于F1车队的具体成本上限金额。片段仅提及F1车队有义务遵守成本上限（Cost Cap），并提到成本上限管理等部门会应用与成本上限相关的实质性阈值，但未规定具体数字或计算方式。\n\n最关键的文档和条款：FIA 2026 F1 Regulations - Section D，条款D2及D10.1.3；但均未列明成本上限数值。",
+      "answer": "根据提供的规则片段，Section D 中明确提到 F1 车队需要遵守“Cost Cap”（成本上限），具体条款是 D2 援引了 Article D4 规定的“遵守成本上限”的义务，但片段中没有给出成本上限的具体金额数值。因此，从现有证据无法回答具体金额是多少。最关键的来源是《FIA 2026 F1 Regulations - Section D》条款 D2（第 6 页），其中提及车队须按 Article D4 遵守成本上限。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 3,
@@ -217,7 +210,7 @@
     {
       "name": "pu-cost-cap",
       "question": "What cost cap applies to power unit manufacturers in Section E?",
-      "answer": "根据提供的规则片段，Section E 提到了“Power Unit Cost Cap”（动力单元成本上限），但片段中没有给出具体适用的金额数字。片段只规定每家动力单元制造商必须持续遵守该成本上限，并需按报告截止日期提交报告文件等义务（见条款 E2）。因此，具体成本上限金额在现有证据中不足，无法从片段得知。最关键的来源是《FIA 2026 F1 Regulations - Section E [Financial – PU Manufacturers] - Iss 06 - 2026-06-25》的 E2 条款。",
+      "answer": "根据提供的规则片段，没有给出Section E中适用于动力单元制造商的具体成本上限金额。片段仅涉及成本上限裁决小组（E7）、合规审查流程（E6.3.3）以及制造商义务（E2），均未包含数值规定。因此证据不足，无法回答具体金额。最关键的文档为FIA 2026 F1 Regulations - Section E，条款为E2，但其中也未载明成本上限数字。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 3,
@@ -233,7 +226,7 @@
     {
       "name": "wind-tunnel-testing",
       "question": "What operational limits apply to wind tunnel testing in Section F?",
-      "answer": "根据片段内容，Section F 中关于风洞测试的操作限制主要体现在 F4.3.1 条款中：只允许使用以大气压空气作为试验流体的风洞；除模型或地面绕偏航轴的旋转外，禁止设计产生相对于 RATG 的弯曲流场；闭口风洞可调整垂直壁和天花板以改善气流均匀性；允许使用粒子图像测速系统。不得使用大于全尺寸 60% 的缩比模型和 RATG 进行 RWTT，风洞空气速度相对模型和 RATG 不得超过 50m/s；在受限风洞测试期间，风洞空气速度变化率的绝对值必须小于 4.5m/s²，该变化率通过中心采样、周期 0.5 秒的移动平均滤波平滑，且仅在风洞空气速度在 15m/s 至最大速度 95% 之间变化的斜坡阶段内计算。其他片段如 F3.1.4 涉及停工期豁免，F4.6.1 涉及 RWTT 和 RCFD 的数量限制表格，但未提供具体数值细节。\n\n最关键的文档和条款是 FIA 2026 F1 Regulations - Section F [Operational] 中的 F4.3.1，第 10 页。",
+      "answer": "根据提供的规则片段，Section F中对风洞测试的操作限制主要见于F4.3.1条款：仅允许使用以大气压空气为试验流体的风洞；除RATG和模型或地面绕偏航轴旋转外，不允许制造相对RATG的弯曲流场；闭口风洞可调整垂直壁和天花板以改善气流均匀性；允许使用粒子图像测速系统；禁止使用大于全尺寸60%的比例模型和RATG进行RWTT，风洞空气速度相对模型和RATG不得超过50m/s；在受限风洞测试期间，风洞空气速度变化率绝对值必须小于4.5m/s²，该变化率通过中心化0.5秒移动平均滤波平滑，且仅在风洞空气速度从15m/s到单次运行最大速度95%之间的升速和降速阶段计算。片段2虽提及关闭期间风洞使用情形，但未直接给出测试操作限制。\n\n最关键的来源是《FIA 2026 F1 Regulations - Section F [Operational]》的F4.3.1条款，第10页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 4,
@@ -249,7 +242,7 @@
     {
       "name": "red-flag-zh",
       "question": "红旗出示后，比赛暂停程序是什么？",
-      "answer": "根据FIA 2026 F1规则B5.14.2，当比赛总监决定暂停比赛时，会向所有参赛者发送“RED FLAG - RACE SUSPENDED”等信号，所有观察哨和线处显示红旗，发车架橙色灯点亮。信号发出后：禁止超车；维修区出口关闭，所有F1赛车必须缓慢驶入维修区；第一辆到达维修区的赛车应直接驶向维修区出口（除非比赛总监规定维修区内的其他位置），并保持在快车道上；其他赛车按进入维修区的顺序在第一辆赛车后排成一列，所有赛车必须留在快车道。特殊情况下，若出于安全原因维修区入口可能在赛车返回前关闭，则所有赛车必须缓慢驶向发车区，第一辆到达的赛车占据杆位，其余按到达顺序占据剩余发车位。有关程序将在发车区而非快车道上进行。计时系统不会停止，暂停时长将加到最大比赛时间上。关键来源：FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4)，条款B5.14.2，第47页。",
+      "answer": "根据规则，当赛事总监决定暂停比赛时，会向所有参赛者发送“红旗-冲刺暂停”或“红旗-比赛暂停”消息，所有旗站和发车线处显示红旗，发车架橙色灯亮起。信号发出后，禁止超车；维修区出口关闭，所有F1赛车必须缓慢驶入维修区。第一辆到达维修区的赛车应直接驶向维修区出口（除非赛事总监另行指定位置），并保持在快车道；其他赛车按进入维修区的顺序在第一辆赛车后排队，所有赛车须留在快车道。特殊情况下，出于安全原因，维修区入口可能在赛车返回前关闭，此时所有赛车须缓慢驶向发车格，最先到达的赛车占据杆位，其余按到达顺序填满剩余发车格位置。相关程序不变，但在发车格上进行。计时系统和时间记录不会停止，暂停时长将增加到最长时限中。最关键的来源是FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4) 第47页条款B5.14.2。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 4,
@@ -257,7 +250,7 @@
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
       "groundedness_score": 5,
-      "helpfulness_score": 4,
+      "helpfulness_score": 5,
       "rejection_correct": true,
       "violations": [],
       "failures": []
@@ -265,7 +258,7 @@
     {
       "name": "virtual-safety-car-zh",
       "question": "虚拟安全车期间车手要遵守什么要求？",
-      "answer": "根据规则片段，虚拟安全车（VSC）期间车手需要遵守以下要求：通过双挥舞黄旗裁判区域时，除了满足片段4中b项的要求（即显著降低速度、准备改变方向或停车，且不得试图创造有意义圈速）之外，还必须保持在FIA ECU为每个相关裁判区域设定的最短时间以上。也就是说，车手在VSC期间经过双黄旗区域时，速度必须足够慢，确保圈速不低于规定的最短时间。\n\n最关键的文档为 FIA 2026 F1 Regulations - Section B [Sporting]，条款 B1.8.4 和 B5.12。",
+      "answer": "根据规则片段，虚拟安全车期间，车手通过双黄旗旗语区段时，除需满足片段2中b)项关于双黄旗的一般要求（即显著减速、准备改变方向或停车，且不得试图做出有效圈速）外，还必须保持在FIA ECU设定的每个相关旗语区段的最低时间以上。最关键的来源是FIA 2026 F1 Regulations Section B条款B1.8.4，第12页。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
       "evidence_count": 5,
@@ -281,10 +274,26 @@
     {
       "name": "plank-wear-zh",
       "question": "技术规则如何限制赛车底板磨损？",
-      "answer": "根据规则片段，技术规则主要通过底板组件（Plank Assembly）的厚度磨损限值来限制赛车底板磨损。条款C3.6.1规定，底板组件厚度在全新时必须为10mm±0.2mm且均匀；因磨损允许的最小厚度为8mm，该符合性在三个直径34mm检查孔的周边进行检验。同时，C3.6.1还规定了底板组件的几何形状需符合RV-PLANK，制造公差为±0.5mm。磨损检查的具体方法是拆下Skid后用带6.35mm直径砧座的千分尺进行物理测量，每个孔整个周边必须在允许公差内。此外，C3.6.4对底板和Skid的固定方式、紧固件尺寸及位置作出了限制，但直接约束磨损的核心条款是C3.6.1中的厚度公差和最小磨损厚度。关键来源为FIA 2026 F1 Regulations Section C [Technical] 的C3.6.1，第24页。",
+      "answer": "根据规则片段，技术规则通过规定底板组件的厚度要求来限制磨损：底板组件新造时厚度必须为10mm±0.2mm且均匀，因磨损允许最小厚度为8mm，该要求将在指定检查孔的周边进行核验。此外，还规定了底板的几何、孔位及制造公差等细节。答案依据为《FIA 2026 F1 Regulations - Section C [Technical] - Iss 19 - 2026-06-25》第24页条款C3.6.1。",
       "answer_status": "answered",
       "expected_answer_status": "answered",
-      "evidence_count": 5,
+      "evidence_count": 4,
+      "status_correct": true,
+      "citations_consistent": true,
+      "evidence_supported_fraction": 0.3333333333333333,
+      "groundedness_score": 5,
+      "helpfulness_score": 5,
+      "rejection_correct": true,
+      "violations": [],
+      "failures": []
+    },
+    {
+      "name": "unsafe-release-paraphrase",
+      "question": "Can a car be sent from its pit box into another car's path?",
+      "answer": "不可以。根据规则，赛车不得以任何可能危及维修区人员或其他车手、或可能损坏其他赛车的方式从车库或指定维修停车位释放。来源：FIA 2026 F1 Regulations - Section B [Sporting] - Iss 07 - 2026-06-25 (4)，条款B1.6.2，第9页。",
+      "answer_status": "answered",
+      "expected_answer_status": "answered",
+      "evidence_count": 6,
       "status_correct": true,
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
@@ -295,27 +304,9 @@
       "failures": []
     },
     {
-      "name": "unsafe-release-paraphrase",
-      "question": "Can a car be sent from its pit box into another car's path?",
-      "answer": "根据提供的规则片段，没有直接条款写明“能否将赛车从维修区停车位发出到另一辆赛车的路径上”。但规则规定了相关限制：赛车只能从指定维修停车位立即驶回赛道（B1.6.3 c），且驶出维修道时必须等维修道尽头绿灯亮起，蓝旗或蓝灯会警告出站车手有赛道上的赛车接近（B1.6.3 e）。同时，无论是否在维修区，都不得以可能对他人构成危险的方式驾驶（B4.1.4 a）。因此，如果发出赛车会直接进入另一辆车的路径并造成危险，则不被允许。关键条款是 FIA 2026 Rules 的 B1.6.3 和 B4.1.4。",
-      "answer_status": "answered",
-      "expected_answer_status": "answered",
-      "evidence_count": 6,
-      "status_correct": true,
-      "citations_consistent": true,
-      "evidence_supported_fraction": 0.0,
-      "groundedness_score": null,
-      "helpfulness_score": null,
-      "rejection_correct": null,
-      "violations": [],
-      "failures": [
-        "judge_error=LLMJudgeParseError"
-      ]
-    },
-    {
       "name": "alien-rule-zh",
       "question": "外星人赛车该怎么处理？",
-      "answer": "未检索到与问题“外星人赛车该怎么处理？”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。",
+      "answer": "未检索到与问题“外星人赛车该怎么处理？”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。如果你能提供具体条款编号、赛事场景或车队/车手背景，我可以继续在规则库中检索。",
       "answer_status": "insufficient_evidence",
       "expected_answer_status": "insufficient_evidence",
       "evidence_count": 0,
@@ -323,7 +314,7 @@
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
       "groundedness_score": 5,
-      "helpfulness_score": 3,
+      "helpfulness_score": 4,
       "rejection_correct": true,
       "violations": [],
       "failures": []
@@ -331,7 +322,7 @@
     {
       "name": "teleportation-rule",
       "question": "extraterrestrial teleportation axiom",
-      "answer": "未检索到与问题“extraterrestrial teleportation axiom”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。",
+      "answer": "未检索到与问题“extraterrestrial teleportation axiom”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。如果你能提供具体条款编号、赛事场景或车队/车手背景，我可以继续在规则库中检索。",
       "answer_status": "insufficient_evidence",
       "expected_answer_status": "insufficient_evidence",
       "evidence_count": 0,
@@ -339,7 +330,7 @@
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
       "groundedness_score": 5,
-      "helpfulness_score": 3,
+      "helpfulness_score": 4,
       "rejection_correct": true,
       "violations": [],
       "failures": []
@@ -347,7 +338,7 @@
     {
       "name": "ufo-rule-zh",
       "question": "ufo 入侵维修区的规则是什么？",
-      "answer": "未检索到与问题“ufo 入侵维修区的规则是什么？”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。",
+      "answer": "未检索到与问题“ufo 入侵维修区的规则是什么？”相关的 FIA 规则证据。为了避免编造规则，我不能基于当前资料给出确定答案。如果你能提供具体条款编号、赛事场景或车队/车手背景，我可以继续在规则库中检索。",
       "answer_status": "insufficient_evidence",
       "expected_answer_status": "insufficient_evidence",
       "evidence_count": 0,
@@ -355,7 +346,7 @@
       "citations_consistent": true,
       "evidence_supported_fraction": 0.0,
       "groundedness_score": 5,
-      "helpfulness_score": 3,
+      "helpfulness_score": 4,
       "rejection_correct": true,
       "violations": [],
       "failures": []

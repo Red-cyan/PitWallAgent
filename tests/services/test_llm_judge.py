@@ -82,6 +82,47 @@ def test_judge_raises_after_repeated_invalid_responses() -> None:
         LLMJudge(llm_client=client).judge("question", "answer", ["evidence"])
 
 
+def test_judge_recovers_from_empty_response_without_response_format() -> None:
+    client = SequenceLLMClient(
+        [
+            "",
+            "",
+            '{"groundedness_score": 5, "helpfulness_score": 4, "rejection_correct": true, '
+            '"violations": [], "reasoning": "ok"}',
+        ]
+    )
+
+    verdict = LLMJudge(llm_client=client).judge("question", "answer", ["evidence"])
+
+    assert verdict.groundedness_score == 5
+    assert client.calls == 3
+
+
+def test_judge_extracts_balanced_json_object_with_trailing_prose() -> None:
+    raw = (
+        "```json\n"
+        '{"groundedness_score": 4, "helpfulness_score": 4, "rejection_correct": true, '
+        '"violations": [], "reasoning": "ok"}\n'
+        "```\n以上是评分结果。"
+    )
+
+    verdict = LLMJudge._parse(raw)
+
+    assert verdict.groundedness_score == 4
+    assert verdict.helpfulness_score == 4
+
+
+def test_judge_repairs_trailing_comma_before_closing_bracket() -> None:
+    raw = (
+        '{"groundedness_score": 5, "helpfulness_score": 4, "rejection_correct": true, '
+        '"violations": ["a",], "reasoning": "ok"}'
+    )
+
+    verdict = LLMJudge._parse(raw)
+
+    assert verdict.violations == ["a"]
+
+
 def test_answer_verdict_validates_score_range() -> None:
     with pytest.raises(ValueError):
         AnswerVerdict.model_validate(

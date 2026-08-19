@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 from app.schemas.rules import (
@@ -12,7 +13,14 @@ from app.services.qa_grounding import (
     citations_consistent,
     evidence_supported_fraction,
 )
-from scripts.run_qa_eval import QACase, evaluate, load_cases, render_markdown
+from scripts.run_qa_eval import (
+    QACase,
+    QAResult,
+    _check,
+    evaluate,
+    load_cases,
+    render_markdown,
+)
 
 
 class StubQAService:
@@ -70,10 +78,14 @@ def test_real_qa_cases_dataset_is_balanced() -> None:
 
     assert len(cases) == 21
     answered = [case for case in cases if case.expected_answer_status == "answered"]
-    partial = [case for case in cases if case.expected_answer_status == "partial_evidence"]
-    insufficient = [case for case in cases if case.expected_answer_status == "insufficient_evidence"]
-    assert len(answered) == 17
-    assert len(partial) == 1
+    partial = [
+        case for case in cases if case.expected_answer_status == "partial_evidence"
+    ]
+    insufficient = [
+        case for case in cases if case.expected_answer_status == "insufficient_evidence"
+    ]
+    assert len(answered) == 18
+    assert len(partial) == 0
     assert len(insufficient) == 3
 
 
@@ -106,7 +118,10 @@ def test_evaluate_flags_status_mismatch() -> None:
                 )
             return response
 
-    metrics, results = evaluate(WrongStatusService(), [QACase("x", "外星人赛车该怎么处理？", "insufficient_evidence")])  # type: ignore[arg-type]
+    metrics, results = evaluate(
+        WrongStatusService(),
+        [QACase("x", "外星人赛车该怎么处理？", "insufficient_evidence")],
+    )  # type: ignore[arg-type]
 
     assert metrics["answer_status_accuracy"] == 0.0
     assert results[0].failures
@@ -147,3 +162,60 @@ def test_citations_consistent_matches_retrieved_chunks() -> None:
 
 def test_citations_consistent_vacuously_true_when_empty() -> None:
     assert citations_consistent([], []) is True
+
+
+def _gate_args(**overrides: float | None) -> argparse.Namespace:
+    values: dict[str, float | None] = {
+        "min_status_accuracy": 0.0,
+        "min_citation_consistency": 0.0,
+        "min_groundedness_score": None,
+        "min_helpfulness_score": None,
+        "min_rejection_correct": None,
+        "min_case_groundedness_score": None,
+        "min_case_helpfulness_score": None,
+    }
+    values.update(overrides)
+    return argparse.Namespace(**values)
+
+
+def _result(
+    groundedness: int | None, helpfulness: int | None, failures: list[str] | None = None
+) -> QAResult:
+    return QAResult(
+        name="case-1",
+        question="question",
+        answer="answer",
+        answer_status="answered",
+        expected_answer_status="answered",
+        evidence_count=1,
+        status_correct=True,
+        citations_consistent=True,
+        evidence_supported_fraction=1.0,
+        groundedness_score=groundedness,
+        helpfulness_score=helpfulness,
+        failures=failures or [],
+    )
+
+
+def test_check_rejects_case_below_individual_groundedness_threshold() -> None:
+    metrics = {"answer_status_accuracy": 1.0, "citation_consistency_rate": 1.0}
+    args = _gate_args(min_case_groundedness_score=4.0, min_case_helpfulness_score=3.0)
+
+    assert _check(metrics, [_result(3, 4)], args) is False
+
+
+def test_check_rejects_case_below_individual_helpfulness_threshold() -> None:
+    metrics = {"answer_status_accuracy": 1.0, "citation_consistency_rate": 1.0}
+    args = _gate_args(min_case_groundedness_score=4.0, min_case_helpfulness_score=3.0)
+
+    assert _check(metrics, [_result(4, 2)], args) is False
+
+
+def test_check_rejects_missing_judge_verdict() -> None:
+    metrics = {"answer_status_accuracy": 1.0, "citation_consistency_rate": 1.0}
+    args = _gate_args()
+
+    assert (
+        _check(metrics, [_result(None, None, ["judge_error=LLMJudgeParseError"])], args)
+        is False
+    )

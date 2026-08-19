@@ -2,7 +2,9 @@ from app.repositories.rule_repository import RuleRepository
 from app.schemas.rules import RetrievedChunk
 
 
-def test_rule_repository_does_not_return_arbitrary_chunk_when_rerank_has_no_signal() -> None:
+def test_rule_repository_does_not_return_arbitrary_chunk_when_rerank_has_no_signal() -> (
+    None
+):
     repository = RuleRepository()
     chunk = RetrievedChunk(
         chunk_id="chunk-1",
@@ -75,12 +77,45 @@ def test_rule_repository_does_not_treat_section_match_as_evidence() -> None:
 
 def test_adjacent_clause_parts_are_appended_without_changing_hit_rank() -> None:
     repository = RuleRepository(prefer_database=False)
-    first = RetrievedChunk(chunk_id="part-1", content="first", document_title="Section B",
-                           document_key="b", clause_id="B5.1", article="B5.1", part_ordinal=1)
-    second = RetrievedChunk(chunk_id="part-2", content="second", document_title="Section B",
-                            document_key="b", clause_id="B5.1", article="B5.1", part_ordinal=2)
+    first = RetrievedChunk(
+        chunk_id="part-1",
+        content="first",
+        document_title="Section B",
+        document_key="b",
+        clause_id="B5.1",
+        article="B5.1",
+        part_ordinal=1,
+    )
+    second = RetrievedChunk(
+        chunk_id="part-2",
+        content="second",
+        document_title="Section B",
+        document_key="b",
+        clause_id="B5.1",
+        article="B5.1",
+        part_ordinal=2,
+    )
     repository._cached_chunks = [first, second]
 
     expanded = repository.expand_clause_context([second])
 
     assert [chunk.chunk_id for chunk in expanded] == ["part-2", "part-1"]
+
+
+def test_fuel_flow_question_extracts_phrase_that_marks_evidence_strong() -> None:
+    repository = RuleRepository()
+
+    phrases = repository._extract_phrases("Where must the fuel flow meter be fitted?")
+
+    assert "fuel flow meter" in phrases
+
+
+def test_pit_box_question_normalizes_to_pit_stop_release_terms() -> None:
+    repository = RuleRepository()
+
+    normalized = repository._normalize_question(
+        "Can a car be sent from its pit box into another car's path?"
+    )
+
+    assert "designated pit stop position" in normalized
+    assert "unsafe release" in normalized

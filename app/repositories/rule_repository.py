@@ -71,6 +71,7 @@ class RuleRepository:
         "罚时": "time penalty stewards",
         "底板": "plank",
         "木板": "plank",
+        "pit box": "designated pit stop position garage released unsafe release",
     }
 
     SECTION_KEYWORDS = {
@@ -158,18 +159,26 @@ class RuleRepository:
         return self.expand_clause_context(debug_data.retrieved_chunks)
 
     def expand_clause_context(self, hits: list[RetrievedChunk], max_neighbors: int = 1) -> list[RetrievedChunk]:
-        """Append adjacent parts without changing the rank or score of original hits."""
+        """Insert adjacent parts next to their hit without changing hit rank or score.
+
+        Neighbors are kept immediately after the hit so downstream context
+        assembly cannot drop a referenced sub-clause (for example VSC clause
+        ``c`` referencing the requirements of ``b``) before a budget cut.
+        """
         if not hits or max_neighbors < 1:
             return hits
         all_chunks = self._load_chunks()
         hit_ids = {chunk.chunk_id for chunk in hits}
-        supplements: list[RetrievedChunk] = []
+        selected_ids = set(hit_ids)
+        expanded: list[RetrievedChunk] = []
         for hit in hits:
+            expanded.append(hit)
             if not hit.clause_id:
                 continue
             neighbors = [
                 chunk for chunk in all_chunks
                 if chunk.chunk_id not in hit_ids
+                and chunk.chunk_id not in selected_ids
                 and chunk.document_key == hit.document_key
                 and chunk.clause_id == hit.clause_id
                 and chunk.chunk_type == hit.chunk_type
@@ -177,9 +186,9 @@ class RuleRepository:
             ]
             neighbors.sort(key=lambda chunk: (abs(chunk.part_ordinal - hit.part_ordinal), chunk.part_ordinal))
             for neighbor in neighbors[:max_neighbors]:
-                if neighbor.chunk_id not in {chunk.chunk_id for chunk in supplements}:
-                    supplements.append(neighbor)
-        return [*hits, *supplements]
+                expanded.append(neighbor)
+                selected_ids.add(neighbor.chunk_id)
+        return expanded
 
     def search_keywords(self, question: str, top_k: int = 5) -> list[RetrievedChunk]:
         """Run the deterministic keyword pipeline without an LLM or embedding model."""
@@ -975,6 +984,9 @@ class RuleRepository:
 
         if "impeding" in normalized_question:
             phrases.append("impeding")
+
+        if "fuel flow" in normalized_question or "flow meter" in normalized_question:
+            phrases.append("fuel flow meter")
 
         return phrases
 

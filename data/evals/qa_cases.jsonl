@@ -8,7 +8,7 @@
 {"name":"dangerous-driving","question":"What penalty applies to dangerous driving?","expected_answer_status":"answered","language":"en"}
 {"name":"plank-wear","question":"What technical rule limits plank wear?","expected_answer_status":"answered","language":"en"}
 {"name":"floor-geometry","question":"What requirements apply to floor geometry?","expected_answer_status":"answered","language":"en"}
-{"name":"fuel-flow-meter","question":"Where must the fuel flow meter be fitted?","expected_answer_status":"partial_evidence","language":"en"}
+{"name":"fuel-flow-meter","question":"Where must the fuel flow meter be fitted?","expected_answer_status":"answered","language":"en"}
 {"name":"team-cost-cap","question":"What cost cap applies to F1 teams in Section D?","expected_answer_status":"answered","language":"en"}
 {"name":"pu-cost-cap","question":"What cost cap applies to power unit manufacturers in Section E?","expected_answer_status":"answered","language":"en"}
 {"name":"wind-tunnel-testing","question":"What operational limits apply to wind tunnel testing in Section F?","expected_answer_status":"answered","language":"en"}

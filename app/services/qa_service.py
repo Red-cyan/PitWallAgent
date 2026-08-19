@@ -48,6 +48,7 @@ class RegulationQAService:
             return (
                 f"未检索到与问题“{question}”相关的 FIA 规则证据。"
                 "为了避免编造规则，我不能基于当前资料给出确定答案。"
+                "如果你能提供具体条款编号、赛事场景或车队/车手背景，我可以继续在规则库中检索。"
             )
 
         primary_chunk = chunks[0]

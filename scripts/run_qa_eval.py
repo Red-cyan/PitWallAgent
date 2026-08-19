@@ -221,7 +221,11 @@ def render_markdown(metrics: dict[str, float | int | str], results: list[QAResul
     return "\n".join(lines) + "\n"
 
 
-def _check(metrics: dict[str, float | int | str], args: argparse.Namespace) -> bool:
+def _check(
+    metrics: dict[str, float | int | str],
+    results: list[QAResult],
+    args: argparse.Namespace,
+) -> bool:
     passed = True
     checks = [
         ("min_status_accuracy", "answer_status_accuracy"),
@@ -248,6 +252,35 @@ def _check(metrics: dict[str, float | int | str], args: argparse.Namespace) -> b
         if value < args.min_rejection_correct:
             print(f"FAIL rejection_correct_rate: {value:.2%} < {args.min_rejection_correct:.2%}")
             passed = False
+
+    # Averages hide isolated failures: online gates also require every case
+    # to have a judge verdict and stay above per-case score floors.
+    min_case_groundedness = getattr(args, "min_case_groundedness_score", None)
+    min_case_helpfulness = getattr(args, "min_case_helpfulness_score", None)
+    for result in results:
+        if any(failure.startswith("judge_error") for failure in result.failures):
+            print(f"FAIL {result.name}: judge did not produce a verdict")
+            passed = False
+        if (
+            min_case_groundedness is not None
+            and result.groundedness_score is not None
+            and result.groundedness_score < min_case_groundedness
+        ):
+            print(
+                f"FAIL {result.name}: groundedness={result.groundedness_score} "
+                f"< {min_case_groundedness}"
+            )
+            passed = False
+        if (
+            min_case_helpfulness is not None
+            and result.helpfulness_score is not None
+            and result.helpfulness_score < min_case_helpfulness
+        ):
+            print(
+                f"FAIL {result.name}: helpfulness={result.helpfulness_score} "
+                f"< {min_case_helpfulness}"
+            )
+            passed = False
     return passed
 
 
@@ -261,6 +294,8 @@ def main() -> int:
     parser.add_argument("--min-groundedness-score", type=float, default=None)
     parser.add_argument("--min-helpfulness-score", type=float, default=None)
     parser.add_argument("--min-rejection-correct", type=float, default=None)
+    parser.add_argument("--min-case-groundedness-score", type=float, default=None)
+    parser.add_argument("--min-case-helpfulness-score", type=float, default=None)
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()
@@ -291,7 +326,7 @@ def main() -> int:
         args.markdown_output.parent.mkdir(parents=True, exist_ok=True)
         args.markdown_output.write_text(render_markdown(metrics, results), encoding="utf-8")
 
-    return 0 if _check(metrics, args) and len(results) == len(load_cases(args.cases)) else 1
+    return 0 if _check(metrics, results, args) and len(results) == len(load_cases(args.cases)) else 1
 
 
 if __name__ == "__main__":
