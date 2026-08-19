@@ -294,7 +294,7 @@ def test_response_formatter_discloses_local_seed_source() -> None:
         error=None,
     )
 
-    assert "本地示例数据，仅演示用" in answer
+    assert "数据源：本地离线数据" in answer
 
 
 def test_response_formatter_discloses_cached_source_with_timestamp() -> None:

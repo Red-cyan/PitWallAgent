@@ -299,7 +299,7 @@ class AgentResponseFormatter:
                 return f"数据源：Jolpica API 缓存 · 缓存时间 {self._format_datetime(fetched_at)}"
             return "数据源：Jolpica API 缓存"
         if source == "local_seed":
-            return "本地示例数据，仅演示用"
+            return "数据源：本地离线数据"
         if source == "jolpica_api":
             return "数据源：Jolpica API"
         return None

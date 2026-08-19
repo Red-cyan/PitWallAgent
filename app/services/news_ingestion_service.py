@@ -44,7 +44,7 @@ class NewsIngestionService:
 
         with SessionLocal() as session:
             repository = NewsRepository(session)
-            saved_articles = [repository.upsert_article(article) for article in articles]
+            saved_articles = repository.upsert_articles(articles)
 
         log_structured(
             self.logger,

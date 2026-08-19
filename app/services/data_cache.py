@@ -37,6 +37,9 @@ class DataCache:
     def available(self) -> bool:
         if not self.enabled:
             return False
+        # TTL<=0 表示禁用缓存（语义明确的"不缓存"），而不是永不过期。
+        if self.ttl_seconds is not None and self.ttl_seconds <= 0:
+            return False
         if not self._resolved:
             self._client = self._build_client()
             self._resolved = True
@@ -77,7 +80,7 @@ class DataCache:
             client.set(
                 f"{self.KEY_PREFIX}{key}",
                 json.dumps(payload, ensure_ascii=False),
-                ex=max(int(self.ttl_seconds), 0) or None,
+                ex=max(int(self.ttl_seconds), 1),
             )
         except Exception:
             self.logger.debug("data_cache_set_failed", exc_info=True)

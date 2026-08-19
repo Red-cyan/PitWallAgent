@@ -43,6 +43,43 @@ class NewsRepository:
 
         return self._update_article(existing, article)
 
+    def upsert_articles(self, articles: list[NewsArticleCreate]) -> list[NewsArticleRead]:
+        """批量 upsert：单个事务 + savepoint 隔离，单篇失败跳过不中断整批。"""
+        saved: list[NewsArticleRead] = []
+        for article in articles:
+            try:
+                with self.session.begin_nested():
+                    saved.append(self._upsert_in_transaction(article))
+            except IntegrityError:
+                # 并发插入冲突：回滚当前 savepoint 后按已存在记录更新。
+                existing = self._find_existing(article)
+                if existing is None:
+                    continue
+                with self.session.begin_nested():
+                    saved.append(self._update_article(existing, article))
+        self.session.commit()
+        return saved
+
+    def _upsert_in_transaction(self, article: NewsArticleCreate) -> NewsArticleRead:
+        existing = self._find_existing(article)
+        if existing is not None:
+            return self._update_article(existing, article)
+        record = NewsArticleRecord(
+            source_name=article.source_name,
+            source_article_id=article.source_article_id,
+            title=article.title,
+            summary=article.summary,
+            content=article.content,
+            article_url=str(article.article_url),
+            author=article.author,
+            published_at=article.published_at,
+            tags=article.tags,
+            raw_payload=article.raw_payload,
+        )
+        self.session.add(record)
+        self.session.flush()
+        return NewsArticleRead.from_record(record)
+
     def _update_article(
         self, existing: NewsArticleRecord, article: NewsArticleCreate
     ) -> NewsArticleRead:

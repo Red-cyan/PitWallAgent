@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     llm_planner_multi_max_tokens: int = 320
     llm_planner_timeout_seconds: float = 4.0
     agent_react_max_steps: int = 5
+    # 单轮最多并行执行的工具调用数（tool_calling 模式截断）
+    agent_max_parallel_tool_calls: int = 5
     agent_planner_mode: str = "tool_calling"  # tool_calling | structured
     agent_judge_enabled: bool = True
     agent_judge_on_success_general: bool = True

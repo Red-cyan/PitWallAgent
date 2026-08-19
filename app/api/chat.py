@@ -4,6 +4,7 @@ import re
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 
+from app.core.logging import log_structured
 from app.schemas.chat import (
     ChatHistoryResponse,
     ChatRequest,
@@ -59,11 +60,16 @@ def stream_chat(request: ChatRequest) -> StreamingResponse:
             ):
                 yield _format_sse_event(event["event"], event["data"])
         except Exception as exc:
+            # 只下发安全文案，不向客户端暴露内部异常类名/堆栈。
+            log_structured(
+                chat_service.logger,
+                "chat_stream_failed",
+                error_type=exc.__class__.__name__,
+            )
             yield _format_sse_event(
                 "error",
                 {
                     "message": "Unable to complete the streamed response.",
-                    "error_type": exc.__class__.__name__,
                 },
             )
 

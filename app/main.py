@@ -36,10 +36,48 @@ def _ingest_news_on_startup() -> None:
         )
 
 
+def _warmup_models() -> None:
+    """后台预热 embedding / rerank 大模型。
+
+    BGE-M3（约 2.3GB）与 reranker 首次加载需数十秒，若等首个请求
+    才同步加载会让第一个法规问答直接卡死；启动时在后台线程预载，
+    不阻塞服务就绪。
+    """
+    logger = logging.getLogger("pitwall.rag.warmup")
+    try:
+        if settings.regulation_vector_retrieval_enabled:
+            from app.rag.embedding.factory import build_embedding_service
+
+            service = build_embedding_service()
+            service.embed_texts(["warmup"])
+            log_structured(logger, "embedding_warmup_completed")
+    except Exception as exc:
+        log_structured(
+            logger,
+            "embedding_warmup_failed",
+            error_type=exc.__class__.__name__,
+        )
+    try:
+        if settings.regulation_rerank_enabled:
+            from app.rag.rerank.factory import build_reranker
+
+            reranker = build_reranker()
+            if reranker is not None:
+                reranker.score("warmup", ["warmup"])
+                log_structured(logger, "rerank_warmup_completed")
+    except Exception as exc:
+        log_structured(
+            logger,
+            "rerank_warmup_failed",
+            error_type=exc.__class__.__name__,
+        )
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     if settings.news_ingest_on_startup:
         threading.Thread(target=_ingest_news_on_startup, daemon=True).start()
+    threading.Thread(target=_warmup_models, daemon=True).start()
     yield
 
 

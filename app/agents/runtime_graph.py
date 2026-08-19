@@ -106,7 +106,7 @@ class LangGraphAgentRuntime:
         self.planner_mode = configured_mode if configured_mode in {"structured", "tool_calling"} else "tool_calling"
         self.checkpointer = checkpointer if checkpointer is not None else self._build_default_checkpointer()
         self.max_steps = max_steps if max_steps is not None else settings.agent_react_max_steps
-        self.max_parallel_tool_calls = 5
+        self.max_parallel_tool_calls = settings.agent_max_parallel_tool_calls
         self.graph = self._build_graph()
 
     def run(
