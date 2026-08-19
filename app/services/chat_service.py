@@ -3,6 +3,7 @@ import queue
 import threading
 import time
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from typing import Any
 
 from app.config.settings import settings
@@ -21,6 +22,14 @@ from app.services.context_builder import ContextBuilder
 from app.services.memory_service import MemoryContext, MemoryService
 from app.services.session_service import SessionService
 from app.services.streaming import StreamCancelled
+
+
+class SessionNotFoundError(LookupError):
+    """会话不存在。"""
+
+    def __init__(self, session_id: str) -> None:
+        super().__init__(f"Chat session not found: {session_id}")
+        self.session_id = session_id
 
 
 class ChatService:
@@ -274,7 +283,10 @@ class ChatService:
                 ).inc()
 
     def get_history(self, session_id: str) -> ChatHistoryResponse:
-        session = self.session_service.get_or_create_session(session_id)
+        # 只读：不存在的会话返回 404，而不是隐式创建后返回空历史。
+        session = self.session_service.get_session(session_id)
+        if session is None:
+            raise SessionNotFoundError(session_id)
         history = self.session_service.get_history(session.session_id)
         log_structured(
             self.logger,
@@ -330,13 +342,19 @@ class ChatService:
         return ChatSessionDeleteResponse(session_id=session_id, deleted=deleted)
 
     def _build_summary(self, session_id: str, history: list) -> ChatSessionSummary:
-        session = self.session_service.get_or_create_session(session_id)
+        # 只读构造摘要：不隐式创建会话。会话不存在时用历史推断更新时间和意图。
+        session = self.session_service.get_session(session_id)
+        last_turn = history[-1] if history else None
         return ChatSessionSummary(
             session_id=session_id,
             title=self._session_title(history),
             turn_count=len(history),
             last_intent=self.session_service.get_last_intent(session_id),
-            updated_at=session.updated_at,
+            updated_at=(
+                session.updated_at
+                if session is not None
+                else (last_turn.created_at if last_turn is not None else datetime.now(UTC))
+            ),
         )
 
     def _session_title(self, history: list) -> str:

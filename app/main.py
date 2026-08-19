@@ -2,12 +2,16 @@ import logging
 import threading
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.router import router
 from app.config.settings import settings
 from app.core.logging import configure_logging, log_structured
+from app.core.request_context import get_request_id
 from app.mcp.pitwall_server import PitWallServer
 from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.api_auth import ApiAuthMiddleware
@@ -75,3 +79,46 @@ app.include_router(router)
 
 mcp_server = PitWallServer()
 app.mount("/mcp", mcp_server.streamable_http_app())
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_request: Request, exc: StarletteHTTPException):
+    """统一的 HTTP 错误响应，携带 request_id 便于排查。"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "request_id": get_request_id(),
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Request validation failed.",
+            "errors": exc.errors(),
+            "request_id": get_request_id(),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_request: Request, exc: Exception):
+    """兜底异常：返回结构化 500，不再暴露 uvicorn 纯文本与堆栈。"""
+    logger = logging.getLogger("pitwall.error")
+    log_structured(
+        logger,
+        "unhandled_exception",
+        error_type=exc.__class__.__name__,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error.",
+            "error_type": exc.__class__.__name__,
+            "request_id": get_request_id(),
+        },
+    )

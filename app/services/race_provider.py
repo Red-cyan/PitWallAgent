@@ -36,113 +36,31 @@ class RaceDataProvider(Protocol):
 
 
 class StaticRaceDataProvider:
-    """Local seed provider used when the live race API is unavailable."""
+    """Fallback provider used when the live race API and last-good cache are both unavailable.
+
+    不返回编造的赛事数据：上游故障且无缓存时返回空集合，由调用方明确提示
+    "实时赛况不可用"，避免用户看到虚构的积分榜或赛程。
+    """
 
     SOURCE = "local_seed"
 
     def list_schedule(self, season: int | str) -> list[RaceWeekend]:
-        if str(season) not in {"2026", "current"}:
-            return []
-
-        return [
-            RaceWeekend(
-                season=2026,
-                round_number=9,
-                grand_prix_name="British Grand Prix",
-                circuit_name="Silverstone Circuit",
-                country="United Kingdom",
-                start_date=datetime(2026, 7, 3, 11, 30, tzinfo=UTC),
-                end_date=datetime(2026, 7, 5, 14, 0, tzinfo=UTC),
-                sessions=[
-                    SessionInfo(name="Practice 1", start_time=datetime(2026, 7, 3, 11, 30, tzinfo=UTC)),
-                    SessionInfo(name="Practice 2", start_time=datetime(2026, 7, 3, 15, 0, tzinfo=UTC)),
-                    SessionInfo(name="Practice 3", start_time=datetime(2026, 7, 4, 10, 30, tzinfo=UTC)),
-                    SessionInfo(name="Qualifying", start_time=datetime(2026, 7, 4, 14, 0, tzinfo=UTC)),
-                    SessionInfo(name="Race", start_time=datetime(2026, 7, 5, 14, 0, tzinfo=UTC)),
-                ],
-                source=self.SOURCE,
-            ),
-            RaceWeekend(
-                season=2026,
-                round_number=10,
-                grand_prix_name="Belgian Grand Prix",
-                circuit_name="Spa-Francorchamps",
-                country="Belgium",
-                start_date=datetime(2026, 7, 17, 11, 30, tzinfo=UTC),
-                end_date=datetime(2026, 7, 19, 14, 0, tzinfo=UTC),
-                sessions=[
-                    SessionInfo(name="Practice 1", start_time=datetime(2026, 7, 17, 11, 30, tzinfo=UTC)),
-                    SessionInfo(name="Practice 2", start_time=datetime(2026, 7, 17, 15, 0, tzinfo=UTC)),
-                    SessionInfo(name="Practice 3", start_time=datetime(2026, 7, 18, 10, 30, tzinfo=UTC)),
-                    SessionInfo(name="Qualifying", start_time=datetime(2026, 7, 18, 14, 0, tzinfo=UTC)),
-                    SessionInfo(name="Race", start_time=datetime(2026, 7, 19, 14, 0, tzinfo=UTC)),
-                ],
-                source=self.SOURCE,
-            ),
-        ]
+        return []
 
     def list_driver_standings(self, season: int | str) -> list[DriverStandingEntry]:
-        if str(season) not in {"2026", "current"}:
-            return []
-
-        return [
-            DriverStandingEntry(position=1, driver_name="Andrea Kimi Antonelli", team_name="Mercedes", points=171, source=self.SOURCE),
-            DriverStandingEntry(position=2, driver_name="George Russell", team_name="Mercedes", points=131, source=self.SOURCE),
-            DriverStandingEntry(position=3, driver_name="Charles Leclerc", team_name="Ferrari", points=112, source=self.SOURCE),
-        ]
+        return []
 
     def list_constructor_standings(self, season: int | str) -> list[ConstructorStandingEntry]:
-        if str(season) not in {"2026", "current"}:
-            return []
-
-        return [
-            ConstructorStandingEntry(position=1, team_name="Mercedes", points=302, source=self.SOURCE),
-            ConstructorStandingEntry(position=2, team_name="Ferrari", points=204, source=self.SOURCE),
-            ConstructorStandingEntry(position=3, team_name="McLaren", points=159, source=self.SOURCE),
-        ]
+        return []
 
     def get_race_results(self, season: int | str, round_number: int) -> RaceResult:
         return RaceResult(
-            season=2026,
+            season=int(season) if str(season).isdigit() else 0,
             round_number=round_number,
-            grand_prix_name="British Grand Prix",
-            circuit_name="Silverstone Circuit",
-            country="United Kingdom",
-            results=[
-                RaceResultEntry(
-                    position=1,
-                    driver_name="Andrea Kimi Antonelli",
-                    team_name="Mercedes",
-                    points=25,
-                    grid=1,
-                    laps=52,
-                    status="Finished",
-                    time="1:23:45.678",
-                    source=self.SOURCE,
-                ),
-                RaceResultEntry(
-                    position=2,
-                    driver_name="George Russell",
-                    team_name="Mercedes",
-                    points=18,
-                    grid=2,
-                    laps=52,
-                    status="Finished",
-                    time="+5.432",
-                    source=self.SOURCE,
-                ),
-                RaceResultEntry(
-                    position=3,
-                    driver_name="Charles Leclerc",
-                    team_name="Ferrari",
-                    points=15,
-                    grid=3,
-                    laps=52,
-                    status="Finished",
-                    time="+12.109",
-                    source=self.SOURCE,
-                ),
-            ],
+            grand_prix_name="Unavailable",
+            circuit_name="",
+            country="",
+            results=[],
             source=self.SOURCE,
         )
 

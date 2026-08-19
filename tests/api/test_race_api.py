@@ -136,3 +136,26 @@ def test_race_endpoints_return_404_when_not_found(monkeypatch) -> None:
 
     assert next_response.status_code == 404
     assert previous_response.status_code == 404
+
+
+def test_race_schedule_rejects_invalid_season(monkeypatch) -> None:
+    from app.api import race
+
+    monkeypatch.setattr(race, "race_service", StubRaceService())
+    client = TestClient(app)
+
+    response = client.get("/api/race/schedule?season=../../etc/passwd")
+
+    assert response.status_code == 422
+    assert "Invalid season" in response.json()["detail"]
+
+
+def test_race_schedule_accepts_current_and_year(monkeypatch) -> None:
+    from app.api import race
+
+    monkeypatch.setattr(race, "race_service", StubRaceService())
+    client = TestClient(app)
+
+    for season in ("current", "2026"):
+        response = client.get(f"/api/race/schedule?season={season}")
+        assert response.status_code == 200

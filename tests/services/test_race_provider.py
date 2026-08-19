@@ -75,7 +75,7 @@ def test_failure_falls_back_to_cached_data_with_source_and_timestamp() -> None:
     assert result[0].fetched_at == "2026-08-06T12:00:00+00:00"
 
 
-def test_failure_without_cache_falls_back_to_static_seed() -> None:
+def test_failure_without_cache_falls_back_to_empty_static() -> None:
     cache = DataCache(client=DictCacheClient())
     provider = JolpicaRaceDataProvider(
         fetch_json=_raise_connection_error,
@@ -84,6 +84,5 @@ def test_failure_without_cache_falls_back_to_static_seed() -> None:
 
     result = provider.list_driver_standings("2026")
 
-    assert result[0].source == "local_seed"
-    assert result[0].fetched_at is None
-    assert result[0].driver_name == "Andrea Kimi Antonelli"
+    # 上游故障且无 last-good 缓存时，静态兜底不返回编造数据，而是空结果。
+    assert result == []

@@ -1,4 +1,5 @@
 import json
+import re
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
@@ -11,12 +12,20 @@ from app.schemas.chat import (
     ChatSessionListResponse,
     ChatSessionSummary,
 )
-from app.services.chat_service import ChatService
+from app.services.chat_service import ChatService, SessionNotFoundError
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 chat_service = ChatService()
 
 PRIMARY_ENDPOINT_NOTE = "Primary conversational endpoint with session memory."
+
+# 会话 ID 由服务端 uuid4().hex 生成，限制格式防止任意字符串刷会话。
+_SESSION_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+
+
+def _require_session_id(session_id: str) -> None:
+    if not _SESSION_ID_PATTERN.fullmatch(session_id):
+        raise HTTPException(status_code=422, detail="Invalid session id.")
 
 
 @router.post(
@@ -92,6 +101,7 @@ def list_chat_sessions(
     description="Fetch metadata for a single chat session.",
 )
 def get_chat_session(session_id: str, response: Response) -> ChatSessionSummary:
+    _require_session_id(session_id)
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     session = chat_service.get_session(session_id)
@@ -109,6 +119,7 @@ def get_chat_session(session_id: str, response: Response) -> ChatSessionSummary:
 def delete_chat_session(
     session_id: str, response: Response
 ) -> ChatSessionDeleteResponse:
+    _require_session_id(session_id)
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     result = chat_service.delete_session(session_id)
@@ -124,9 +135,13 @@ def delete_chat_session(
     description="Fetch the persisted conversation history for a session.",
 )
 def get_chat_history(session_id: str, response: Response) -> ChatHistoryResponse:
+    _require_session_id(session_id)
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
-    return chat_service.get_history(session_id)
+    try:
+        return chat_service.get_history(session_id)
+    except SessionNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Chat session not found.") from exc
 
 
 def _format_sse_event(event: str, data: dict) -> str:

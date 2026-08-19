@@ -145,6 +145,7 @@ class RuleRepository:
             else prefer_database
         )
         self._cached_chunks: list[RetrievedChunk] | None = None
+        self._cached_chunks_version: str | None = None
         self._normalized_content_cache: dict[str, str] = {}
         self._token_stats_cache: dict[str, tuple[dict[str, int], int]] = {}
         self._document_frequency_cache: dict[str, int] = {}
@@ -569,16 +570,42 @@ class RuleRepository:
 
     def _load_chunks(self) -> list[RetrievedChunk]:
         if self._cached_chunks is not None:
-            return self._cached_chunks
+            # 缓存版本尚未跟踪（外部注入）时直接信任；否则仅在激活语料
+            # 版本确认变化时重载，避免 ingest+activate 后检索仍用旧快照。
+            if self._cached_chunks_version is None:
+                return self._cached_chunks
+            version = self._current_chunks_version()
+            if version is None or version == self._cached_chunks_version:
+                return self._cached_chunks
 
         if self.prefer_database:
             chunks = self._load_chunks_from_database()
             if chunks:
                 self._cached_chunks = chunks
+                self._cached_chunks_version = self._current_chunks_version()
                 return self._cached_chunks
 
         self._cached_chunks = self._load_chunks_from_file()
+        self._cached_chunks_version = "file"
         return self._cached_chunks
+
+    def _current_chunks_version(self) -> str | None:
+        """当前激活语料版本；无法确定（如 DB 不可用）返回 None。
+
+        版本变化时自动重载 chunk 快照，使 ingest+activate 新语料后
+        关键词/融合检索立即生效，而不必等到进程重启。
+        """
+        if not self.prefer_database:
+            return "file"
+        try:
+            with SessionLocal() as session:
+                return session.scalar(
+                    select(RegulationCorpusRecord.corpus_version)
+                    .where(RegulationCorpusRecord.active.is_(True))
+                    .limit(1)
+                )
+        except SQLAlchemyError:
+            return None
 
     def _load_chunks_from_database(self) -> list[RetrievedChunk]:
         try:

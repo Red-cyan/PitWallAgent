@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 20.0
     llm_max_retries: int = 1
     llm_max_tokens: int | None = 700
+    # LLM 熔断：连续失败达到阈值后进入冷却期，期间所有 LLM 调用快速失败走降级，
+    # 避免 LLM 故障时多个组件串行等超时（可累计 40s+）。0 表示关闭熔断。
+    llm_circuit_breaker_threshold: int = 3
+    llm_circuit_breaker_cooldown_seconds: float = 30.0
     llm_planner_enabled: bool = True
     llm_planner_max_tokens: int = 160
     llm_planner_multi_max_tokens: int = 320

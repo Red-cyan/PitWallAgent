@@ -139,7 +139,7 @@ class ReActReflector:
                     "(short string), next_plan (object or null). "
                     "next_plan must contain tool_name, action and params, and only use these "
                     "supported intent/tool combinations: "
-                    "news_tool:list_recent|get_article|get_insights|get_rules_analysis; "
+                    "news_tool:list_recent|search|get_article|get_insights|get_rules_analysis; "
                     "race_tool:list_schedule|get_next_race|get_previous_race|get_race_results|"
                     "get_driver_standings|get_constructor_standings; "
                     "regulation_tool:ask; strategy_tool:analyze; general_tool:answer. "

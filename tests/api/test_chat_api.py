@@ -11,13 +11,18 @@ from app.schemas.chat import (
     ConversationTurn,
 )
 
+# 合法会话 ID：服务端 uuid4().hex 生成 32 位十六进制
+SESSION_ONE = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+SESSION_TWO = "b1b2c3d4e5f60718293a4b5c6d7e8f91"
+MISSING_ID = "00000000000000000000000000000000"
+
 
 class StubChatService:
     def handle_chat(
         self, message: str, session_id: str | None = None, user_id: str | None = None
     ) -> ChatResponse:
         return ChatResponse(
-            session_id=session_id or "session-001",
+            session_id=session_id or SESSION_ONE,
             response=AgentQueryResponse(
                 intent="race",
                 tool_name="race_tool",
@@ -41,7 +46,7 @@ class StubChatService:
                 ),
             ],
             session=ChatSessionSummary(
-                session_id=session_id or "session-001",
+                session_id=session_id or SESSION_ONE,
                 turn_count=2,
                 last_intent="race",
                 updated_at="2026-07-02T00:00:01Z",
@@ -99,13 +104,13 @@ class StubChatService:
         return ChatSessionListResponse(
             sessions=[
                 ChatSessionSummary(
-                    session_id="session-002",
+                    session_id=SESSION_TWO,
                     turn_count=4,
                     last_intent="race",
                     updated_at="2026-07-02T00:00:02Z",
                 ),
                 ChatSessionSummary(
-                    session_id="session-001",
+                    session_id=SESSION_ONE,
                     turn_count=2,
                     last_intent="news",
                     updated_at="2026-07-02T00:00:01Z",
@@ -114,7 +119,7 @@ class StubChatService:
         )
 
     def get_session(self, session_id: str) -> ChatSessionSummary | None:
-        if session_id == "missing":
+        if session_id == MISSING_ID:
             return None
         return ChatSessionSummary(
             session_id=session_id,
@@ -126,7 +131,7 @@ class StubChatService:
     def delete_session(self, session_id: str) -> ChatSessionDeleteResponse:
         return ChatSessionDeleteResponse(
             session_id=session_id,
-            deleted=session_id != "missing",
+            deleted=session_id != MISSING_ID,
         )
 
 
@@ -143,7 +148,7 @@ def test_chat_routes_request(monkeypatch) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["session_id"] == "session-001"
+    assert body["session_id"] == SESSION_ONE
     assert body["response"]["intent"] == "race"
     assert body["response"]["tool_name"] == "race_tool"
     assert body["history"][1]["intent"] == "race"
@@ -157,11 +162,11 @@ def test_chat_history_routes_request(monkeypatch) -> None:
     monkeypatch.setattr(chat, "chat_service", StubChatService())
     client = TestClient(app)
 
-    response = client.get("/api/chat/session-001/history")
+    response = client.get(f"/api/chat/{SESSION_ONE}/history")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["session"]["session_id"] == "session-001"
+    assert body["session"]["session_id"] == SESSION_ONE
     assert body["session"]["last_intent"] == "race"
     assert len(body["history"]) == 2
     assert response.headers["X-PitWall-Endpoint-Mode"] == "primary"
@@ -178,7 +183,7 @@ def test_chat_sessions_routes_request(monkeypatch) -> None:
     assert response.status_code == 200
     body = response.json()
     assert len(body["sessions"]) == 2
-    assert body["sessions"][0]["session_id"] == "session-002"
+    assert body["sessions"][0]["session_id"] == SESSION_TWO
     assert response.headers["X-PitWall-Endpoint-Mode"] == "primary"
 
 
@@ -188,11 +193,11 @@ def test_chat_session_routes_request(monkeypatch) -> None:
     monkeypatch.setattr(chat, "chat_service", StubChatService())
     client = TestClient(app)
 
-    response = client.get("/api/chat/session-001")
+    response = client.get(f"/api/chat/{SESSION_ONE}")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["session_id"] == "session-001"
+    assert body["session_id"] == SESSION_ONE
     assert body["last_intent"] == "race"
 
 
@@ -202,7 +207,7 @@ def test_chat_session_returns_404_when_missing(monkeypatch) -> None:
     monkeypatch.setattr(chat, "chat_service", StubChatService())
     client = TestClient(app)
 
-    response = client.get("/api/chat/missing")
+    response = client.get(f"/api/chat/{MISSING_ID}")
 
     assert response.status_code == 404
 
@@ -213,11 +218,11 @@ def test_delete_chat_session_routes_request(monkeypatch) -> None:
     monkeypatch.setattr(chat, "chat_service", StubChatService())
     client = TestClient(app)
 
-    response = client.delete("/api/chat/session-001")
+    response = client.delete(f"/api/chat/{SESSION_ONE}")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["session_id"] == "session-001"
+    assert body["session_id"] == SESSION_ONE
     assert body["deleted"] is True
 
 
@@ -227,7 +232,7 @@ def test_delete_chat_session_returns_404_when_missing(monkeypatch) -> None:
     monkeypatch.setattr(chat, "chat_service", StubChatService())
     client = TestClient(app)
 
-    response = client.delete("/api/chat/missing")
+    response = client.delete(f"/api/chat/{MISSING_ID}")
 
     assert response.status_code == 404
 
