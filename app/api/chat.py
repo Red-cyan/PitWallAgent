@@ -28,7 +28,11 @@ PRIMARY_ENDPOINT_NOTE = "Primary conversational endpoint with session memory."
 def chat(request: ChatRequest, response: Response) -> ChatResponse:
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
-    return chat_service.handle_chat(message=request.message, session_id=request.session_id)
+    return chat_service.handle_chat(
+        message=request.message,
+        session_id=request.session_id,
+        user_id=request.user_id,
+    )
 
 
 @router.post(
@@ -42,6 +46,7 @@ def stream_chat(request: ChatRequest) -> StreamingResponse:
             for event in chat_service.stream_chat(
                 message=request.message,
                 session_id=request.session_id,
+                user_id=request.user_id,
             ):
                 yield _format_sse_event(event["event"], event["data"])
         except Exception as exc:
@@ -101,7 +106,9 @@ def get_chat_session(session_id: str, response: Response) -> ChatSessionSummary:
     summary="Delete a chat session",
     description="Delete a stored chat session and its metadata.",
 )
-def delete_chat_session(session_id: str, response: Response) -> ChatSessionDeleteResponse:
+def delete_chat_session(
+    session_id: str, response: Response
+) -> ChatSessionDeleteResponse:
     response.headers["X-PitWall-Endpoint-Mode"] = "primary"
     response.headers["X-PitWall-Endpoint-Note"] = PRIMARY_ENDPOINT_NOTE
     result = chat_service.delete_session(session_id)

@@ -11,6 +11,7 @@ settings.regulation_prefer_database = False
 settings.regulation_vector_retrieval_enabled = False
 settings.regulation_rerank_enabled = False
 settings.memory_vector_retrieval_enabled = False
+settings.memory_long_term_backend = "memory"
 settings.llm_api_key = None
 settings.llm_planner_enabled = False
 
@@ -22,6 +23,7 @@ def pytest_runtest_setup(item):
     settings.regulation_vector_retrieval_enabled = False
     settings.regulation_rerank_enabled = False
     settings.memory_vector_retrieval_enabled = False
+    settings.memory_long_term_backend = "memory"
     settings.llm_api_key = None
     settings.llm_planner_enabled = False
 

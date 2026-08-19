@@ -53,7 +53,7 @@ docker compose up --build
 
 先问：`车队积分榜前 5 名是谁？`，再问：`第 4 名呢？`
 
-展示 session history 和 memory trace，说明系统只对追问继承上下文，显式的新主体查询不会被旧上下文污染。长时记忆后端为 Redis，重启容器不丢"你记得我"。
+展示 session history 和 memory trace，说明系统只对追问继承上下文，显式的新主体查询不会被旧上下文污染。长时记忆后端为 PostgreSQL（user_id 维度画像），重启容器不丢"你记得我"。
 
 ### 7. MCP 互操作（2026 亮点）
 

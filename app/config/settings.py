@@ -75,10 +75,13 @@ class Settings(BaseSettings):
     memory_compression_enabled: bool = True
     memory_compression_timeout_seconds: float = 4.0
     memory_long_term_enabled: bool = True
-    memory_long_term_backend: str = "memory"
+    memory_long_term_backend: str = "postgres"
     memory_long_term_ttl_seconds: int = 2592000
     memory_long_term_top_k: int = 3
     memory_vector_retrieval_enabled: bool = True
+    memory_extraction_enabled: bool = True
+    memory_extraction_timeout_seconds: float = 3.0
+    memory_extraction_max_tokens: int = 160
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0

@@ -130,7 +130,7 @@ FIA PDF
 - 演示不可观测：前端最后一条 assistant 消息增加折叠 trace/citation 面板。
 - 静态兜底数据伪装成真实数据：来源披露 + Redis last-good 缓存。
 - 向量召回弱：Section 感知检索 + 交叉编码器重排，R@5 66.7%→73.7%。
-- Docker 重启丢长期记忆：长时记忆后端切 Redis。
+- Docker 重启丢长期记忆：长时记忆后端切 PostgreSQL，按 user_id 持久化画像（constraint/fact 覆盖、preference/history 增量追加）。
 - 回答质量不可量化：LLM-as-judge 端到端评测闭环。
 
 ## 如何启动
@@ -221,7 +221,7 @@ MCP 是 AI 应用与外部工具/数据互操作的标准协议（"AI 的 USB-C"
 Jolpica 挂了 → 读 Redis last-good 缓存（标注缓存时间）；缓存也没有 → 本地种子数据（明确标注"仅演示用"）。回答对来源完全透明，不拿假数据冒充。
 
 ### 9. 多轮对话上下文怎么管理的？
-Redis 会话历史 + 上下文压缩（token 预算内总结）+ 长时记忆（Redis 持久化，语义召回 BGE-M3 + 词法回退）。显式新主体查询不会继承旧上下文（有 regression 用例）。
+Redis 会话历史 + 上下文压缩（token 预算内总结）+ 长时记忆（PostgreSQL 持久化画像，语义召回 BGE-M3 + 词法回退）。显式新主体查询不会继承旧上下文（有 regression 用例）。
 
 ### 10. 评测集会不会是自说自话？
 60 条 RAG 数据集独立于实现标注（跨页、表格、同义改写、跨 Section 干扰、无答案负例），且 keyword/vector/hybrid 三份报告可对同一数据集复现；Agent 59 条 golden 覆盖六类意图。评测在无 LLM key 下确定性运行，保证 CI 可复现。

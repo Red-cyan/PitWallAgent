@@ -39,13 +39,16 @@ class ChatService:
         self.context_builder = context_builder or ContextBuilder()
         self.memory_service = memory_service or MemoryService()
 
-    def handle_chat(self, message: str, session_id: str | None = None) -> ChatResponse:
+    def handle_chat(
+        self, message: str, session_id: str | None = None, user_id: str | None = None
+    ) -> ChatResponse:
         session = self.session_service.get_or_create_session(session_id)
         history = self.session_service.get_history(session.session_id)
         fallback_intent = self.session_service.get_last_intent(session.session_id)
         memory_context = self.memory_service.build_context(
             session=session,
             current_message=message,
+            owner_id=user_id,
         )
 
         log_structured(
@@ -56,20 +59,27 @@ class ChatService:
             has_fallback_intent=fallback_intent is not None,
         )
 
-        self.session_service.append_user_message(session.session_id, message, compact=False)
+        self.session_service.append_user_message(
+            session.session_id, message, compact=False
+        )
         response = self.agent_service.handle_query(
             message,
             fallback_intent=fallback_intent,
             conversation_context=memory_context.rendered,
         )
-        self.session_service.append_agent_response(session.session_id, response, compact=False)
+        self.session_service.append_agent_response(
+            session.session_id, response, compact=False
+        )
         self.session_service.compact_session(session.session_id)
-        memory_context = self._refresh_memory_context(session.session_id, memory_context)
+        memory_context = self._refresh_memory_context(
+            session.session_id, memory_context
+        )
         response.trace = self._with_memory_trace(response.trace, memory_context)
         self.memory_service.record_interaction(
             session_id=session.session_id,
             user_message=message,
             assistant_message=response.final_answer,
+            owner_id=user_id,
         )
 
         updated_history = self.session_service.get_history(session.session_id)
@@ -92,7 +102,9 @@ class ChatService:
             session=summary,
         )
 
-    def stream_chat(self, message: str, session_id: str | None = None) -> Iterator[dict]:
+    def stream_chat(
+        self, message: str, session_id: str | None = None, user_id: str | None = None
+    ) -> Iterator[dict]:
         session = self.session_service.get_or_create_session(session_id)
         started_at = time.perf_counter()
         request_id = get_request_id() or ""
@@ -117,9 +129,12 @@ class ChatService:
         memory_context = self.memory_service.build_context(
             session=session,
             current_message=message,
+            owner_id=user_id,
         )
 
-        self.session_service.append_user_message(session.session_id, message, compact=False)
+        self.session_service.append_user_message(
+            session.session_id, message, compact=False
+        )
         yield {
             "event": "status",
             "data": event_data(message="retrieving", stage="retrieving"),
@@ -159,7 +174,9 @@ class ChatService:
             except Exception as exc:
                 messages.put(("error", exc))
 
-        worker = threading.Thread(target=run_agent, name="pitwall-chat-stream", daemon=True)
+        worker = threading.Thread(
+            target=run_agent, name="pitwall-chat-stream", daemon=True
+        )
         worker.start()
         token_seen = False
         completed = False
@@ -204,14 +221,21 @@ class ChatService:
                     "stream_total": total_ms,
                 },
             }
-            self.session_service.append_agent_response(session.session_id, response_payload, compact=False)
+            self.session_service.append_agent_response(
+                session.session_id, response_payload, compact=False
+            )
             self.session_service.compact_session(session.session_id)
-            memory_context = self._refresh_memory_context(session.session_id, memory_context)
-            response_payload.trace = self._with_memory_trace(response_payload.trace, memory_context)
+            memory_context = self._refresh_memory_context(
+                session.session_id, memory_context
+            )
+            response_payload.trace = self._with_memory_trace(
+                response_payload.trace, memory_context
+            )
             self.memory_service.record_interaction(
                 session_id=session.session_id,
                 user_message=message,
                 assistant_message=response_payload.final_answer,
+                owner_id=user_id,
             )
             updated_history = self.session_service.get_history(session.session_id)
             response = ChatResponse(
@@ -221,7 +245,9 @@ class ChatService:
                 session=self._build_summary(session.session_id, updated_history),
             )
             STREAM_REQUESTS.labels("success", stream_mode).inc()
-            STREAM_DURATION.labels(stream_mode).observe(time.perf_counter() - started_at)
+            STREAM_DURATION.labels(stream_mode).observe(
+                time.perf_counter() - started_at
+            )
             completed = True
             yield {
                 "event": "message_completed",
@@ -244,7 +270,9 @@ class ChatService:
             if not completed:
                 cancelled.set()
             if not completed and not failed:
-                STREAM_REQUESTS.labels("cancelled", "token" if token_seen else "unknown").inc()
+                STREAM_REQUESTS.labels(
+                    "cancelled", "token" if token_seen else "unknown"
+                ).inc()
 
     def get_history(self, session_id: str) -> ChatHistoryResponse:
         session = self.session_service.get_or_create_session(session_id)
@@ -314,16 +342,27 @@ class ChatService:
 
     def _session_title(self, history: list) -> str:
         first_user_message = next(
-            (turn.message.strip() for turn in history if turn.role == "user" and turn.message.strip()),
+            (
+                turn.message.strip()
+                for turn in history
+                if turn.role == "user" and turn.message.strip()
+            ),
             "New conversation",
         )
-        return first_user_message if len(first_user_message) <= 48 else f"{first_user_message[:47]}..."
+        return (
+            first_user_message
+            if len(first_user_message) <= 48
+            else f"{first_user_message[:47]}..."
+        )
 
     def _chunk_text(self, text: str, chunk_size: int = 24) -> list[str]:
         if not text:
             return [""]
 
-        return [text[index : index + chunk_size] for index in range(0, len(text), chunk_size)]
+        return [
+            text[index : index + chunk_size]
+            for index in range(0, len(text), chunk_size)
+        ]
 
     def _with_memory_trace(self, trace: dict, memory_context: MemoryContext) -> dict:
         return {
@@ -331,7 +370,9 @@ class ChatService:
             "memory": memory_context.trace(),
         }
 
-    def _refresh_memory_context(self, session_id: str, context: MemoryContext) -> MemoryContext:
+    def _refresh_memory_context(
+        self, session_id: str, context: MemoryContext
+    ) -> MemoryContext:
         session = self.session_service.get_session(session_id)
         if session is None:
             return context

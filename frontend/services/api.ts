@@ -14,6 +14,7 @@ const API_BASE_URL =
 type ChatPayload = {
   message: string;
   session_id?: string | null;
+  user_id?: string | null;
 };
 
 export async function listSessions(): Promise<ChatSessionListResponse> {

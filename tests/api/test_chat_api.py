@@ -13,7 +13,9 @@ from app.schemas.chat import (
 
 
 class StubChatService:
-    def handle_chat(self, message: str, session_id: str | None = None) -> ChatResponse:
+    def handle_chat(
+        self, message: str, session_id: str | None = None, user_id: str | None = None
+    ) -> ChatResponse:
         return ChatResponse(
             session_id=session_id or "session-001",
             response=AgentQueryResponse(
@@ -46,8 +48,12 @@ class StubChatService:
             ),
         )
 
-    def stream_chat(self, message: str, session_id: str | None = None):
-        response = self.handle_chat(message=message, session_id=session_id)
+    def stream_chat(
+        self, message: str, session_id: str | None = None, user_id: str | None = None
+    ):
+        response = self.handle_chat(
+            message=message, session_id=session_id, user_id=user_id
+        )
         yield {
             "event": "session_started",
             "data": {"session_id": response.session_id},
@@ -251,7 +257,9 @@ def test_chat_stream_routes_request(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
     assert "event: session_started" in response.text
-    assert response.text.index("event: session_started") < response.text.index("event: message_completed")
+    assert response.text.index("event: session_started") < response.text.index(
+        "event: message_completed"
+    )
     assert "event: status" in response.text
     assert "event: message_delta" in response.text
     assert "event: message_completed" in response.text

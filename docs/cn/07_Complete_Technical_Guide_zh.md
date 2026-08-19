@@ -610,9 +610,9 @@ Pydantic v2。按文件：
 
 ### 11.3 MemoryService（app/services/memory_service.py）——长期记忆
 
-- 开关：`memory_long_term_enabled`（默认 true）、后端 `memory_long_term_backend`（memory/redis）、TTL 30 天、语义召回 `top_k=3`、`memory_vector_retrieval_enabled`。
+- 开关：`memory_long_term_enabled`（默认 true）、后端 `memory_long_term_backend`（postgres/memory/redis）、TTL 30 天、语义召回 `top_k=3`、`memory_vector_retrieval_enabled`。
 - `build_context(session, message)`：把 最近 N 轮（`memory_recent_turns=4`）+ 长期记忆摘要 + 当前消息 组装成一个"渲染上下文"字符串，受 `memory_context_token_budget`（1200）预算约束。
-- `record_interaction(...)`：从对话里提取**偏好标记**（比如用户是哪个车队的粉丝），写入长期记忆存储（Redis 用 zset + hash）。
+- `record_interaction(...)`：从对话里提取**偏好标记**（比如用户是哪个车队的粉丝），写入长期记忆存储（默认 PostgreSQL 按 user_id + memory_key 持久化：preference/history 增量追加、constraint/fact 覆盖更新）。
 - 记忆的"召回"支持向量相似度（语义检索，复用 embedding 服务）。
 
 ### 11.4 ContextCompactionService（app/services/context_compaction_service.py）——上下文压缩
@@ -1086,8 +1086,8 @@ for step in 1..max_steps:
 
 ### 26.3 长期记忆（memory_long_term_*）
 
-- 开关 `memory_long_term_enabled`（默认 true）、后端 `memory_long_term_backend`（memory/redis）、TTL 30 天；
-- `record_interaction(user_message, assistant_message)`：从对话中提取**偏好标记**（规则匹配 + 别名表），写入长期存储（Redis 用 zset + hash 结构）；
+- 开关 `memory_long_term_enabled`（默认 true）、后端 `memory_long_term_backend`（postgres/memory/redis）、TTL 30 天；
+- `record_interaction(user_message, assistant_message)`：从对话中提取**偏好标记**（规则匹配 + 别名表），写入长期存储（默认 PostgreSQL 按 user_id + memory_key 持久化；preference/history 增量追加、constraint/fact 覆盖更新）；
 - 召回：`memory_vector_retrieval_enabled` 开启时支持向量相似度语义召回（复用 embedding 服务）。
 
 ### 26.4 记忆的 trace
