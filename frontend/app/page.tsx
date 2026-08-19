@@ -8,6 +8,7 @@ import { MessageBubble } from "@/components/message-bubble";
 import { SessionList } from "@/components/session-list";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { extractCitations } from "@/lib/chat-utils";
+import { getUserId } from "@/lib/user-id";
 import { deleteSession, getChatHistory, listSessions, streamChatMessage } from "@/services/api";
 import { AgentTrace, ChatResponse, ChatSessionSummary, ConversationTurn } from "@/types/chat";
 
@@ -93,7 +94,9 @@ export default function HomePage() {
     setStatusMessage("Connecting");
 
     try {
-      await streamChatMessage({ message, session_id: activeSessionId }, (payload) => {
+      await streamChatMessage(
+        { message, session_id: activeSessionId, user_id: getUserId() },
+        (payload) => {
         if (payload.event === "session_started") {
           setActiveSessionId(payload.data.session_id);
           setStreamingAssistant((previous) => ({ text: previous?.text ?? "", sessionId: payload.data.session_id }));

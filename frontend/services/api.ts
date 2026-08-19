@@ -1,6 +1,5 @@
 import {
   ChatHistoryResponse,
-  ChatResponse,
   ChatSessionDeleteResponse,
   ChatSessionListResponse,
   ActiveCorpus,
@@ -11,61 +10,66 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:8000";
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 type ChatPayload = {
   message: string;
   session_id?: string | null;
   user_id?: string | null;
 };
 
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function extractErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: string };
+    if (typeof payload.detail === "string") return payload.detail;
+  } catch {
+    // 非 JSON 错误体，回退到状态码文案。
+  }
+  return `请求失败（HTTP ${response.status}）。`;
+}
+
+async function ensureOk(response: Response, fallbackMessage: string): Promise<void> {
+  if (response.ok) return;
+  const detail = await extractErrorMessage(response);
+  throw new Error(detail || fallbackMessage);
+}
+
 export async function listSessions(): Promise<ChatSessionListResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/chat/sessions?limit=50`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/chat/sessions?limit=50`, {
     cache: "no-store",
   });
-
-  if (!response.ok) {
-    throw new Error("加载会话列表失败。");
-  }
-
+  await ensureOk(response, "加载会话列表失败。");
   return response.json();
 }
 
 export async function getChatHistory(sessionId: string): Promise<ChatHistoryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/chat/${sessionId}/history`, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("加载会话历史失败。");
-  }
-
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/chat/${sessionId}/history`,
+    { cache: "no-store" },
+  );
+  await ensureOk(response, "加载会话历史失败。");
   return response.json();
 }
 
 export async function deleteSession(sessionId: string): Promise<ChatSessionDeleteResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/chat/${sessionId}`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/chat/${sessionId}`, {
     method: "DELETE",
   });
-
-  if (!response.ok) {
-    throw new Error("删除会话失败。");
-  }
-
-  return response.json();
-}
-
-export async function sendChatMessage(payload: ChatPayload): Promise<ChatResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error("发送消息失败。");
-  }
-
+  await ensureOk(response, "删除会话失败。");
   return response.json();
 }
 
@@ -83,6 +87,9 @@ export async function streamChatMessage(
     signal,
   });
 
+  if (!response.ok) {
+    await ensureOk(response, "流式连接失败。");
+  }
   if (!response.ok || !response.body) {
     throw new Error("流式连接失败。");
   }
@@ -118,12 +125,10 @@ export async function streamChatMessage(
 }
 
 export async function getActiveCorpus(): Promise<ActiveCorpus> {
-  const response = await fetch(`${API_BASE_URL}/api/rules/corpus/active`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/rules/corpus/active`, {
     cache: "no-store",
   });
-  if (!response.ok) {
-    throw new Error("Active corpus is unavailable.");
-  }
+  await ensureOk(response, "Active corpus is unavailable.");
   return response.json();
 }
 
@@ -131,14 +136,12 @@ export async function debugRuleRetrieval(
   question: string,
   topK: number,
 ): Promise<RetrievalDebugResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/rules/retrieve/debug`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/rules/retrieve/debug`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, top_k: topK }),
   });
-  if (!response.ok) {
-    throw new Error("Retrieval request failed.");
-  }
+  await ensureOk(response, "Retrieval request failed.");
   return response.json();
 }
 
@@ -153,7 +156,14 @@ export function parseSseEvent(rawEvent: string): StreamEvent | null {
 
   const event = eventLine.replace("event:", "").trim();
   const dataPayload = dataLines.map((line) => line.replace("data:", "").trim()).join("\n");
-  const data = JSON.parse(dataPayload) as StreamEvent["data"];
+
+  let data: StreamEvent["data"];
+  try {
+    data = JSON.parse(dataPayload) as StreamEvent["data"];
+  } catch {
+    // 单个畸形数据块不应杀死整个流；跳过该事件，保留其余有效事件。
+    return null;
+  }
 
   return { event, data } as StreamEvent;
 }

@@ -311,15 +311,18 @@ class PostgresLongTermMemoryStore:
                 record.source_session_id = memory.source_session_id
                 record.memory_metadata = memory.metadata
                 record.updated_at = now
-            session.commit()
 
     def list(self, owner_id: str = "default") -> list[LongTermMemory]:
+        # 与 Redis 后端一致：只取最近更新的 top_k*5（下限 20）条候选，
+        # 避免 preference/history 累积型记忆无限膨胀后每轮全量加载。
+        limit = max(settings.memory_long_term_top_k * 5, 20)
         with self._session() as session:
             records = (
                 session.execute(
                     select(UserMemoryRecord)
                     .where(UserMemoryRecord.user_id == owner_id)
                     .order_by(UserMemoryRecord.updated_at.desc())
+                    .limit(limit)
                 )
                 .scalars()
                 .all()
@@ -335,6 +338,15 @@ class PostgresLongTermMemoryStore:
                 )
             ).scalar_one_or_none()
             return self._to_memory(record) if record is not None else None
+
+    def ping(self) -> bool:
+        """探测数据库可用性；失败时由工厂降级，避免请求直接 500。"""
+        try:
+            with self._session() as session:
+                session.execute(select(UserMemoryRecord.id).limit(1))
+            return True
+        except Exception:
+            return False
 
     @staticmethod
     def _to_memory(record: UserMemoryRecord) -> LongTermMemory:
@@ -371,7 +383,14 @@ class LongTermMemoryStoreFactory:
         if backend == "memory":
             return InMemoryLongTermMemoryStore()
         if backend == "postgres":
-            return PostgresLongTermMemoryStore()
+            store = PostgresLongTermMemoryStore()
+            if not store.ping():
+                logger = logging.getLogger("pitwall.memory_store")
+                logger.warning(
+                    "PostgreSQL long-term memory unavailable; degrading to in-memory store"
+                )
+                return InMemoryLongTermMemoryStore()
+            return store
         if backend == "redis":
             return RedisLongTermMemoryStore(
                 client=SessionStoreFactory._build_redis_client(),
@@ -401,13 +420,15 @@ class MemoryExtractor:
                     user_message=user_message,
                     assistant_message=assistant_message,
                 )
-                if extracted:
-                    return extracted
             except Exception as exc:
                 self.logger.warning(
                     "memory extraction via LLM failed; fallback to keyword extraction",
                     extra={"error_type": exc.__class__.__name__},
                 )
+            else:
+                # LLM 成功返回（含空结果）即尊重其判断，不再走关键词降级，
+                # 避免把“没有持久信息”误判成偏好/约束存入画像。
+                return extracted
         return self._extract_keyword(user_message, assistant_message)
 
     def _extract_with_llm(
@@ -478,7 +499,9 @@ class MemoryExtractor:
             return [
                 ExtractedMemory(
                     category="constraint",
-                    key="constraint",
+                    # 关键词降级无法区分“同一约束的更新”与“新约束”，
+                    # 用消息内容做稳定 key，让不同约束各自独立、重复声明时覆盖。
+                    key=content,
                     value=content,
                     confidence=0.8 if assistant_message else 0.6,
                 )

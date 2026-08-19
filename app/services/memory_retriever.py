@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 from typing import Protocol
@@ -75,7 +76,10 @@ class SemanticMemoryRetriever:
         embedder: MemoryEmbedder,
         memory: LongTermMemory,
     ) -> list[float] | None:
-        key = f"{memory.owner_id}:{memory.memory_id}"
+        # 缓存键含内容指纹：constraint/fact 类记忆覆盖内容后 memory_id 不变，
+        # 若仅按 (owner, memory_id) 缓存会持续命中旧向量，导致召回结果与持久化内容不一致。
+        digest = hashlib.sha1(memory.content.encode("utf-8")).hexdigest()[:12]
+        key = f"{memory.owner_id}:{memory.memory_id}:{digest}"
         cached = self._memory_embedding_cache.get(key)
         if cached is not None:
             return cached

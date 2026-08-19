@@ -75,11 +75,8 @@ class ChatService:
             session.session_id, memory_context
         )
         response.trace = self._with_memory_trace(response.trace, memory_context)
-        self.memory_service.record_interaction(
-            session_id=session.session_id,
-            user_message=message,
-            assistant_message=response.final_answer,
-            owner_id=user_id,
+        self._record_memory(
+            session.session_id, message, response.final_answer, user_id
         )
 
         updated_history = self.session_service.get_history(session.session_id)
@@ -231,12 +228,6 @@ class ChatService:
             response_payload.trace = self._with_memory_trace(
                 response_payload.trace, memory_context
             )
-            self.memory_service.record_interaction(
-                session_id=session.session_id,
-                user_message=message,
-                assistant_message=response_payload.final_answer,
-                owner_id=user_id,
-            )
             updated_history = self.session_service.get_history(session.session_id)
             response = ChatResponse(
                 session_id=session.session_id,
@@ -253,6 +244,14 @@ class ChatService:
                 "event": "message_completed",
                 "data": response.model_dump(mode="json"),
             }
+            # 记忆写入放到 message_completed 之后，避免阻塞流式收尾；
+            # 持久化异常不影响已完成的对话响应。
+            self._record_memory(
+                session.session_id,
+                message,
+                response_payload.final_answer,
+                user_id,
+            )
             log_structured(
                 self.logger,
                 "chat_stream_completed",
@@ -369,6 +368,24 @@ class ChatService:
             **trace,
             "memory": memory_context.trace(),
         }
+
+    def _record_memory(
+        self, session_id: str, user_message: str, assistant_message: str, user_id: str | None
+    ) -> None:
+        """提取并持久化长期记忆；失败仅告警，不打断对话主流程。"""
+        try:
+            self.memory_service.record_interaction(
+                session_id=session_id,
+                user_message=user_message,
+                assistant_message=assistant_message,
+                owner_id=user_id,
+            )
+        except Exception as exc:
+            log_structured(
+                self.logger,
+                "memory_record_interaction_failed",
+                error_type=exc.__class__.__name__,
+            )
 
     def _refresh_memory_context(
         self, session_id: str, context: MemoryContext

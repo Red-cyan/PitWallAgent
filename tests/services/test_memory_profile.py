@@ -18,8 +18,29 @@ def _new_service() -> MemoryService:
     return MemoryService(store=InMemoryLongTermMemoryStore())
 
 
-def test_constraint_memories_overwrite_previous_value() -> None:
-    service = _new_service()
+def test_constraint_memories_overwrite_previous_value(monkeypatch) -> None:
+    """LLM 路径下，同一 key 的约束更新时覆盖旧值。"""
+
+    class StubLLM:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def chat(self, messages, **kwargs):  # noqa: ANN001
+            self.calls += 1
+            value = "use Chinese" if self.calls == 2 else "use English"
+            return (
+                '{"memories":[{"category":"constraint","key":"language",'
+                '"value":"' + value + '"}]}'
+            )
+
+    monkeypatch.setattr("app.services.memory_service.settings.llm_api_key", "test-key")
+    monkeypatch.setattr(
+        "app.services.memory_service.settings.memory_extraction_enabled", True
+    )
+    service = MemoryService(
+        store=InMemoryLongTermMemoryStore(),
+        extractor=MemoryExtractor(llm_client=StubLLM()),
+    )
 
     service.record_interaction(
         session_id="session-1",
@@ -35,7 +56,7 @@ def test_constraint_memories_overwrite_previous_value() -> None:
     memories = service.retrieve_memories("回复语言")
 
     assert len(memories) == 1
-    assert "中文" in memories[0].content
+    assert "Chinese" in memories[0].content
 
 
 def test_preference_memories_are_appended_incrementally() -> None:
@@ -104,6 +125,71 @@ def test_llm_extraction_parses_structured_memory(monkeypatch) -> None:
     assert extracted[0].category == "constraint"
     assert extracted[0].key == "language"
     assert extracted[0].value == "always use English"
+
+
+def test_llm_empty_result_does_not_fall_back_to_keyword(monkeypatch) -> None:
+    """LLM 明确表示无持久信息时，不得再用关键词降级误存画像。"""
+
+    class StubEmptyLLM:
+        def chat(self, messages, **kwargs):  # noqa: ANN001
+            return '{"memories": []}'
+
+    monkeypatch.setattr("app.services.memory_service.settings.llm_api_key", "test-key")
+    monkeypatch.setattr(
+        "app.services.memory_service.settings.memory_extraction_enabled", True
+    )
+    extractor = MemoryExtractor(llm_client=StubEmptyLLM())
+
+    extracted = extractor.extract(
+        user_message="必须用中文回复",
+        assistant_message="好的",
+    )
+
+    assert extracted == []
+
+
+def test_keyword_constraints_do_not_overwrite_each_other() -> None:
+    """关键词降级下不同约束使用内容作 key，各自独立存在。"""
+    service = _new_service()
+
+    service.record_interaction(
+        session_id="session-1",
+        user_message="必须用中文回复",
+        assistant_message="好的",
+    )
+    service.record_interaction(
+        session_id="session-1",
+        user_message="不要提2026赛季",
+        assistant_message="好的",
+    )
+
+    memories = service.retrieve_memories("约束")
+
+    assert len(memories) == 2
+    contents = " ".join(memory.content for memory in memories)
+    assert "中文" in contents
+    assert "2026" in contents
+
+
+def test_same_keyword_constraint_replaces_previous_value() -> None:
+    """同一约束重复声明时按 key 覆盖旧值，不重复追加。"""
+    service = _new_service()
+
+    service.record_interaction(
+        session_id="session-1",
+        user_message="必须用中文回复",
+        assistant_message="好的",
+    )
+    service.record_interaction(
+        session_id="session-1",
+        user_message="必须用中文回复",
+        assistant_message="好的",
+    )
+
+    memories = service.retrieve_memories("约束")
+
+    assert len(memories) == 1
+    assert "中文" in memories[0].content
 
 
 def test_postgres_store_round_trip_and_overwrite() -> None:
